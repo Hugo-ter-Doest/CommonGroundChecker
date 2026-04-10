@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --cg-blue: #154273;
+  --cg-lightblue: #2E6BB4;
+  --cg-orange: #E17000;
+}
+
+body {
+  @apply bg-cg-gray text-gray-800 antialiased;
+}
+
+.spinner {
+  border: 3px solid #e5e7eb;
+  border-top-color: var(--cg-lightblue);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
