@@ -137,3 +137,7 @@ A **+10 bonus** is added when an EUPL license is detected (European Union Public
 | < 50 | ❌ Non-compliant |
 
 > **Note:** Automated analysis is indicative only. Architecture checks rely on heuristics. For official certification, contact [commonground.nl](https://commonground.nl).
+
+## License
+
+This project is licensed under the **European Union Public Licence v. 1.2 (EUPL-1.2)**. See [LICENSE](LICENSE) for the full text.
