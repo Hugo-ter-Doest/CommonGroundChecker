@@ -4,14 +4,42 @@ An online automatic compliance checker for [Common Ground](https://commonground.
 
 ## What it checks
 
-| # | Criterion | Standard |
-|---|-----------|----------|
-| 1 | **OpenAPI / API-first** — machine-readable spec present | [API Design Rules](https://commonground.nl/cms/view/54476259/api-designrules) |
-| 2 | **OSI-approved open-source license** | [opensource.org/licenses](https://opensource.org/licenses) |
-| 3 | **publiccode.yml** — government metadata file | [Standard for Public Code](https://standard.publiccode.net) |
-| 4 | **Docker / Container** — Dockerfile + docker-compose | [Haven](https://haven.commonground.nl) |
-| 5 | **5-Layer Architecture** — correct layer categorisation | [5-lagen model](https://commonground.nl/cms/view/54476261/5-lagen-model) |
-| 6 | **Haven (Kubernetes)** — Helm chart + K8s best practices | [haven.commonground.nl](https://haven.commonground.nl) |
+Criteria are grouped into four categories. Each criterion has a requirement level (mandatory / recommended) and a configurable weight that influences the overall score.
+
+### Governance
+
+| # | Criterion | Level | Standard |
+|---|-----------|-------|----------|
+| 1 | **Actual source code** — repository contains real source files, not just docs or config | Mandatory | [commonground.nl](https://commonground.nl) |
+| 2 | **OpenAPI / API-first** — machine-readable OpenAPI or Swagger spec present *(required only when "Component is a register" is checked)* | Mandatory | [API Design Rules](https://commonground.nl/cms/view/54476259/api-designrules) |
+| 3 | **OSI-approved open-source license** — LICENSE file with an OSI-approved identifier | Mandatory | [opensource.org/licenses](https://opensource.org/licenses) |
+| 4 | **publiccode.yml** — government metadata file in the repository root | Mandatory | [Standard for Public Code](https://standard.publiccode.net) |
+
+### Deployment & Operations
+
+| # | Criterion | Level | Standard |
+|---|-----------|-------|----------|
+| 5 | **Docker support** — Dockerfile (and optionally docker-compose) present | Mandatory | [Haven](https://haven.commonground.nl) |
+| 6 | **Available Docker image** — published registry image URL provided | Mandatory | [Haven](https://haven.commonground.nl) |
+| 7 | **Helm chart (Kubernetes)** — Chart.yaml or K8s manifests present | Mandatory | [Haven](https://haven.commonground.nl) |
+
+### Software Quality
+
+| # | Criterion | Level | Standard |
+|---|-----------|-------|----------|
+| 8 | **Documentation** — README, docs folder, or external docs URL | Mandatory | [irealisatie.nl](https://www.irealisatie.nl/kennis/common-ground) |
+| 9 | **Test suite** — automated tests or test configuration present | Recommended | [GitHub Actions](https://docs.github.com/en/actions/automating-builds-and-tests) |
+| 10 | **Contributing guide** — CONTRIBUTING file explaining how to contribute | Recommended | [GitHub docs](https://docs.github.com/en/communities/setting-up-your-project-for-healthy-contributions/setting-guidelines-for-repository-contributors) |
+| 11 | **Code of Conduct** — CODE_OF_CONDUCT file present | Recommended | [opensource.guide](https://opensource.guide/code-of-conduct/) |
+| 12 | **Security policy** — SECURITY file with responsible disclosure info | Recommended | [GitHub docs](https://docs.github.com/en/code-security/getting-started/adding-a-security-policy-to-your-repository) |
+| 13 | **Semantic versioning** — releases or tags following MAJOR.MINOR.PATCH | Recommended | [semver.org](https://semver.org/) |
+| 14 | **SBOM** — Software Bill of Materials (SPDX or CycloneDX) published | Recommended | [CISA SBOM](https://www.cisa.gov/sbom) |
+
+### Architecture
+
+| # | Criterion | Level | Standard |
+|---|-----------|-------|----------|
+| 15 | **5-Layer Architecture** — component belongs to a recognised Common Ground layer | Recommended | [5-lagen model](https://commonground.nl/cms/view/54476261/5-lagen-model) |
 
 ## Getting started
 
@@ -19,56 +47,93 @@ An online automatic compliance checker for [Common Ground](https://commonground.
 # 1. Install dependencies
 npm install
 
-# 2. (Optional) Set a GitHub token for higher rate limits
-cp .env.local.example .env.local
-# Edit .env.local and add your GitHub token
+# 2. Set up the database (PostgreSQL required)
+cp .env.local.example .env
+# Edit .env and configure DATABASE_URL and optionally GITHUB_TOKEN
 
-# 3. Start the development server
+# 3. Push the Prisma schema and generate the client
+npm run db:push
+npm run db:generate
+
+# 4. Start the development server
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) and paste a GitHub repository URL.
+
+A **GitHub personal access token** in `.env` is optional but strongly recommended — the unauthenticated GitHub API rate limit is 60 requests/hour, which is quickly exhausted for newer repos.
 
 ## Tech stack
 
 - **Next.js 14** (App Router)
 - **TypeScript**
 - **Tailwind CSS**
-- **GitHub REST API** (no external dependencies beyond js-yaml)
+- **PostgreSQL + Prisma** — persistent analysis history and versioned scoring configs
+- **GitHub REST API**
 
 ## Architecture
 
 ```
 src/
 ├── app/
-│   ├── api/check/route.ts     # POST /api/check — runs all checks
-│   ├── page.tsx               # Main UI page
+│   ├── api/
+│   │   ├── check/route.ts          # POST /api/check — runs all checks & persists result
+│   │   ├── admin/scoring/route.ts  # GET/POST scoring weights
+│   │   └── repo-history/route.ts   # GET analysis history
+│   ├── admin/page.tsx              # Admin — configure criterion weights
+│   ├── history/                    # History overview + per-repo + per-run detail
+│   ├── about/page.tsx              # About page
+│   ├── page.tsx                    # Main checker UI
 │   └── layout.tsx
 ├── components/
-│   ├── CheckerForm.tsx        # URL input form
-│   ├── ResultCard.tsx         # Expandable result row
-│   ├── ScoreBadge.tsx         # Circular score dial
-│   └── RepoMeta.tsx           # Repo metadata card
-└── lib/
-    ├── github.ts              # GitHub API client
-    ├── types.ts               # Shared TypeScript types
-    └── checkers/
-        ├── index.ts           # Orchestrator
-        ├── openapi.ts         # OpenAPI/Swagger check
-        ├── license.ts         # OSI license check
-        ├── publiccode.ts      # publiccode.yml check
-        ├── docker.ts          # Docker/container check
-        ├── fiveLayer.ts       # 5-layer architecture check
-        └── haven.ts           # Haven/Kubernetes check
+│   ├── CheckerForm.tsx             # URL input, options, and register checkbox
+│   ├── ResultCard.tsx              # Expandable result row
+│   ├── ScoreBadge.tsx              # Circular score dial
+│   ├── RepoMeta.tsx                # Repo metadata + version evidence
+│   └── AdminWeightsForm.tsx        # Admin weight sliders
+├── lib/
+│   ├── db.ts                       # Prisma client singleton
+│   ├── github.ts                   # GitHub API client + version detection
+│   ├── types.ts                    # Shared TypeScript types
+│   └── checkers/
+│       ├── index.ts                # Orchestrator — runs all checks, computes score
+│       ├── config.ts               # Scoring config — defaults, DB persistence
+│       ├── sourcecode.ts
+│       ├── openapi.ts
+│       ├── license.ts
+│       ├── publiccode.ts
+│       ├── docker.ts
+│       ├── dockerImage.ts
+│       ├── helmchart.ts
+│       ├── documentation.ts
+│       ├── tests.ts
+│       ├── contributing.ts
+│       ├── codeofconduct.ts
+│       ├── security.ts
+│       ├── semver.ts
+│       ├── sbom.ts
+│       └── fiveLayer.ts
+└── generated/prisma/               # Auto-generated Prisma client (git-ignored)
 ```
 
 ## Scoring
 
-Each check contributes to an overall score (0–100):
-- **Pass** = full point
-- **Warning** = half point
-- **Fail** = no point
+Each check has a configurable **weight** (0–1) set via the Admin page. Weights are stored in the database as versioned snapshots; each analysis run is linked to the exact scoring config used.
 
-A score ≥ 80 is considered **Compliant**, 50–79 is **Partial**, < 50 is **Non-compliant**.
+Score formula:
+```
+baseScore = round((Σ statusScore × weight) / (Σ weight) × 100)
+score     = min(100, baseScore + euplBonus)
+```
+
+Status scores: **Pass** = 1.0 · **Warn / Info** = 0.5 · **Fail** = 0.
+
+A **+10 bonus** is added when an EUPL license is detected (European Union Public Licence).
+
+| Score | Label |
+|-------|-------|
+| ≥ 80 | ✅ Compliant |
+| 50–79 | ⚠️ Partial |
+| < 50 | ❌ Non-compliant |
 
 > **Note:** Automated analysis is indicative only. Architecture checks rely on heuristics. For official certification, contact [commonground.nl](https://commonground.nl).
