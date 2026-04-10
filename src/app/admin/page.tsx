@@ -1,6 +1,7 @@
 import Link from "next/link";
 import AdminWeightsForm from "@/components/AdminWeightsForm";
 import {
+  DEFAULT_COMPLEXITY_MAX_CCN_THRESHOLD,
   DEFAULT_COMPLEXITY_THRESHOLD,
   DEFAULT_CRITERION_CONFIG_BY_CHECK_ID,
   getScoringConfig,
@@ -52,6 +53,12 @@ export default async function AdminPage() {
         defaultWeights={defaultWeights}
         initialComplexityThreshold={scoringConfig.complexityThreshold}
         defaultComplexityThreshold={DEFAULT_COMPLEXITY_THRESHOLD}
+        initialComplexityMaxCcnThreshold={
+          scoringConfig.complexityMaxCcnThreshold
+        }
+        defaultComplexityMaxCcnThreshold={
+          DEFAULT_COMPLEXITY_MAX_CCN_THRESHOLD
+        }
       />
     </div>
   );

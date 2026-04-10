@@ -70,7 +70,11 @@ function extractThresholdBreaches(output: string): string[] {
     .slice(0, 10);
 }
 
-function extractSummary(output: string): { averageCcn: number; functionCount: number } | null {
+function extractSummary(output: string): {
+  averageCcn: number;
+  maxCcn: number;
+  functionCount: number;
+} | null {
   const lines = output
     .split(/\r?\n/)
     .map((line) => line.trim())
@@ -89,7 +93,7 @@ function extractSummary(output: string): { averageCcn: number; functionCount: nu
       const avgCcn = Number(numericParts[2]);
       const functionCount = Number(numericParts[4]);
       if (Number.isFinite(avgCcn) && Number.isFinite(functionCount)) {
-        return { averageCcn: avgCcn, functionCount };
+        return { averageCcn: avgCcn, maxCcn: avgCcn, functionCount };
       }
     }
   }
@@ -99,6 +103,7 @@ function extractSummary(output: string): { averageCcn: number; functionCount: nu
 
 function extractAverageFromFunctionRows(output: string): {
   averageCcn: number;
+  maxCcn: number;
   functionCount: number;
 } | null {
   const lines = output.split(/\r?\n/);
@@ -125,8 +130,10 @@ function extractAverageFromFunctionRows(output: string): {
   }
 
   const total = ccnValues.reduce((sum, value) => sum + value, 0);
+  const maxCcn = Math.max(...ccnValues);
   return {
     averageCcn: total / ccnValues.length,
+    maxCcn,
     functionCount: ccnValues.length,
   };
 }
@@ -134,7 +141,8 @@ function extractAverageFromFunctionRows(output: string): {
 export async function checkComplexity(
   owner: string,
   repo: string,
-  threshold: number
+  averageThreshold: number,
+  maxCcnThreshold: number
 ): Promise<CheckResult> {
   const lizard = await detectLizardCommand();
 
@@ -183,7 +191,8 @@ export async function checkComplexity(
       };
     }
 
-    const thresholdText = String(Math.max(1, Math.round(threshold)));
+    const averageThresholdText = String(Math.max(1, Math.round(averageThreshold)));
+    const maxCcnThresholdText = String(Math.max(1, Math.round(maxCcnThreshold)));
     const args = [
       ...lizard.argsPrefix,
       "-x",
@@ -256,8 +265,12 @@ export async function checkComplexity(
     }
 
     const averageCcn = summary.averageCcn;
+    const maxCcn = summary.maxCcn;
 
-    if (averageCcn <= Number(thresholdText)) {
+    const passesAverage = averageCcn <= Number(averageThresholdText);
+    const passesMax = maxCcn <= Number(maxCcnThresholdText);
+
+    if (passesAverage && passesMax) {
       return {
         id: "complexity",
         title: "Cyclomatic complexity (Lizard)",
@@ -265,19 +278,32 @@ export async function checkComplexity(
           "The repository should be analyzed with Lizard to track cyclomatic complexity across supported languages.",
         status: "pass",
         message:
-          `Lizard analysis executed successfully. Average cyclomatic complexity is ${averageCcn.toFixed(
+          `Lizard analysis executed successfully. AvgCCN ${averageCcn.toFixed(
             2
-          )}, within threshold ${thresholdText}.`,
+          )} <= ${averageThresholdText} and MaxCCN ${maxCcn.toFixed(
+            2
+          )} <= ${maxCcnThresholdText}.`,
         evidence: [
           `Analyzer: ${lizard.command} ${lizard.argsPrefix.join(" ")}`.trim(),
           ...(analysis.code !== 0
             ? [`Lizard returned non-zero exit code ${analysis.code}, but summary metrics were parsed.`]
             : []),
-          `Average CCN: ${averageCcn.toFixed(2)} (threshold: ${thresholdText})`,
+          `Average CCN: ${averageCcn.toFixed(2)} (threshold: ${averageThresholdText})`,
+          `Max CCN: ${maxCcn.toFixed(2)} (threshold: ${maxCcnThresholdText})`,
           ...evidence,
         ].slice(0, 10),
         referenceUrl: "https://github.com/terryyin/lizard",
       };
+    }
+
+    const exceeded: string[] = [];
+    if (!passesAverage) {
+      exceeded.push(
+        `AvgCCN ${averageCcn.toFixed(2)} > ${averageThresholdText}`
+      );
+    }
+    if (!passesMax) {
+      exceeded.push(`MaxCCN ${maxCcn.toFixed(2)} > ${maxCcnThresholdText}`);
     }
 
     return {
@@ -287,15 +313,14 @@ export async function checkComplexity(
         "The repository should be analyzed with Lizard to track cyclomatic complexity across supported languages.",
       status: "fail",
       message:
-        `Lizard analysis ran. Average cyclomatic complexity is ${averageCcn.toFixed(
-          2
-        )}, above threshold ${thresholdText}.`,
+        `Lizard analysis ran. Threshold exceeded: ${exceeded.join("; ")}.`,
       evidence: [
         `Analyzer: ${lizard.command} ${lizard.argsPrefix.join(" ")}`.trim(),
         ...(analysis.code !== 0
           ? [`Lizard returned non-zero exit code ${analysis.code}, but summary metrics were parsed.`]
           : []),
-        `Average CCN: ${averageCcn.toFixed(2)} (threshold: ${thresholdText})`,
+        `Average CCN: ${averageCcn.toFixed(2)} (threshold: ${averageThresholdText})`,
+        `Max CCN: ${maxCcn.toFixed(2)} (threshold: ${maxCcnThresholdText})`,
         ...(evidence.length > 0 ? evidence : ["See lizard output for details."]),
       ].slice(0, 10),
       referenceUrl: "https://github.com/terryyin/lizard",

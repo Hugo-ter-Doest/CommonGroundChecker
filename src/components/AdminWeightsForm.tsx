@@ -141,6 +141,8 @@ interface AdminWeightsFormProps {
   defaultWeights: Record<string, number>;
   initialComplexityThreshold: number;
   defaultComplexityThreshold: number;
+  initialComplexityMaxCcnThreshold: number;
+  defaultComplexityMaxCcnThreshold: number;
 }
 
 export default function AdminWeightsForm({
@@ -148,11 +150,15 @@ export default function AdminWeightsForm({
   defaultWeights,
   initialComplexityThreshold,
   defaultComplexityThreshold,
+  initialComplexityMaxCcnThreshold,
+  defaultComplexityMaxCcnThreshold,
 }: AdminWeightsFormProps) {
   const [weights, setWeights] = useState<Record<string, number>>(initialWeights);
   const [complexityThreshold, setComplexityThreshold] = useState<number>(
     initialComplexityThreshold
   );
+  const [complexityMaxCcnThreshold, setComplexityMaxCcnThreshold] =
+    useState<number>(initialComplexityMaxCcnThreshold);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -164,8 +170,19 @@ export default function AdminWeightsForm({
       return current !== initial;
     });
 
-    return weightChanged || complexityThreshold !== initialComplexityThreshold;
-  }, [weights, initialWeights, complexityThreshold, initialComplexityThreshold]);
+    return (
+      weightChanged ||
+      complexityThreshold !== initialComplexityThreshold ||
+      complexityMaxCcnThreshold !== initialComplexityMaxCcnThreshold
+    );
+  }, [
+    weights,
+    initialWeights,
+    complexityThreshold,
+    initialComplexityThreshold,
+    complexityMaxCcnThreshold,
+    initialComplexityMaxCcnThreshold,
+  ]);
 
   async function save() {
     setSaving(true);
@@ -178,6 +195,7 @@ export default function AdminWeightsForm({
         body: JSON.stringify({
           criterionWeights: weights,
           complexityThreshold,
+          complexityMaxCcnThreshold,
         }),
       });
       const data = await res.json();
@@ -191,6 +209,9 @@ export default function AdminWeightsForm({
         if (typeof data?.complexityThreshold === "number") {
           setComplexityThreshold(data.complexityThreshold);
         }
+        if (typeof data?.complexityMaxCcnThreshold === "number") {
+          setComplexityMaxCcnThreshold(data.complexityMaxCcnThreshold);
+        }
       }
     } catch {
       setError("Network error while saving weights.");
@@ -202,6 +223,7 @@ export default function AdminWeightsForm({
   function resetToDefaults() {
     setWeights(defaultWeights);
     setComplexityThreshold(defaultComplexityThreshold);
+    setComplexityMaxCcnThreshold(defaultComplexityMaxCcnThreshold);
     setMessage(null);
     setError(null);
   }
@@ -238,6 +260,27 @@ export default function AdminWeightsForm({
               const next = Number(event.target.value);
               if (!Number.isFinite(next)) return;
               setComplexityThreshold(Math.max(1, Math.min(100, Math.round(next))));
+            }}
+            className="w-24 rounded-md border border-gray-300 px-2 py-1 text-sm"
+          />
+        </div>
+        <div className="flex items-center gap-3">
+          <label htmlFor="complexity-max-ccn-threshold" className="text-sm font-medium text-gray-700">
+            Lizard threshold (Max CCN)
+          </label>
+          <input
+            id="complexity-max-ccn-threshold"
+            type="number"
+            min={1}
+            max={200}
+            step={1}
+            value={complexityMaxCcnThreshold}
+            onChange={(event) => {
+              const next = Number(event.target.value);
+              if (!Number.isFinite(next)) return;
+              setComplexityMaxCcnThreshold(
+                Math.max(1, Math.min(200, Math.round(next)))
+              );
             }}
             className="w-24 rounded-md border border-gray-300 px-2 py-1 text-sm"
           />

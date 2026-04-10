@@ -97,7 +97,12 @@ export async function runChecks(
       checkDocumentation(tree, options?.documentationLocations ?? [])
     ),
     Promise.resolve(checkTests(tree)),
-    checkComplexity(owner, repo, scoringConfig.complexityThreshold),
+    checkComplexity(
+      owner,
+      repo,
+      scoringConfig.complexityThreshold,
+      scoringConfig.complexityMaxCcnThreshold
+    ),
     Promise.resolve(checkContributing(tree)),
     Promise.resolve(checkCodeOfConduct(tree)),
     Promise.resolve(checkSecurity(tree)),

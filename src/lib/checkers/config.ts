@@ -9,6 +9,7 @@ export interface CriterionConfig {
 interface ScoringConfigOverrides {
   criterionWeights?: Record<string, number>;
   complexityThreshold?: number;
+  complexityMaxCcnThreshold?: number;
 }
 
 export interface ScoringConfig {
@@ -16,6 +17,7 @@ export interface ScoringConfig {
   statusScoreByStatus: Record<CheckStatus, number>;
   euplBonusPoints: number;
   complexityThreshold: number;
+  complexityMaxCcnThreshold: number;
 }
 
 export interface ActiveScoringConfig {
@@ -32,6 +34,7 @@ export const DEFAULT_STATUS_SCORE_BY_STATUS: Record<CheckStatus, number> = {
 
 export const DEFAULT_EUPL_BONUS_POINTS = 10;
 export const DEFAULT_COMPLEXITY_THRESHOLD = 15;
+export const DEFAULT_COMPLEXITY_MAX_CCN_THRESHOLD = 30;
 
 export const DEFAULT_CRITERION_CONFIG_BY_CHECK_ID: Record<string, CriterionConfig> = {
   sourcecode: { weight: 1, requirementLevel: "mandatory" },
@@ -63,6 +66,12 @@ function clampComplexityThreshold(value: number): number {
   return Math.max(1, Math.min(100, rounded));
 }
 
+function clampComplexityMaxCcnThreshold(value: number): number {
+  if (!Number.isFinite(value)) return DEFAULT_COMPLEXITY_MAX_CCN_THRESHOLD;
+  const rounded = Math.round(value);
+  return Math.max(1, Math.min(200, rounded));
+}
+
 function buildScoringConfig(overrides?: ScoringConfigOverrides): ScoringConfig {
   const criterionConfigByCheckId: Record<string, CriterionConfig> =
     Object.fromEntries(
@@ -89,6 +98,10 @@ function buildScoringConfig(overrides?: ScoringConfigOverrides): ScoringConfig {
       typeof overrides?.complexityThreshold === "number"
         ? clampComplexityThreshold(overrides.complexityThreshold)
         : DEFAULT_COMPLEXITY_THRESHOLD,
+    complexityMaxCcnThreshold:
+      typeof overrides?.complexityMaxCcnThreshold === "number"
+        ? clampComplexityMaxCcnThreshold(overrides.complexityMaxCcnThreshold)
+        : DEFAULT_COMPLEXITY_MAX_CCN_THRESHOLD,
   };
 }
 
@@ -100,11 +113,21 @@ function parseOverridesFromDbPayload(payload: unknown): ScoringConfigOverrides {
   const candidate = payload as Record<string, unknown>;
   const criterionWeightsRaw = candidate.criterionWeights;
   const complexityThresholdRaw = candidate.complexityThreshold;
+  const complexityMaxCcnThresholdRaw = candidate.complexityMaxCcnThreshold;
   if (!criterionWeightsRaw || typeof criterionWeightsRaw !== "object") {
+    const result: ScoringConfigOverrides = {};
     if (typeof complexityThresholdRaw === "number") {
-      return {
-        complexityThreshold: clampComplexityThreshold(complexityThresholdRaw),
-      };
+      result.complexityThreshold = clampComplexityThreshold(
+        complexityThresholdRaw
+      );
+    }
+    if (typeof complexityMaxCcnThresholdRaw === "number") {
+      result.complexityMaxCcnThreshold = clampComplexityMaxCcnThreshold(
+        complexityMaxCcnThresholdRaw
+      );
+    }
+    if (Object.keys(result).length > 0) {
+      return result;
     }
     return {};
   }
@@ -124,6 +147,10 @@ function parseOverridesFromDbPayload(payload: unknown): ScoringConfigOverrides {
       typeof complexityThresholdRaw === "number"
         ? clampComplexityThreshold(complexityThresholdRaw)
         : undefined,
+    complexityMaxCcnThreshold:
+      typeof complexityMaxCcnThresholdRaw === "number"
+        ? clampComplexityMaxCcnThreshold(complexityMaxCcnThresholdRaw)
+        : undefined,
   };
 }
 
@@ -133,7 +160,12 @@ async function readLatestDbOverrides(): Promise<{
 } | null> {
   const row = await prisma.scoringConfig.findFirst({
     orderBy: { createdAt: "desc" },
-    select: { id: true, criterionWeights: true, complexityThreshold: true },
+    select: {
+      id: true,
+      criterionWeights: true,
+      complexityThreshold: true,
+      complexityMaxCcnThreshold: true,
+    },
   });
 
   if (!row) return null;
@@ -143,6 +175,7 @@ async function readLatestDbOverrides(): Promise<{
     overrides: parseOverridesFromDbPayload({
       criterionWeights: row.criterionWeights,
       complexityThreshold: row.complexityThreshold,
+      complexityMaxCcnThreshold: row.complexityMaxCcnThreshold,
     }),
   };
 }
@@ -155,6 +188,10 @@ async function createDbOverridesRecord(
       criterionWeights: overrides.criterionWeights ?? {},
       complexityThreshold: clampComplexityThreshold(
         overrides.complexityThreshold ?? DEFAULT_COMPLEXITY_THRESHOLD
+      ),
+      complexityMaxCcnThreshold: clampComplexityMaxCcnThreshold(
+        overrides.complexityMaxCcnThreshold ??
+          DEFAULT_COMPLEXITY_MAX_CCN_THRESHOLD
       ),
     },
   });
@@ -192,7 +229,8 @@ export async function getActiveScoringConfig(): Promise<ActiveScoringConfig> {
 
 export async function saveCriterionWeights(
   criterionWeights: Record<string, number>,
-  complexityThreshold?: number
+  complexityThreshold?: number,
+  complexityMaxCcnThreshold?: number
 ): Promise<ActiveScoringConfig> {
   const overrides: ScoringConfigOverrides = {
     criterionWeights: {},
@@ -200,6 +238,10 @@ export async function saveCriterionWeights(
       typeof complexityThreshold === "number"
         ? clampComplexityThreshold(complexityThreshold)
         : DEFAULT_COMPLEXITY_THRESHOLD,
+    complexityMaxCcnThreshold:
+      typeof complexityMaxCcnThreshold === "number"
+        ? clampComplexityMaxCcnThreshold(complexityMaxCcnThreshold)
+        : DEFAULT_COMPLEXITY_MAX_CCN_THRESHOLD,
   };
 
   for (const [checkId, config] of Object.entries(
