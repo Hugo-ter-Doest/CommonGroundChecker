@@ -140,4 +140,6 @@ A **+10 bonus** is added when an EUPL license is detected (European Union Public
 
 ## License
 
+Copyright © 2026 VNG Realisatie
+
 This project is licensed under the **European Union Public Licence v. 1.2 (EUPL-1.2)**. See [LICENSE](LICENSE) for the full text.
