@@ -219,7 +219,7 @@ export default function HomePage() {
       {/* Hero */}
       <section className="space-y-3">
         <h2 className="text-2xl font-bold text-cg-blue">
-          Common Ground Compliance Checker
+          Common Ground Component Checker
         </h2>
         <p className="text-gray-600 max-w-2xl">
           Enter the URL of a public GitHub repository to automatically verify

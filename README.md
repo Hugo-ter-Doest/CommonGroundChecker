@@ -35,11 +35,12 @@ Criteria are grouped into four categories. Each criterion has a requirement leve
 |---|-----------|-------|----------|
 | 9 | **Documentation** — README, docs folder, or external docs URL | Mandatory | [irealisatie.nl](https://www.irealisatie.nl/kennis/common-ground) |
 | 10 | **Test suite** — automated tests or test configuration present | Recommended | [GitHub Actions](https://docs.github.com/en/actions/automating-builds-and-tests) |
-| 11 | **Contributing guide** — CONTRIBUTING file explaining how to contribute | Recommended | [GitHub docs](https://docs.github.com/en/communities/setting-up-your-project-for-healthy-contributions/setting-guidelines-for-repository-contributors) |
-| 12 | **Code of Conduct** — CODE_OF_CONDUCT file present | Recommended | [opensource.guide](https://opensource.guide/code-of-conduct/) |
-| 13 | **Security policy** — SECURITY file with responsible disclosure info | Recommended | [GitHub docs](https://docs.github.com/en/code-security/getting-started/adding-a-security-policy-to-your-repository) |
-| 14 | **Semantic versioning** — releases or tags following MAJOR.MINOR.PATCH | Recommended | [semver.org](https://semver.org/) |
-| 15 | **SBOM** — Software Bill of Materials (SPDX or CycloneDX) published | Recommended | [CISA SBOM](https://www.cisa.gov/sbom) |
+| 11 | **Cyclomatic complexity (Lizard)** — average complexity (AvgCCN) is measured and compared against an admin-configurable threshold | Recommended | [lizard](https://github.com/terryyin/lizard) |
+| 12 | **Contributing guide** — CONTRIBUTING file explaining how to contribute | Recommended | [GitHub docs](https://docs.github.com/en/communities/setting-up-your-project-for-healthy-contributions/setting-guidelines-for-repository-contributors) |
+| 13 | **Code of Conduct** — CODE_OF_CONDUCT file present | Recommended | [opensource.guide](https://opensource.guide/code-of-conduct/) |
+| 14 | **Security policy** — SECURITY file with responsible disclosure info | Recommended | [GitHub docs](https://docs.github.com/en/code-security/getting-started/adding-a-security-policy-to-your-repository) |
+| 15 | **Semantic versioning** — releases or tags following MAJOR.MINOR.PATCH | Recommended | [semver.org](https://semver.org/) |
+| 16 | **SBOM** — Software Bill of Materials (SPDX or CycloneDX) published | Recommended | [CISA SBOM](https://www.cisa.gov/sbom) |
 
 ## Getting started
 
@@ -54,6 +55,9 @@ cp .env.local.example .env
 # 3. Push the Prisma schema and generate the client
 npm run db:push
 npm run db:generate
+
+# 3b. Install Lizard (required for cyclomatic complexity criterion)
+py -m pip install lizard
 
 # 4. Start the development server
 npm run dev
@@ -107,6 +111,7 @@ src/
 │       ├── helmchart.ts
 │       ├── documentation.ts
 │       ├── tests.ts
+│       ├── complexity.ts
 │       ├── contributing.ts
 │       ├── codeofconduct.ts
 │       ├── security.ts
@@ -119,6 +124,10 @@ src/
 ## Scoring
 
 Each check has a configurable **weight** (0–1) set via the Admin page. Weights are stored in the database as versioned snapshots; each analysis run is linked to the exact scoring config used.
+
+For the Lizard complexity criterion, the Admin page also stores a configurable
+**average cyclomatic complexity threshold** (AvgCCN). The check passes when a
+repository’s measured AvgCCN is at or below this threshold.
 
 Score formula:
 ```
