@@ -94,6 +94,12 @@ const CRITERION_CATEGORIES: CriterionCategory[] = [
           "Checks for common test directories, test file naming conventions, or test configuration files.",
       },
       {
+        id: "complexity",
+        label: "Cyclomatic complexity",
+        explanation:
+          "Clones the analyzed repository and runs Lizard locally. The criterion passes when average cyclomatic complexity (AvgCCN) stays within the configured threshold.",
+      },
+      {
         id: "semver",
         label: "Semantic versioning",
         explanation:
@@ -133,24 +139,33 @@ const ALL_CRITERION_FIELDS = CRITERION_CATEGORIES.flatMap((group) =>
 interface AdminWeightsFormProps {
   initialWeights: Record<string, number>;
   defaultWeights: Record<string, number>;
+  initialComplexityThreshold: number;
+  defaultComplexityThreshold: number;
 }
 
 export default function AdminWeightsForm({
   initialWeights,
   defaultWeights,
+  initialComplexityThreshold,
+  defaultComplexityThreshold,
 }: AdminWeightsFormProps) {
   const [weights, setWeights] = useState<Record<string, number>>(initialWeights);
+  const [complexityThreshold, setComplexityThreshold] = useState<number>(
+    initialComplexityThreshold
+  );
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const hasChanges = useMemo(() => {
-    return ALL_CRITERION_FIELDS.some(({ id }) => {
+    const weightChanged = ALL_CRITERION_FIELDS.some(({ id }) => {
       const current = Number(weights[id] ?? 0);
       const initial = Number(initialWeights[id] ?? 0);
       return current !== initial;
     });
-  }, [weights, initialWeights]);
+
+    return weightChanged || complexityThreshold !== initialComplexityThreshold;
+  }, [weights, initialWeights, complexityThreshold, initialComplexityThreshold]);
 
   async function save() {
     setSaving(true);
@@ -160,7 +175,10 @@ export default function AdminWeightsForm({
       const res = await fetch("/api/admin/scoring", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ criterionWeights: weights }),
+        body: JSON.stringify({
+          criterionWeights: weights,
+          complexityThreshold,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -169,6 +187,9 @@ export default function AdminWeightsForm({
         setMessage("Weights saved. New analyses will use this configuration.");
         if (data?.criterionWeights && typeof data.criterionWeights === "object") {
           setWeights(data.criterionWeights as Record<string, number>);
+        }
+        if (typeof data?.complexityThreshold === "number") {
+          setComplexityThreshold(data.complexityThreshold);
         }
       }
     } catch {
@@ -180,6 +201,7 @@ export default function AdminWeightsForm({
 
   function resetToDefaults() {
     setWeights(defaultWeights);
+    setComplexityThreshold(defaultComplexityThreshold);
     setMessage(null);
     setError(null);
   }
@@ -191,6 +213,35 @@ export default function AdminWeightsForm({
         <p className="text-sm text-gray-500 mt-1">
           Set how much each criterion influences the total score (0 to 1).
         </p>
+      </div>
+
+      <div className="space-y-2 border border-gray-200 rounded-xl p-4 bg-gray-50/40">
+        <h4 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
+          Complexity threshold
+        </h4>
+        <p className="text-xs text-gray-500">
+          Maximum average cyclomatic complexity (AvgCCN) accepted by the Lizard
+          check. Repositories with AvgCCN above this value fail the criterion.
+        </p>
+        <div className="flex items-center gap-3">
+          <label htmlFor="complexity-threshold" className="text-sm font-medium text-gray-700">
+            Lizard threshold (AvgCCN)
+          </label>
+          <input
+            id="complexity-threshold"
+            type="number"
+            min={1}
+            max={100}
+            step={1}
+            value={complexityThreshold}
+            onChange={(event) => {
+              const next = Number(event.target.value);
+              if (!Number.isFinite(next)) return;
+              setComplexityThreshold(Math.max(1, Math.min(100, Math.round(next))));
+            }}
+            className="w-24 rounded-md border border-gray-300 px-2 py-1 text-sm"
+          />
+        </div>
       </div>
 
       <div className="space-y-4">

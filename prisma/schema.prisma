@@ -41,6 +41,7 @@ model Repo {
 model ScoringConfig {
   id               String         @id @default(uuid())
   criterionWeights Json
+  complexityThreshold Int          @default(15)
   createdAt        DateTime       @default(now())
   updatedAt        DateTime @updatedAt
   analyses         RepoAnalysis[]

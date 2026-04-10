@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
+  DEFAULT_COMPLEXITY_THRESHOLD,
   DEFAULT_CRITERION_CONFIG_BY_CHECK_ID,
   getScoringConfig,
   saveCriterionWeights,
@@ -21,6 +22,14 @@ function extractWeightsFromPayload(payload: unknown): Record<string, number> {
   return result;
 }
 
+function extractComplexityThresholdFromPayload(payload: unknown): number | undefined {
+  if (!payload || typeof payload !== "object") return undefined;
+  const raw = payload as Record<string, unknown>;
+  const value = raw.complexityThreshold;
+  if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
+  return value;
+}
+
 export async function GET() {
   try {
     const scoringConfig = await getScoringConfig();
@@ -32,12 +41,14 @@ export async function GET() {
           config.weight,
         ])
       ),
+      complexityThreshold: scoringConfig.complexityThreshold,
       defaultCriterionWeights: Object.fromEntries(
         Object.entries(DEFAULT_CRITERION_CONFIG_BY_CHECK_ID).map(([checkId, config]) => [
           checkId,
           config.weight,
         ])
       ),
+      defaultComplexityThreshold: DEFAULT_COMPLEXITY_THRESHOLD,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unexpected error.";
@@ -49,14 +60,19 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const reset = body?.reset === true;
+    const incomingThreshold = extractComplexityThresholdFromPayload(body);
 
     const activeConfig = reset
-      ? await saveCriterionWeights({})
-      : await saveCriterionWeights(extractWeightsFromPayload(body?.criterionWeights));
+      ? await saveCriterionWeights({}, DEFAULT_COMPLEXITY_THRESHOLD)
+      : await saveCriterionWeights(
+          extractWeightsFromPayload(body?.criterionWeights),
+          incomingThreshold
+        );
 
     return NextResponse.json({
       ok: true,
       scoringConfigId: activeConfig.id,
+      complexityThreshold: activeConfig.config.complexityThreshold,
       criterionWeights: Object.fromEntries(
         Object.entries(activeConfig.config.criterionConfigByCheckId).map(([checkId, config]) => [
           checkId,

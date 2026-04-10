@@ -13,6 +13,7 @@ import { checkContributing } from "./contributing";
 import { checkCodeOfConduct } from "./codeofconduct";
 import { checkSecurity } from "./security";
 import { checkTests } from "./tests";
+import { checkComplexity } from "./complexity";
 import { checkSourceCode } from "./sourcecode";
 import { checkSemver } from "./semver";
 import {
@@ -84,7 +85,7 @@ export async function runChecks(
       });
 
   // Run all checkers in parallel
-  const [sourcecode, openapi, license, publiccode, docker, dockerimage, sbom, documentation, tests, contributing, codeofconduct, security, semver, fivelayer, helmchart] = await Promise.all([
+  const [sourcecode, openapi, license, publiccode, docker, dockerimage, sbom, documentation, tests, complexity, contributing, codeofconduct, security, semver, fivelayer, helmchart] = await Promise.all([
     Promise.resolve(checkSourceCode(tree)),
     openApiCheckPromise,
     checkLicense(owner, repo, meta, tree),
@@ -96,6 +97,7 @@ export async function runChecks(
       checkDocumentation(tree, options?.documentationLocations ?? [])
     ),
     Promise.resolve(checkTests(tree)),
+    checkComplexity(owner, repo, scoringConfig.complexityThreshold),
     Promise.resolve(checkContributing(tree)),
     Promise.resolve(checkCodeOfConduct(tree)),
     Promise.resolve(checkSecurity(tree)),
@@ -114,6 +116,7 @@ export async function runChecks(
     sbom,
     documentation,
     tests,
+    complexity,
     contributing,
     codeofconduct,
     security,
@@ -161,6 +164,7 @@ export async function runChecks(
     sbom,
     documentation,
     tests,
+    complexity,
     contributing,
     codeofconduct,
     security,

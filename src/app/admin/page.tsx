@@ -1,6 +1,7 @@
 import Link from "next/link";
 import AdminWeightsForm from "@/components/AdminWeightsForm";
 import {
+  DEFAULT_COMPLEXITY_THRESHOLD,
   DEFAULT_CRITERION_CONFIG_BY_CHECK_ID,
   getScoringConfig,
 } from "@/lib/checkers/config";
@@ -49,6 +50,8 @@ export default async function AdminPage() {
       <AdminWeightsForm
         initialWeights={initialWeights}
         defaultWeights={defaultWeights}
+        initialComplexityThreshold={scoringConfig.complexityThreshold}
+        defaultComplexityThreshold={DEFAULT_COMPLEXITY_THRESHOLD}
       />
     </div>
   );

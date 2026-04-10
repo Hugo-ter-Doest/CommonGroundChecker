@@ -104,6 +104,14 @@ const CRITERIA_OVERVIEW = [
       "Checks for common test directories, test file naming conventions, or test configuration files.",
   },
   {
+    icon: "📉",
+    label: "Cyclomatic complexity",
+    category: "Software Quality" as CriteriaCategory,
+    desc: "Lizard analysis on target repo",
+    tooltip:
+      "Clones the analyzed repository and runs Lizard locally to measure cyclomatic complexity across supported languages.",
+  },
+  {
     icon: "🤝",
     label: "Contributing guide",
     category: "Governance" as CriteriaCategory,
