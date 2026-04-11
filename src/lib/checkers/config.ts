@@ -40,6 +40,7 @@ export const DEFAULT_CRITERION_CONFIG_BY_CHECK_ID: Record<string, CriterionConfi
   sourcecode: { weight: 1, requirementLevel: "mandatory" },
   openapi: { weight: 1, requirementLevel: "mandatory" },
   license: { weight: 1, requirementLevel: "mandatory" },
+  copyrightowner: { weight: 0.75, requirementLevel: "recommended" },
   publiccode: { weight: 1, requirementLevel: "mandatory" },
   docker: { weight: 1, requirementLevel: "mandatory" },
   dockerimage: { weight: 1, requirementLevel: "mandatory" },

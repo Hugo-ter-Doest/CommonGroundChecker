@@ -2,6 +2,7 @@
 
 export type CheckStatus = "pass" | "fail" | "warn" | "info";
 export type RequirementLevel = "mandatory" | "recommended";
+export type ConfidenceLevel = "high" | "medium" | "low";
 
 export interface VersionEvidence {
   source: "release" | "tag" | "manifest" | "readme" | "none";
@@ -22,6 +23,8 @@ export interface CheckResult {
   evidence?: string[];
   /** Link to the relevant Common Ground / standard reference */
   referenceUrl?: string;
+  /** Optional confidence level for inferred/heuristic checks */
+  confidence?: ConfidenceLevel;
 }
 
 export interface CheckReport {

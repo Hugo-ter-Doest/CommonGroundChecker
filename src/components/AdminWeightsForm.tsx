@@ -24,6 +24,12 @@ const CRITERION_CATEGORIES: CriterionCategory[] = [
           "The component must carry an OSI-approved open-source license (e.g. EUPL-1.2, MIT, Apache-2.0). A EUPL license earns bonus points because it is the EU recommended licence for public-sector software.",
       },
       {
+        id: "copyrightowner",
+        label: "Copyright / IP owner",
+        explanation:
+          "Detects probable copyright holder(s) from COPYRIGHT/NOTICE/LICENSE/README files and package metadata. If no explicit statement is found, it falls back to repository ownership metadata with a warning.",
+      },
+      {
         id: "publiccode",
         label: "publiccode.yml",
         explanation:

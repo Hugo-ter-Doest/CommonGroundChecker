@@ -1,6 +1,6 @@
 "use client";
 
-import type { CheckStatus, RequirementLevel } from "@/lib/types";
+import type { CheckStatus, ConfidenceLevel, RequirementLevel } from "@/lib/types";
 import {
   CheckCircle,
   XCircle,
@@ -17,6 +17,7 @@ interface ResultCardProps {
   title: string;
   description: string;
   requirementLevel?: RequirementLevel;
+  confidence?: ConfidenceLevel;
   status: CheckStatus;
   message: string;
   evidence?: string[];
@@ -75,6 +76,7 @@ export default function ResultCard({
   title,
   description,
   requirementLevel,
+  confidence,
   status,
   message,
   evidence,
@@ -119,6 +121,11 @@ export default function ResultCard({
         >
           {req.label}
         </span>
+        {confidence && (
+          <span className="text-xs font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full border border-blue-300 text-blue-700 bg-blue-50">
+            {confidence} confidence
+          </span>
+        )}
         {open ? (
           <ChevronUp className="w-4 h-4 text-gray-500" />
         ) : (

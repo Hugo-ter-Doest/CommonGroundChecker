@@ -5,6 +5,7 @@ const ids = [
   "sourcecode",
   "openapi",
   "license",
+  "copyrightowner",
   "publiccode",
   "docker",
   "dockerimage",
@@ -28,6 +29,7 @@ const mocks = vi.hoisted(() => ({
   checkOpenApi: vi.fn(),
   checkLicense: vi.fn(),
   checkPublicCode: vi.fn(),
+  checkCopyrightOwner: vi.fn(),
   checkDocker: vi.fn(),
   checkDockerImage: vi.fn(),
   checkSbom: vi.fn(),
@@ -53,6 +55,7 @@ vi.mock("@/lib/github", () => ({
 
 vi.mock("@/lib/checkers/openapi", () => ({ checkOpenApi: mocks.checkOpenApi }));
 vi.mock("@/lib/checkers/license", () => ({ checkLicense: mocks.checkLicense }));
+vi.mock("@/lib/checkers/copyrightOwner", () => ({ checkCopyrightOwner: mocks.checkCopyrightOwner }));
 vi.mock("@/lib/checkers/publiccode", () => ({ checkPublicCode: mocks.checkPublicCode }));
 vi.mock("@/lib/checkers/docker", () => ({ checkDocker: mocks.checkDocker }));
 vi.mock("@/lib/checkers/dockerImage", () => ({ checkDockerImage: mocks.checkDockerImage }));
@@ -120,6 +123,7 @@ describe("runChecks", () => {
     mocks.checkSourceCode.mockReturnValue(resultFor("sourcecode", "pass"));
     mocks.checkOpenApi.mockResolvedValue(resultFor("openapi", "pass"));
     mocks.checkLicense.mockResolvedValue(resultFor("license", "pass"));
+    mocks.checkCopyrightOwner.mockResolvedValue(resultFor("copyrightowner", "pass"));
     mocks.checkPublicCode.mockResolvedValue(resultFor("publiccode", "pass"));
     mocks.checkDocker.mockReturnValue(resultFor("docker", "pass"));
     mocks.checkDockerImage.mockReturnValue(resultFor("dockerimage", "pass"));

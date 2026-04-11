@@ -41,6 +41,14 @@ const CRITERIA_OVERVIEW = [
       "The component must carry an OSI-approved open-source license (e.g. EUPL-1.2, MIT, Apache-2.0). A EUPL license earns bonus points because it is the EU recommended licence for public-sector software.",
   },
   {
+    icon: "©",
+    label: "Copyright / IP owner",
+    category: "Governance" as CriteriaCategory,
+    desc: "Probable ownership disclosure",
+    tooltip:
+      "Detects probable copyright holder(s) from COPYRIGHT/NOTICE/LICENSE/README files and package metadata. If no explicit statement is found, it falls back to repository ownership metadata with lower confidence.",
+  },
+  {
     icon: "📋",
     label: "publiccode.yml",
     category: "Governance" as CriteriaCategory,
@@ -430,7 +438,19 @@ export default function HomePage() {
               <span className="px-2 py-0.5 rounded-full border border-gray-300 text-gray-600 bg-white font-semibold uppercase tracking-wide">
                 Recommended
               </span>
+              <span className="px-2 py-0.5 rounded-full border border-blue-300 text-blue-700 bg-blue-50 font-semibold uppercase tracking-wide">
+                High confidence
+              </span>
+              <span className="px-2 py-0.5 rounded-full border border-blue-300 text-blue-700 bg-blue-50/70 font-semibold uppercase tracking-wide">
+                Medium confidence
+              </span>
+              <span className="px-2 py-0.5 rounded-full border border-blue-200 text-blue-600 bg-blue-50/40 font-semibold uppercase tracking-wide">
+                Low confidence
+              </span>
             </div>
+            <p className="mb-3 text-xs text-gray-500">
+              Confidence indicates how strong the ownership evidence is: high = explicit legal statement, medium = manifest metadata, low = repository-owner fallback or weak evidence.
+            </p>
             <div className="space-y-2">
               {report.results.map((r) => (
                 <ResultCard key={r.id} {...r} />

@@ -16,6 +16,7 @@ import { checkTests } from "./tests";
 import { checkComplexity } from "./complexity";
 import { checkSourceCode } from "./sourcecode";
 import { checkSemver } from "./semver";
+import { checkCopyrightOwner } from "./copyrightOwner";
 import {
   getActiveScoringConfig,
 } from "./config";
@@ -91,6 +92,7 @@ export async function runChecks(
   const networkChecksPromise = Promise.all([
     openApiCheckPromise,
     checkLicense(owner, repo, meta, tree),
+    checkCopyrightOwner(owner, repo, meta, tree),
     checkPublicCode(owner, repo, tree),
     checkFiveLayer(owner, repo, tree, meta),
     checkHelmChart(owner, repo, tree, options?.helmChartLocations ?? []),
@@ -117,7 +119,7 @@ export async function runChecks(
 
   // Instant checks done; emit next step while slower checks complete in parallel
   onProgress?.("Analysing API specs, licence & deployment files\u2026", 60);
-  const [[openapi, license, publiccode, fivelayer, helmchart], complexity] = await Promise.all([
+  const [[openapi, license, copyrightowner, publiccode, fivelayer, helmchart], complexity] = await Promise.all([
     networkChecksPromise,
     complexityPromise,
   ]);
@@ -128,6 +130,7 @@ export async function runChecks(
     sourcecode,
     openapi,
     license,
+    copyrightowner,
     publiccode,
     docker,
     dockerimage,
@@ -176,6 +179,7 @@ export async function runChecks(
     sourcecode,
     openapi,
     licenseResult,
+    copyrightowner,
     publiccode,
     docker,
     dockerimage,

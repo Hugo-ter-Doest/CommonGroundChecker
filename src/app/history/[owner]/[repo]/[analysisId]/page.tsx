@@ -33,6 +33,12 @@ function normalizeResults(raw: unknown): CheckResult[] {
         title: typeof item.title === "string" ? item.title : "Unknown check",
         description: typeof item.description === "string" ? item.description : "",
         requirementLevel,
+        confidence:
+          item.confidence === "high" ||
+          item.confidence === "medium" ||
+          item.confidence === "low"
+            ? item.confidence
+            : undefined,
         status:
           item.status === "pass" ||
           item.status === "warn" ||
@@ -198,6 +204,20 @@ export default async function AnalysisDetailPage({ params }: AnalysisDetailPageP
         <h3 className="font-semibold text-sm uppercase tracking-wide text-gray-600">
           Criteria results for this run
         </h3>
+        <div className="mb-2 flex flex-wrap gap-2 text-xs">
+          <span className="px-2 py-0.5 rounded-full border border-blue-300 text-blue-700 bg-blue-50 font-semibold uppercase tracking-wide">
+            High confidence
+          </span>
+          <span className="px-2 py-0.5 rounded-full border border-blue-300 text-blue-700 bg-blue-50/70 font-semibold uppercase tracking-wide">
+            Medium confidence
+          </span>
+          <span className="px-2 py-0.5 rounded-full border border-blue-200 text-blue-600 bg-blue-50/40 font-semibold uppercase tracking-wide">
+            Low confidence
+          </span>
+        </div>
+        <p className="mb-2 text-xs text-gray-500">
+          Confidence indicates how strong the ownership evidence is: high = explicit legal statement, medium = manifest metadata, low = repository-owner fallback or weak evidence.
+        </p>
         {results.length === 0 ? (
           <p className="text-sm text-gray-500 bg-white border border-gray-200 rounded-xl px-4 py-3">
             No detailed criteria were stored for this analysis.
@@ -211,6 +231,7 @@ export default async function AnalysisDetailPage({ params }: AnalysisDetailPageP
                 title={result.title}
                 description={result.description}
                 requirementLevel={result.requirementLevel}
+                confidence={result.confidence}
                 status={result.status}
                 message={result.message}
                 evidence={result.evidence}
