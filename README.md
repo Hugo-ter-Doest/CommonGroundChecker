@@ -1,6 +1,6 @@
 # Common Ground Checker
 
-![Common Ground](./public/icons/Common_gound_logo_rgb.svg)
+<img src="./public/icons/Common_gound_logo_rgb.svg" alt="Common Ground" height="20" />
 ![Coverage](./badges/coverage.svg)
 ![Vulnerabilities](./badges/vulnerabilities.svg)
 
