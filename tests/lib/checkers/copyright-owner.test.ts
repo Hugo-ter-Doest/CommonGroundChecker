@@ -58,4 +58,23 @@ describe("checkCopyrightOwner", () => {
     expect(result.confidence).toBe("low");
     expect(result.message).toContain("Fallback based on repository ownership: maykinmedia");
   });
+
+  it("ignores legal boilerplate and keeps only plausible owner names", async () => {
+    mocks.getFileContent.mockResolvedValue(
+      "Copyright 2018 VNG Realisatie, holder of the Work)\\n" +
+      "Nothing in this Licence is intended to deprive the Licensee of the benefits"
+    );
+
+    const result = await checkCopyrightOwner(
+      "org",
+      "repo",
+      { owner: { login: "org" } },
+      ["LICENSE"]
+    );
+
+    expect(result.status).toBe("pass");
+    expect(result.message).toContain("VNG Realisatie");
+    expect(result.message).not.toContain("holder of the Work");
+    expect(result.message).not.toContain("Licensee");
+  });
 });

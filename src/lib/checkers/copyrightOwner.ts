@@ -1,9 +1,25 @@
 import { getFileContent } from "../github";
 import type { CheckResult } from "../types";
 
-const OWNER_LINE_PATTERNS: RegExp[] = [
-  /copyright\s*(?:\(c\)|©)?\s*(?:\d{4}(?:\s*[-–]\s*\d{4})?\s*)?(?:by\s+)?([^\n\r.;]+)/gi,
-  /all rights reserved\s*[—–-]?\s*([^\n\r.;]+)/gi,
+const COPYRIGHT_CAPTURE_PATTERNS: RegExp[] = [
+  /copyright\s*(?:\(c\)|©)?\s*(?:\d{4}(?:\s*[-–]\s*\d{4})?\s*)?(?:by\s+)?(.+)/i,
+  /(.+?)\s+copyright\s*(?:\(c\)|©)?\s*(?:\d{4}(?:\s*[-–]\s*\d{4})?)?/i,
+  /all rights reserved\.?\s*(?:by\s+)?(.+)/i,
+];
+
+const BOILERPLATE_FRAGMENTS = [
+  "holder of the work",
+  "notice for the work",
+  "law applicable",
+  "original work",
+  "licensee",
+  "licence",
+  "license",
+  "article",
+  "granted hereunder",
+  "patent",
+  "trademark",
+  "modifications he/she",
 ];
 
 const CANDIDATE_FILES = [
@@ -27,6 +43,10 @@ function normalizeOwnerName(value: string): string {
   return value
     .replace(/^[:\s]+|[:\s]+$/g, "")
     .replace(/^by\s+/i, "")
+    .replace(/^copyright\s*(?:\(c\)|©)?\s*/i, "")
+    .replace(/\b(?:copyright\s*(?:\(c\)|©)?|all rights reserved)\b/gi, "")
+    .replace(/\b\d{4}(?:\s*[-–]\s*\d{4})?\b/g, "")
+    .replace(/[)\](}>]+$/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -34,18 +54,35 @@ function normalizeOwnerName(value: string): string {
 function looksLikePersonOrOrg(name: string): boolean {
   if (name.length < 2 || name.length > 120) return false;
   if (/^(all|copyright|rights|reserved|license)$/i.test(name)) return false;
-  return /[a-z]/i.test(name);
+  const lower = name.toLowerCase();
+  if (BOILERPLATE_FRAGMENTS.some((part) => lower.includes(part))) return false;
+  if (!/[a-z]/i.test(name)) return false;
+  const words = name.split(/\s+/).filter(Boolean);
+  if (words.length > 8) return false;
+  return true;
 }
 
 function extractOwnersFromText(content: string): string[] {
   const owners = new Set<string>();
 
-  for (const pattern of OWNER_LINE_PATTERNS) {
-    pattern.lastIndex = 0;
-    let match: RegExpExecArray | null;
-    while ((match = pattern.exec(content)) !== null) {
-      const raw = match[1] ?? "";
-      const candidates = raw
+  const lines = content
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(0, 250);
+
+  for (const line of lines) {
+    if (!/copyright|all rights reserved/i.test(line)) continue;
+
+    for (const pattern of COPYRIGHT_CAPTURE_PATTERNS) {
+      const match = line.match(pattern);
+      if (!match?.[1]) continue;
+
+      const sanitized = match[1]
+        .split(/\s+-\s+|\s+—\s+|\s+–\s+|\s+\|\s+/)
+        .shift() ?? "";
+
+      const candidates = sanitized
         .split(/,|\band\b|\&/i)
         .map((segment) => normalizeOwnerName(segment))
         .filter((candidate) => looksLikePersonOrOrg(candidate));
