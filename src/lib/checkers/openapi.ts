@@ -1,4 +1,4 @@
-import { getFileContent, getRepoTree } from "../github";
+import { getFileContent } from "../github";
 import type { CheckResult } from "../types";
 
 const OPENAPI_PATTERNS = [

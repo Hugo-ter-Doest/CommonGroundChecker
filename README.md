@@ -1,5 +1,6 @@
 # Common Ground Checker
 
+![Common Ground](./public/icons/Common_gound_logo_rgb.svg)
 ![Coverage](./badges/coverage.svg)
 
 An online automatic compliance checker for [Common Ground](https://commonground.nl) — the Dutch vision and architecture for open, reusable software in municipalities.

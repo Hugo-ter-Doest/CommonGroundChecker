@@ -1,7 +1,7 @@
 import Link from "next/link";
 import RepoMeta from "@/components/RepoMeta";
 import { prisma } from "@/lib/db";
-import type { CheckReport, CheckStatus } from "@/lib/types";
+import type { CheckReport } from "@/lib/types";
 
 interface HistoryPageProps {
   params: {

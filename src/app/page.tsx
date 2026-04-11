@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import CheckerForm from "@/components/CheckerForm";
 import ResultCard from "@/components/ResultCard";
 import ScoreBadge from "@/components/ScoreBadge";
@@ -202,18 +203,18 @@ export default function HomePage() {
   return (
     <div className="max-w-5xl mx-auto px-6 py-10 space-y-10">
       <nav className="flex items-center justify-end gap-4 text-sm">
-        <a href="/" className="text-gray-500 hover:text-cg-lightblue transition-colors">
+        <Link href="/" className="text-gray-500 hover:text-cg-lightblue transition-colors">
           Checker
-        </a>
-        <a href="/history" className="text-cg-lightblue hover:underline font-medium">
+        </Link>
+        <Link href="/history" className="text-cg-lightblue hover:underline font-medium">
           History
-        </a>
-        <a href="/admin" className="text-gray-500 hover:text-cg-lightblue transition-colors">
+        </Link>
+        <Link href="/admin" className="text-gray-500 hover:text-cg-lightblue transition-colors">
           Admin
-        </a>
-        <a href="/about" className="text-gray-500 hover:text-cg-lightblue transition-colors">
+        </Link>
+        <Link href="/about" className="text-gray-500 hover:text-cg-lightblue transition-colors">
           About
-        </a>
+        </Link>
       </nav>
 
       {/* Hero */}
@@ -330,15 +331,15 @@ export default function HomePage() {
                   Branch: {report.repoMeta.defaultBranch}
                 </p>
                 <div className="flex items-center gap-4 text-xs">
-                  <a
+                  <Link
                     href={`/history/${encodeURIComponent(report.owner)}/${encodeURIComponent(report.repo)}`}
                     className="text-cg-lightblue hover:underline"
                   >
                     View repository history
-                  </a>
-                  <a href="/history" className="text-cg-lightblue hover:underline">
+                  </Link>
+                  <Link href="/history" className="text-cg-lightblue hover:underline">
                     Search history
-                  </a>
+                  </Link>
                 </div>
               </div>
             </div>
