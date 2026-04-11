@@ -38,6 +38,8 @@ function isEuplLicense(
   );
 }
 
+export type ProgressCallback = (step: string, pct: number) => void;
+
 interface RunChecksOptions {
   helmChartLocations?: string[];
   documentationLocations?: string[];
@@ -47,21 +49,22 @@ interface RunChecksOptions {
 
 export async function runChecks(
   repoUrl: string,
-  options?: RunChecksOptions
+  options?: RunChecksOptions,
+  onProgress?: ProgressCallback,
 ): Promise<CheckReport> {
   const parsed = parseGitHubUrl(repoUrl);
   if (!parsed) throw new Error("Invalid GitHub repository URL.");
 
   const { owner, repo } = parsed;
 
-  // Fetch meta and tree in parallel
-  const [meta, tree, versionInfo] = await Promise.all([
-    getRepoMeta(owner, repo),
-    (async () => {
-      const branch =
-        (await getRepoMeta(owner, repo)).default_branch ?? "main";
-      return getRepoTree(owner, repo, branch);
-    })(),
+  // Fetch repo metadata first (needed to know default branch)
+  onProgress?.("Fetching repository metadata\u2026", 15);
+  const meta = await getRepoMeta(owner, repo);
+
+  // Fetch file tree and version in parallel using the real default branch
+  onProgress?.("Loading repository file tree\u2026", 30);
+  const [tree, versionInfo] = await Promise.all([
+    getRepoTree(owner, repo, meta.default_branch ?? "main"),
     getRepoVersion(owner, repo),
   ]);
 
@@ -84,32 +87,42 @@ export async function runChecks(
         referenceUrl: "https://commonground.nl/cms/view/54476259/api-designrules",
       });
 
-  // Run all checkers in parallel
-  const [sourcecode, openapi, license, publiccode, docker, dockerimage, sbom, documentation, tests, complexity, contributing, codeofconduct, security, semver, fivelayer, helmchart] = await Promise.all([
-    Promise.resolve(checkSourceCode(tree)),
+  // Kick off network-dependent and slow checks immediately so they run concurrently
+  const networkChecksPromise = Promise.all([
     openApiCheckPromise,
     checkLicense(owner, repo, meta, tree),
     checkPublicCode(owner, repo, tree),
-    Promise.resolve(checkDocker(tree)),
-    Promise.resolve(checkDockerImage(options?.dockerLocations ?? [])),
-    Promise.resolve(checkSbom(tree)),
-    Promise.resolve(
-      checkDocumentation(tree, options?.documentationLocations ?? [])
-    ),
-    Promise.resolve(checkTests(tree)),
-    checkComplexity(
-      owner,
-      repo,
-      scoringConfig.complexityThreshold,
-      scoringConfig.complexityMaxCcnThreshold
-    ),
-    Promise.resolve(checkContributing(tree)),
-    Promise.resolve(checkCodeOfConduct(tree)),
-    Promise.resolve(checkSecurity(tree)),
-    Promise.resolve(checkSemver(version)),
     checkFiveLayer(owner, repo, tree, meta),
     checkHelmChart(owner, repo, tree, options?.helmChartLocations ?? []),
   ]);
+  const complexityPromise = checkComplexity(
+    owner,
+    repo,
+    scoringConfig.complexityThreshold,
+    scoringConfig.complexityMaxCcnThreshold
+  );
+
+  // Instant checks — synchronous pure functions on the tree array
+  onProgress?.("Running code structure checks\u2026", 45);
+  const sourcecode = checkSourceCode(tree);
+  const docker = checkDocker(tree);
+  const dockerimage = checkDockerImage(options?.dockerLocations ?? []);
+  const sbom = checkSbom(tree);
+  const documentation = checkDocumentation(tree, options?.documentationLocations ?? []);
+  const tests = checkTests(tree);
+  const contributing = checkContributing(tree);
+  const codeofconduct = checkCodeOfConduct(tree);
+  const security = checkSecurity(tree);
+  const semver = checkSemver(version);
+
+  // Instant checks done; emit next step while slower checks complete in parallel
+  onProgress?.("Analysing API specs, licence & deployment files\u2026", 60);
+  const [[openapi, license, publiccode, fivelayer, helmchart], complexity] = await Promise.all([
+    networkChecksPromise,
+    complexityPromise,
+  ]);
+
+  onProgress?.("Calculating compliance score\u2026", 90);
 
   const results = [
     sourcecode,

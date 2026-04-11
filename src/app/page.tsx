@@ -157,6 +157,10 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<CheckReport | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<{ step: string; pct: number }>({
+    step: "",
+    pct: 0,
+  });
 
   async function handleCheck(
     url: string,
@@ -168,8 +172,10 @@ export default function HomePage() {
     setLoading(true);
     setError(null);
     setReport(null);
+    setProgress({ step: "Starting analysis…", pct: 0 });
+
     try {
-      const res = await fetch("/api/check", {
+      const res = await fetch("/api/check/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -180,11 +186,51 @@ export default function HomePage() {
           isRegister,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? "An error occurred.");
-      } else {
-        setReport(data as CheckReport);
+
+      if (!res.body) throw new Error("No response stream.");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // SSE events are separated by double newlines
+        const events = buffer.split("\n\n");
+        buffer = events.pop() ?? "";
+
+        for (const event of events) {
+          const dataLine = event
+            .split("\n")
+            .find((l) => l.startsWith("data: "));
+          if (!dataLine) continue;
+
+          const payload = JSON.parse(dataLine.slice(6)) as {
+            step: string;
+            pct: number;
+            done?: boolean;
+            result?: CheckReport;
+            error?: string;
+          };
+
+          if (payload.error) {
+            setError(payload.error);
+            setLoading(false);
+            return;
+          }
+
+          setProgress({ step: payload.step, pct: payload.pct });
+
+          if (payload.done && payload.result) {
+            setReport(payload.result);
+            setLoading(false);
+            return;
+          }
+        }
       }
     } catch {
       setError("Network error — could not reach the server.");
@@ -281,11 +327,26 @@ export default function HomePage() {
         <CheckerForm onSubmit={handleCheck} loading={loading} />
       </section>
 
-      {/* Loading */}
+      {/* Progress bar */}
       {loading && (
-        <section className="flex flex-col items-center gap-3 py-12 text-gray-500">
-          <div className="spinner w-10 h-10" style={{ width: 40, height: 40 }} />
-          <p>Fetching repository and running checks…</p>
+        <section className="py-10">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-700 font-medium">{progress.step}</span>
+              <span className="text-cg-blue font-semibold tabular-nums">
+                {progress.pct}%
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+              <div
+                className="h-2.5 rounded-full bg-cg-lightblue transition-all duration-500 ease-out"
+                style={{ width: `${progress.pct}%` }}
+              />
+            </div>
+            <p className="text-xs text-gray-400">
+              Analysing repository — this may take a moment for complexity analysis…
+            </p>
+          </div>
         </section>
       )}
 
