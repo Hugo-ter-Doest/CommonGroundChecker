@@ -278,9 +278,9 @@ export async function checkComplexity(
           "The repository should be analyzed with Lizard to track cyclomatic complexity across supported languages.",
         status: "pass",
         message:
-          `Lizard analysis executed successfully. AvgCCN ${averageCcn.toFixed(
+          `Lizard analysis executed successfully. Avg CCN ${averageCcn.toFixed(
             2
-          )} <= ${averageThresholdText} and MaxCCN ${maxCcn.toFixed(
+          )} <= ${averageThresholdText} and Max CCN ${maxCcn.toFixed(
             2
           )} <= ${maxCcnThresholdText}.`,
         evidence: [
@@ -313,7 +313,9 @@ export async function checkComplexity(
         "The repository should be analyzed with Lizard to track cyclomatic complexity across supported languages.",
       status: "fail",
       message:
-        `Lizard analysis ran. Threshold exceeded: ${exceeded.join("; ")}.`,
+        `Lizard analysis ran. Avg CCN ${averageCcn.toFixed(2)} (threshold: ${averageThresholdText}); ` +
+        `Max CCN ${maxCcn.toFixed(2)} (threshold: ${maxCcnThresholdText}). ` +
+        `Threshold exceeded: ${exceeded.join("; ")}.`,
       evidence: [
         `Analyzer: ${lizard.command} ${lizard.argsPrefix.join(" ")}`.trim(),
         ...(analysis.code !== 0
