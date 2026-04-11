@@ -4,10 +4,10 @@ import { prisma } from "@/lib/db";
 import type { CheckReport } from "@/lib/types";
 
 interface HistoryPageProps {
-  params: {
+  params: Promise<{
     owner: string;
     repo: string;
-  };
+  }>;
 }
 
 function normalizeRepoMeta(raw: unknown): CheckReport["repoMeta"] {
@@ -103,8 +103,9 @@ function badgeClass(score: number): string {
 }
 
 export default async function RepoHistoryPage({ params }: HistoryPageProps) {
-  const owner = decodeURIComponent(params.owner);
-  const repo = decodeURIComponent(params.repo);
+  const { owner: rawOwner, repo: rawRepo } = await params;
+  const owner = decodeURIComponent(rawOwner);
+  const repo = decodeURIComponent(rawRepo);
 
   const repository = await prisma.repo.findFirst({
     where: { owner, name: repo },

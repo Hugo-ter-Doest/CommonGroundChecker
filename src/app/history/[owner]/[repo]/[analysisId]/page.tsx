@@ -4,11 +4,11 @@ import { prisma } from "@/lib/db";
 import type { CheckReport, CheckResult } from "@/lib/types";
 
 interface AnalysisDetailPageProps {
-  params: {
+  params: Promise<{
     owner: string;
     repo: string;
     analysisId: string;
-  };
+  }>;
 }
 
 function badgeClass(score: number): string {
@@ -106,9 +106,10 @@ function normalizeRepoMeta(raw: unknown): CheckReport["repoMeta"] {
 }
 
 export default async function AnalysisDetailPage({ params }: AnalysisDetailPageProps) {
-  const owner = decodeURIComponent(params.owner);
-  const repo = decodeURIComponent(params.repo);
-  const analysisId = decodeURIComponent(params.analysisId);
+  const { owner: rawOwner, repo: rawRepo, analysisId: rawAnalysisId } = await params;
+  const owner = decodeURIComponent(rawOwner);
+  const repo = decodeURIComponent(rawRepo);
+  const analysisId = decodeURIComponent(rawAnalysisId);
 
   const analysis = await prisma.repoAnalysis.findFirst({
     where: {
