@@ -76,7 +76,7 @@ A **GitHub personal access token** in `.env` is optional but strongly recommende
 
 ## Tech stack
 
-- **Next.js 14** (App Router)
+- **Next.js 16* (App Router)
 - **TypeScript**
 - **Tailwind CSS**
 - **PostgreSQL + Prisma** — persistent analysis history and versioned scoring configs
