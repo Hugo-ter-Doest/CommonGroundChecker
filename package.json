@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "coverage:badge": "node scripts/update-coverage-badge.mjs",
+    "security:badge": "node scripts/update-security-badge.mjs",
     "test:watch": "vitest",
     "security": "npm audit --audit-level=high",
     "db:start": "docker compose up -d",

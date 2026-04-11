@@ -37,15 +37,19 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: npm run coverage:badge
 
-      - name: Commit coverage badge
+      - name: Update security badge
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: npm run security:badge
+
+      - name: Commit badges
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          if git diff --quiet -- badges/coverage.svg; then
-            echo "No coverage badge changes"
+          if git diff --quiet -- badges/coverage.svg badges/vulnerabilities.svg; then
+            echo "No badge changes"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add badges/coverage.svg
-          git commit -m "chore: update coverage badge [skip ci]"
+          git add badges/coverage.svg badges/vulnerabilities.svg
+          git commit -m "chore: update badges [skip ci]"
           git push
