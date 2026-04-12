@@ -15,6 +15,7 @@
     "security:badge": "node scripts/update-security-badge.mjs",
     "test:watch": "vitest",
     "security": "npm audit --audit-level=high",
+    "security:secrets": "gitleaks git . --config .gitleaks.toml --redact",
     "db:start": "docker compose up -d",
     "db:stop": "docker compose down",
     "db:push": "prisma db push",

@@ -74,6 +74,20 @@ Open [http://localhost:3000](http://localhost:3000) and paste a GitHub repositor
 
 A **GitHub personal access token** in `.env` is optional but strongly recommended — the unauthenticated GitHub API rate limit is 60 requests/hour, which is quickly exhausted for newer repos.
 
+## Security scanning
+
+To scan for leaked credentials/secrets locally with Gitleaks:
+
+```bash
+# Install Gitleaks once (Windows)
+winget install Gitleaks.Gitleaks
+
+# Scan repository history using the local config
+npm run security:secrets
+```
+
+The scan uses `.gitleaks.toml` and runs with `--redact` so findings are masked in output.
+
 ## Tech stack
 
 - **Next.js 16* (App Router)
