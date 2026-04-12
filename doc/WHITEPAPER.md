@@ -39,6 +39,10 @@ A well-governed SaaS model enables:
 - **Greater interoperability:** component contracts and API-first integration
 - **Improved trust:** transparent criteria and auditable onboarding decisions
 
+Related background:
+- EU interoperability policy and cross-border digital public services: https://interoperable-europe.ec.europa.eu/
+- NORA (Dutch Government Reference Architecture): https://www.noraonline.nl/
+
 ---
 
 ## 2) Conceptual Service Model
@@ -78,12 +82,12 @@ The framework below structures component evaluation into four categories. Each c
 Purpose: Ensure legal clarity, responsible collaboration, and maintainability.
 
 Example criteria:
-- **OSI-approved license** (Mandatory)
+- **OSI-approved license** (Mandatory) — https://opensource.org/licenses
 - **Copyright/IP owner disclosure** (Recommended)
-- **publiccode.yml metadata** (Mandatory)
+- **publiccode.yml metadata** (Mandatory) — https://standard.publiccode.net/
 - **Contributing guide** (Recommended)
-- **Code of Conduct** (Recommended)
-- **Security policy / vulnerability disclosure** (Recommended)
+- **Code of Conduct** (Recommended) — https://opensource.guide/code-of-conduct/
+- **Security policy / vulnerability disclosure** (Recommended) — https://docs.github.com/en/code-security/getting-started/adding-a-security-policy-to-your-repository
 
 Assessment questions:
 - Can this component be reused legally and safely across municipalities?
@@ -95,8 +99,8 @@ Assessment questions:
 Purpose: Ensure components fit municipal reference architectures and integration patterns.
 
 Example criteria:
-- **OpenAPI/API-first specification** (Mandatory for register-style components)
-- **Common Ground 5-layer architecture fit** (Recommended)
+- **OpenAPI/API-first specification** (Mandatory for register-style components) — https://spec.openapis.org/oas/latest.html
+- **Common Ground 5-layer architecture fit** (Recommended) — https://commonground.nl/
 
 Assessment questions:
 - Is the integration contract machine-readable and testable?
@@ -107,9 +111,9 @@ Assessment questions:
 Purpose: Ensure deployability, repeatability, and operational readiness.
 
 Example criteria:
-- **Docker support** (Mandatory)
-- **Published container image availability** (Mandatory)
-- **Helm chart / Kubernetes deployability** (Mandatory)
+- **Docker support** (Mandatory) — https://docs.docker.com/
+- **Published container image availability** (Mandatory) — https://github.com/opencontainers/distribution-spec
+- **Helm chart / Kubernetes deployability** (Mandatory) — https://helm.sh/docs/ and https://kubernetes.io/docs/
 
 Assessment questions:
 - Can the component be deployed consistently across municipal environments?
@@ -123,9 +127,9 @@ Example criteria:
 - **Actual source code present** (Mandatory)
 - **Documentation quality/presence** (Mandatory)
 - **Test suite presence** (Recommended)
-- **Cyclomatic complexity thresholds** (Recommended)
-- **Semantic versioning discipline** (Recommended)
-- **SBOM availability** (Recommended)
+- **Cyclomatic complexity thresholds** (Recommended) — https://github.com/terryyin/lizard
+- **Semantic versioning discipline** (Recommended) — https://semver.org/
+- **SBOM availability** (Recommended) — https://www.cisa.gov/sbom and https://cyclonedx.org/ and https://spdx.dev/
 
 Assessment questions:
 - Is the component understandable, testable, and maintainable?
@@ -156,6 +160,10 @@ Assessment questions:
 - Use weighted scores to balance maturity dimensions
 - Keep mandatory criteria as hard gates
 - Allow configurable thresholds by component type/risk class
+
+Related guidance:
+- OWASP Software Assurance Maturity Model (SAMM): https://owaspsamm.org/
+- NIST Secure Software Development Framework (SSDF): https://csrc.nist.gov/Projects/ssdf
 
 ---
 
@@ -216,6 +224,29 @@ The app can serve as the onboarding gate for candidate components before publica
 A municipal SaaS model built on reusable components can significantly improve delivery speed, quality, and interoperability. Success depends on a clear, transparent, and enforceable onboarding framework.
 
 The Common Ground Checker app offers a concrete way to put this framework into practice today: automate what can be automated, make decisions evidence-based, and keep human governance where judgment is still required.
+
+---
+
+## 8) References
+
+1. Common Ground (NL): https://commonground.nl/  
+2. API Design Rules (NL): https://commonground.nl/cms/view/54476259/api-designrules  
+3. Standard for Public Code: https://standard.publiccode.net/  
+4. Open Source Initiative Licenses: https://opensource.org/licenses  
+5. OpenAPI Specification: https://spec.openapis.org/oas/latest.html  
+6. Semantic Versioning: https://semver.org/  
+7. CISA SBOM Overview: https://www.cisa.gov/sbom  
+8. SPDX: https://spdx.dev/  
+9. CycloneDX: https://cyclonedx.org/  
+10. Docker Docs: https://docs.docker.com/  
+11. Kubernetes Docs: https://kubernetes.io/docs/  
+12. Helm Docs: https://helm.sh/docs/  
+13. GitHub Security Policy Docs: https://docs.github.com/en/code-security/getting-started/adding-a-security-policy-to-your-repository  
+14. Open Source Guides — Code of Conduct: https://opensource.guide/code-of-conduct/  
+15. OWASP SAMM: https://owaspsamm.org/  
+16. NIST SSDF: https://csrc.nist.gov/Projects/ssdf  
+17. Interoperable Europe Portal: https://interoperable-europe.ec.europa.eu/  
+18. NORA (Dutch Government Reference Architecture): https://www.noraonline.nl/
 
 ---
 

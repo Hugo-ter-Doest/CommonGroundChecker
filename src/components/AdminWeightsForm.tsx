@@ -236,63 +236,6 @@ export default function AdminWeightsForm({
 
   return (
     <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold text-gray-800">Criteria weights</h3>
-        <p className="text-sm text-gray-500 mt-1">
-          Set how much each criterion influences the total score (0 to 1).
-        </p>
-      </div>
-
-      <div className="space-y-2 border border-gray-200 rounded-xl p-4 bg-gray-50/40">
-        <h4 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
-          Complexity threshold
-        </h4>
-        <p className="text-xs text-gray-500">
-          Maximum average cyclomatic complexity (AvgCCN) accepted by the Lizard
-          check. Repositories with AvgCCN above this value fail the criterion.
-        </p>
-        <div className="flex items-center gap-3">
-          <label htmlFor="complexity-threshold" className="text-sm font-medium text-gray-700">
-            Lizard threshold (AvgCCN)
-          </label>
-          <input
-            id="complexity-threshold"
-            type="number"
-            min={1}
-            max={100}
-            step={1}
-            value={complexityThreshold}
-            onChange={(event) => {
-              const next = Number(event.target.value);
-              if (!Number.isFinite(next)) return;
-              setComplexityThreshold(Math.max(1, Math.min(100, Math.round(next))));
-            }}
-            className="w-24 rounded-md border border-gray-300 px-2 py-1 text-sm"
-          />
-        </div>
-        <div className="flex items-center gap-3">
-          <label htmlFor="complexity-max-ccn-threshold" className="text-sm font-medium text-gray-700">
-            Lizard threshold (Max CCN)
-          </label>
-          <input
-            id="complexity-max-ccn-threshold"
-            type="number"
-            min={1}
-            max={200}
-            step={1}
-            value={complexityMaxCcnThreshold}
-            onChange={(event) => {
-              const next = Number(event.target.value);
-              if (!Number.isFinite(next)) return;
-              setComplexityMaxCcnThreshold(
-                Math.max(1, Math.min(200, Math.round(next)))
-              );
-            }}
-            className="w-24 rounded-md border border-gray-300 px-2 py-1 text-sm"
-          />
-        </div>
-      </div>
-
       <div className="space-y-4">
         {CRITERION_CATEGORIES.map((group) => (
           <div
@@ -331,6 +274,57 @@ export default function AdminWeightsForm({
                     }}
                     className="w-full accent-cg-lightblue"
                   />
+
+                  {id === "complexity" && (
+                    <div className="mt-3 space-y-2 border border-gray-200 rounded-xl p-4 bg-white/70">
+                      <h5 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
+                        Complexity thresholds
+                      </h5>
+                      <p className="text-xs text-gray-500">
+                        Configure Lizard thresholds for the cyclomatic complexity criterion.
+                      </p>
+                      <div className="flex items-center gap-3">
+                        <label htmlFor="complexity-threshold" className="text-sm font-medium text-gray-700">
+                          Lizard threshold (AvgCCN)
+                        </label>
+                        <input
+                          id="complexity-threshold"
+                          type="number"
+                          min={1}
+                          max={100}
+                          step={1}
+                          value={complexityThreshold}
+                          onChange={(event) => {
+                            const next = Number(event.target.value);
+                            if (!Number.isFinite(next)) return;
+                            setComplexityThreshold(Math.max(1, Math.min(100, Math.round(next))));
+                          }}
+                          className="w-24 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                        />
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <label htmlFor="complexity-max-ccn-threshold" className="text-sm font-medium text-gray-700">
+                          Lizard threshold (Max CCN)
+                        </label>
+                        <input
+                          id="complexity-max-ccn-threshold"
+                          type="number"
+                          min={1}
+                          max={200}
+                          step={1}
+                          value={complexityMaxCcnThreshold}
+                          onChange={(event) => {
+                            const next = Number(event.target.value);
+                            if (!Number.isFinite(next)) return;
+                            setComplexityMaxCcnThreshold(
+                              Math.max(1, Math.min(200, Math.round(next)))
+                            );
+                          }}
+                          className="w-24 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}

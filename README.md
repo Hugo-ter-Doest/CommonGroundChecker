@@ -90,7 +90,7 @@ The scan uses `.gitleaks.toml` and runs with `--redact` so findings are masked i
 
 ## Tech stack
 
-- **Next.js 16* (App Router)
+- **Next.js 16**(App Router)
 - **TypeScript**
 - **Tailwind CSS**
 - **PostgreSQL + Prisma** — persistent analysis history and versioned scoring configs
