@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import CheckerForm from "@/components/CheckerForm";
 import ResultCard from "@/components/ResultCard";
@@ -17,26 +17,50 @@ type CriteriaCategory =
 
 type RequirementLevelLabel = "mandatory" | "recommended" | "informative";
 
-const CRITERION_REQUIREMENT_BY_LABEL: Record<string, RequirementLevelLabel> = {
-  "Source Code": "mandatory",
-  "5-Layer Architecture": "mandatory",
-  "OSI License": "mandatory",
-  "Copyright / IP owner": "mandatory",
-  "publiccode.yml": "mandatory",
-  "Docker support": "mandatory",
-  "Available Docker image": "mandatory",
-  "OpenAPI / API-first": "mandatory",
-  "NL API Design Rules": "mandatory",
-  "Helm chart (Kubernetes)": "mandatory",
-  "SBOM": "recommended",
-  Documentation: "mandatory",
-  "Test suite presence": "mandatory",
-  "Cyclomatic complexity": "recommended",
-  "Code Metrics": "informative",
-  "Contributing guide": "recommended",
-  "Code of Conduct": "recommended",
-  "Security policy": "recommended",
-  "Semantic Versioning": "recommended",
+const DEFAULT_REQUIREMENT_LEVEL_BY_CHECK_ID: Record<string, RequirementLevelLabel> = {
+  sourcecode: "mandatory",
+  fivelayer: "mandatory",
+  license: "mandatory",
+  copyrightowner: "mandatory",
+  publiccode: "mandatory",
+  docker: "mandatory",
+  dockerimage: "mandatory",
+  openapi: "mandatory",
+  adrvalidator: "mandatory",
+  helmchart: "mandatory",
+  sbom: "recommended",
+  documentation: "mandatory",
+  tests: "mandatory",
+  complexity: "recommended",
+  codemetrics: "informative",
+  owaspsecurecoding: "recommended",
+  contributing: "recommended",
+  codeofconduct: "recommended",
+  security: "recommended",
+  semver: "recommended",
+};
+
+const CHECK_ID_BY_CRITERION_LABEL: Record<string, string> = {
+  "Source Code": "sourcecode",
+  "5-Layer Architecture": "fivelayer",
+  "OSI License": "license",
+  "Copyright / IP owner": "copyrightowner",
+  "publiccode.yml": "publiccode",
+  "Docker support": "docker",
+  "Available Docker image": "dockerimage",
+  "OpenAPI / API-first": "openapi",
+  "NL API Design Rules": "adrvalidator",
+  "Helm chart (Kubernetes)": "helmchart",
+  SBOM: "sbom",
+  Documentation: "documentation",
+  "Test suite presence": "tests",
+  "Cyclomatic complexity": "complexity",
+  "Code Metrics": "codemetrics",
+  "OWASP Secure Coding": "owaspsecurecoding",
+  "Contributing guide": "contributing",
+  "Code of Conduct": "codeofconduct",
+  "Security policy": "security",
+  "Semantic Versioning": "semver",
 };
 
 function formatRequirementLabel(level: RequirementLevelLabel): string {
@@ -177,6 +201,14 @@ const CRITERIA_OVERVIEW = [
       "Provides additional software quality metrics as supporting information: total lines of code (NLOC) and function count. This criterion is informative only and does not affect the overall score.",
   },
   {
+    icon: "🛡️",
+    label: "OWASP Secure Coding",
+    category: "Software Quality" as CriteriaCategory,
+    desc: "Heuristic secure code scan",
+    tooltip:
+      "Performs a heuristic static scan for common risky coding patterns aligned with OWASP secure coding concerns, such as eval usage, weak hashes, disabled TLS verification, or hardcoded secrets.",
+  },
+  {
     icon: "🤝",
     label: "Contributing guide",
     category: "Governance" as CriteriaCategory,
@@ -233,6 +265,7 @@ const RESULT_ORDER_BY_ID: string[] = [
   "tests",
   "complexity",
   "codemetrics",
+  "owaspsecurecoding",
   "contributing",
   "codeofconduct",
   "security",
@@ -254,6 +287,7 @@ const RESULT_CATEGORY_BY_ID: Record<string, CriteriaCategory> = {
   tests: "Software Quality",
   complexity: "Software Quality",
   codemetrics: "Software Quality",
+  owaspsecurecoding: "Software Quality",
   contributing: "Governance",
   codeofconduct: "Governance",
   security: "Governance",
@@ -265,10 +299,43 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<CheckReport | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [requirementLevelsByCheckId, setRequirementLevelsByCheckId] = useState<
+    Record<string, RequirementLevelLabel>
+  >(DEFAULT_REQUIREMENT_LEVEL_BY_CHECK_ID);
   const [progress, setProgress] = useState<{ step: string; pct: number }>({
     step: "",
     pct: 0,
   });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadRequirementLevels() {
+      try {
+        const response = await fetch("/api/admin/scoring", { cache: "no-store" });
+        if (!response.ok) return;
+
+        const data = (await response.json()) as {
+          criterionRequirementLevels?: Record<string, RequirementLevelLabel>;
+        };
+
+        if (cancelled || !data.criterionRequirementLevels) return;
+
+        setRequirementLevelsByCheckId({
+          ...DEFAULT_REQUIREMENT_LEVEL_BY_CHECK_ID,
+          ...data.criterionRequirementLevels,
+        });
+      } catch {
+        // Ignore failures and keep default requirement levels.
+      }
+    }
+
+    void loadRequirementLevels();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleCheck(
     url: string,
@@ -387,7 +454,7 @@ export default function HomePage() {
 
       {/* Criteria overview chips */}
       <section>
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 items-start">
           {CATEGORY_ORDER.map((category) => {
             const criteria = CRITERIA_OVERVIEW.filter(
               (item) => item.category === category
@@ -396,29 +463,34 @@ export default function HomePage() {
             return (
               <div
                 key={category}
-                className="space-y-2 border border-gray-200 rounded-xl p-4 bg-gray-50/40"
+                className="space-y-2 border border-gray-200 rounded-xl p-3 bg-gray-50/40"
               >
                 <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
                   {category}
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="space-y-3">
                   {criteria.map((c) => {
+                    const checkId = CHECK_ID_BY_CRITERION_LABEL[c.label];
                     const requirementLevel =
-                      CRITERION_REQUIREMENT_BY_LABEL[c.label] ?? "informative";
+                      requirementLevelsByCheckId[checkId] ?? "informative";
 
                     return (
                       <div
                         key={c.label}
-                        className="relative group/chip h-full min-h-[76px] flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm shadow-sm cursor-default"
+                        className="relative group/chip min-h-[64px] flex items-start justify-between gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs shadow-sm cursor-default"
                       >
-                        <span>{c.icon}</span>
-                        <div>
-                          <p className="font-semibold text-gray-800 leading-tight">
-                            {c.label}
-                          </p>
-                          <p className="text-xs text-gray-400">{c.desc}</p>
+                        <div className="flex items-start gap-3 min-w-0">
+                          <span className="mt-0.5 shrink-0 text-sm">{c.icon}</span>
+                          <div className="min-w-0">
+                            <p className="font-semibold text-gray-800 leading-tight text-sm">
+                              {c.label}
+                            </p>
+                            <p className="text-[11px] text-gray-400 leading-snug">{c.desc}</p>
+                          </div>
+                        </div>
+                        <div className="shrink-0">
                           <span
-                            className={`inline-block mt-1 px-2 py-0.5 rounded-full border text-[10px] font-semibold uppercase tracking-wide ${getRequirementBadgeClass(requirementLevel)}`}
+                            className={`inline-block px-1.5 py-0.5 rounded-full border text-[9px] font-semibold uppercase tracking-wide ${getRequirementBadgeClass(requirementLevel)}`}
                           >
                             {formatRequirementLabel(requirementLevel)}
                           </span>

@@ -19,6 +19,7 @@ import { checkAdrValidator } from "./adrValidator";
 import { checkSourceCode } from "./sourcecode";
 import { checkSemver } from "./semver";
 import { checkCopyrightOwner } from "./copyrightOwner";
+import { checkOwaspSecureCoding } from "./owaspSecureCoding";
 import {
   getActiveScoringConfig,
 } from "./config";
@@ -107,6 +108,7 @@ export async function runChecks(
     scoringConfig.complexityMaxCcnThreshold
   );
   const codeMetricsPromise = checkCodeMetrics(owner, repo);
+  const owaspSecureCodingPromise = checkOwaspSecureCoding(owner, repo, tree);
   const adrValidatorPromise = checkAdrValidator(
     owner,
     repo,
@@ -130,10 +132,11 @@ export async function runChecks(
 
   // Instant checks done; emit next step while slower checks complete in parallel
   onProgress?.("Analysing API specs, licence & deployment files\u2026", 60);
-  const [[openapi, license, copyrightowner, publiccode, fivelayer, helmchart], complexity, codemetrics, adrvalidator] = await Promise.all([
+  const [[openapi, license, copyrightowner, publiccode, fivelayer, helmchart], complexity, codemetrics, owaspsecurecoding, adrvalidator] = await Promise.all([
     networkChecksPromise,
     complexityPromise,
     codeMetricsPromise,
+    owaspSecureCodingPromise,
     adrValidatorPromise,
   ]);
 
@@ -152,6 +155,7 @@ export async function runChecks(
     tests,
     complexity,
     codemetrics,
+    owaspsecurecoding,
     adrvalidator,
     contributing,
     codeofconduct,
@@ -217,6 +221,7 @@ export async function runChecks(
     tests,
     complexity,
     codemetrics,
+    owaspsecurecoding,
     adrvalidator,
     contributing,
     codeofconduct,

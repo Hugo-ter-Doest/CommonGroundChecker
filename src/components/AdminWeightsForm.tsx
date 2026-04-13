@@ -120,6 +120,12 @@ const CRITERION_CATEGORIES: CriterionCategory[] = [
         requirementLevel: "informative",
       },
       {
+        id: "owaspsecurecoding",
+        label: "OWASP Secure Coding",
+        explanation:
+          "Runs a heuristic static scan for common risky coding patterns aligned with OWASP secure coding concerns, such as dynamic code execution, weak hashes, disabled TLS verification, or possible hardcoded secrets.",
+      },
+      {
         id: "semver",
         label: "Semantic versioning",
         explanation:

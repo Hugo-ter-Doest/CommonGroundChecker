@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { Search } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface CheckerFormProps {
   onSubmit: (
@@ -15,6 +16,137 @@ interface CheckerFormProps {
   loading: boolean;
 }
 
+interface RecentRepository {
+  id: string;
+  owner: string;
+  name: string;
+  repoUrl: string;
+  helmChartLocations?: string[];
+  dockerLocations?: string[];
+  apiSpecificationLocations?: string[];
+  documentationLocations?: string[];
+  analysisCount: number;
+  latestAnalysis: {
+    checkedAt: string;
+    score: number;
+  } | null;
+}
+
+type StoredCheckResult = {
+  id?: string;
+  evidence?: string[];
+};
+
+function normalizeLocations(values?: string[]): string[] {
+  if (!Array.isArray(values)) return [];
+  return values.map((value) => value.trim()).filter(Boolean);
+}
+
+function extractFromEvidenceByCheckId(
+  results: StoredCheckResult[] | undefined,
+  checkId: string
+): string[] {
+  if (!Array.isArray(results)) return [];
+  const hit = results.find((item) => item.id === checkId);
+  const evidence = Array.isArray(hit?.evidence) ? hit.evidence : [];
+  return evidence.map((value) => value.trim()).filter(Boolean);
+}
+
+function parseHelmLocationsFromEvidence(results: StoredCheckResult[] | undefined): string[] {
+  const helmEvidence = extractFromEvidenceByCheckId(results, "helmchart");
+  const providedLine = helmEvidence.find((line) =>
+    line.toLowerCase().startsWith("provided helm locations:")
+  );
+
+  if (providedLine) {
+    return providedLine
+      .split(":")
+      .slice(1)
+      .join(":")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean);
+  }
+
+  const externalHelm = helmEvidence.filter((line) => line.startsWith("http"));
+  return externalHelm;
+}
+
+function parseDocumentationLocationsFromEvidence(
+  results: StoredCheckResult[] | undefined
+): string[] {
+  const docEvidence = extractFromEvidenceByCheckId(results, "documentation");
+  return docEvidence.filter((value) => /^https?:\/\//i.test(value));
+}
+
+function parseApiSpecificationLocationsFromEvidence(
+  results: StoredCheckResult[] | undefined
+): string[] {
+  const apiEvidence = extractFromEvidenceByCheckId(results, "openapi");
+
+  return apiEvidence
+    .map((value) => {
+      const prefix = "API specification was auto-discovered by the checker:";
+      if (value.startsWith(prefix)) {
+        return value.slice(prefix.length).trim();
+      }
+      return value;
+    })
+    .map((value) => value.trim())
+    .filter((value) => {
+      if (!value) return false;
+      if (/^https?:\/\//i.test(value)) return true;
+      return !value.includes("://") && !value.includes(" ");
+    });
+}
+
+async function fetchLatestLocationsFromHistory(
+  owner: string,
+  repo: string
+): Promise<{
+  helmChartLocations: string[];
+  dockerLocations: string[];
+  apiSpecificationLocations: string[];
+  documentationLocations: string[];
+}> {
+  try {
+    const response = await fetch(
+      `/api/repo-history?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}&limit=1`,
+      { cache: "no-store" }
+    );
+    if (!response.ok) {
+      return {
+        helmChartLocations: [],
+        dockerLocations: [],
+        apiSpecificationLocations: [],
+        documentationLocations: [],
+      };
+    }
+
+    const data = (await response.json()) as {
+      analyses?: Array<{ results?: StoredCheckResult[] }>;
+    };
+
+    const latestResults = data.analyses?.[0]?.results;
+
+    return {
+      helmChartLocations: parseHelmLocationsFromEvidence(latestResults),
+      dockerLocations: extractFromEvidenceByCheckId(latestResults, "dockerimage"),
+      apiSpecificationLocations: parseApiSpecificationLocationsFromEvidence(
+        latestResults
+      ),
+      documentationLocations: parseDocumentationLocationsFromEvidence(latestResults),
+    };
+  } catch {
+    return {
+      helmChartLocations: [],
+      dockerLocations: [],
+      apiSpecificationLocations: [],
+      documentationLocations: [],
+    };
+  }
+}
+
 const EXAMPLE_REPOS = [
   "https://github.com/open-zaak/open-zaak",
   "https://github.com/maykinmedia/objects-api",
@@ -23,6 +155,7 @@ const EXAMPLE_REPOS = [
 
 export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
   const [value, setValue] = useState("");
+  const [recentRepositories, setRecentRepositories] = useState<RecentRepository[]>([]);
   const [helmSomewhereElse, setHelmSomewhereElse] = useState(false);
   const [helmChartUrl, setHelmChartUrl] = useState("");
   const [documentationSomewhereElse, setDocumentationSomewhereElse] =
@@ -34,6 +167,93 @@ export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
   const [apiSpecificationSomewhereElse, setApiSpecificationSomewhereElse] =
     useState(false);
   const [apiSpecificationUrl, setApiSpecificationUrl] = useState("");
+
+  async function applyRepositoryPrefill(repository: RecentRepository) {
+    let helmChartLocations = normalizeLocations(repository.helmChartLocations);
+    let documentationLocations = normalizeLocations(repository.documentationLocations);
+    let dockerLocations = normalizeLocations(repository.dockerLocations);
+    let apiSpecificationLocations = normalizeLocations(repository.apiSpecificationLocations);
+
+    const needsFallback =
+      helmChartLocations.length === 0 &&
+      documentationLocations.length === 0 &&
+      dockerLocations.length === 0 &&
+      apiSpecificationLocations.length === 0;
+
+    if (needsFallback) {
+      const fallback = await fetchLatestLocationsFromHistory(
+        repository.owner,
+        repository.name
+      );
+      helmChartLocations = fallback.helmChartLocations;
+      documentationLocations = fallback.documentationLocations;
+      dockerLocations = fallback.dockerLocations;
+      apiSpecificationLocations = fallback.apiSpecificationLocations;
+    }
+
+    const helmLocation = helmChartLocations[0] ?? "";
+    const documentationLocation = documentationLocations[0] ?? "";
+    const dockerLocation = dockerLocations[0] ?? "";
+    const apiSpecificationLocation = apiSpecificationLocations[0] ?? "";
+
+    setValue(repository.repoUrl);
+
+    setHelmSomewhereElse(Boolean(helmLocation));
+    setHelmChartUrl(helmLocation);
+
+    setDocumentationSomewhereElse(Boolean(documentationLocation));
+    setDocumentationUrl(documentationLocation);
+
+    setDockerSomewhereElse(Boolean(dockerLocation));
+    setDockerUrl(dockerLocation);
+
+    const hasApiSpecificationLocation = Boolean(apiSpecificationLocation);
+    setIsRegister(hasApiSpecificationLocation);
+    setApiSpecificationSomewhereElse(hasApiSpecificationLocation);
+    setApiSpecificationUrl(apiSpecificationLocation);
+  }
+
+  async function handleExampleSelect(url: string) {
+    const fromHistory = recentRepositories.find(
+      (repository) => repository.repoUrl === url
+    );
+
+    if (fromHistory) {
+      await applyRepositoryPrefill(fromHistory);
+      return;
+    }
+
+    setValue(url);
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadRecentRepositories() {
+      try {
+        const response = await fetch("/api/repositories?limit=8", {
+          cache: "no-store",
+        });
+        if (!response.ok) return;
+
+        const data = (await response.json()) as {
+          repositories?: RecentRepository[];
+        };
+
+        if (!cancelled && Array.isArray(data.repositories)) {
+          setRecentRepositories(data.repositories);
+        }
+      } catch {
+        // Ignore and keep the static examples only.
+      }
+    }
+
+    void loadRecentRepositories();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -273,7 +493,9 @@ export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
             <button
               key={url}
               type="button"
-              onClick={() => setValue(url)}
+              onClick={() => {
+                void handleExampleSelect(url);
+              }}
               disabled={loading}
               className="text-xs text-cg-lightblue hover:underline disabled:opacity-50"
             >
@@ -282,6 +504,50 @@ export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
           );
         })}
       </div>
+
+      {recentRepositories.length > 0 && (
+        <div className="space-y-2 rounded-xl border border-gray-200 bg-gray-50/60 p-4">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <p className="text-sm font-semibold text-gray-800">Recently analyzed repositories</p>
+              <p className="text-xs text-gray-500">
+                Pick a repository from history to prefill the checker.
+              </p>
+            </div>
+            <Link
+              href="/history"
+              className="text-xs font-medium text-cg-lightblue hover:underline"
+            >
+              View full history
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {recentRepositories.map((repository) => (
+              <button
+                key={repository.id}
+                type="button"
+                onClick={() => {
+                  void applyRepositoryPrefill(repository);
+                }}
+                disabled={loading}
+                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-left transition-colors hover:border-cg-lightblue hover:bg-cg-lightblue/5 disabled:opacity-50"
+              >
+                <p className="text-sm font-semibold text-gray-800">
+                  {repository.owner}/{repository.name}
+                </p>
+                <p className="truncate text-xs text-gray-500">{repository.repoUrl}</p>
+                <div className="mt-1 flex flex-wrap gap-2 text-[11px] text-gray-500">
+                  <span>{repository.analysisCount} analys{repository.analysisCount === 1 ? "is" : "es"}</span>
+                  {repository.latestAnalysis && (
+                    <span>Latest score: {repository.latestAnalysis.score}</span>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </form>
   );
 }

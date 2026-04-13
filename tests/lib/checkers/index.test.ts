@@ -14,6 +14,7 @@ const ids = [
   "tests",
   "complexity",
   "codemetrics",
+  "owaspsecurecoding",
   "adrvalidator",
   "contributing",
   "codeofconduct",
@@ -27,6 +28,7 @@ const mocks = vi.hoisted(() => ({
   getRepoMeta: vi.fn(),
   getRepoTree: vi.fn(),
   getRepoVersion: vi.fn(),
+  getFileContent: vi.fn(),
   parseGitHubUrl: vi.fn(),
   checkOpenApi: vi.fn(),
   checkLicense: vi.fn(),
@@ -46,6 +48,7 @@ const mocks = vi.hoisted(() => ({
   checkFiveLayer: vi.fn(),
   checkHelmChart: vi.fn(),
   checkCodeMetrics: vi.fn(),
+  checkOwaspSecureCoding: vi.fn(),
   checkAdrValidator: vi.fn(),
   getActiveScoringConfig: vi.fn(),
 }));
@@ -54,6 +57,7 @@ vi.mock("@/lib/github", () => ({
   getRepoMeta: mocks.getRepoMeta,
   getRepoTree: mocks.getRepoTree,
   getRepoVersion: mocks.getRepoVersion,
+  getFileContent: mocks.getFileContent,
   parseGitHubUrl: mocks.parseGitHubUrl,
 }));
 
@@ -71,6 +75,7 @@ vi.mock("@/lib/checkers/security", () => ({ checkSecurity: mocks.checkSecurity }
 vi.mock("@/lib/checkers/tests", () => ({ checkTests: mocks.checkTests }));
 vi.mock("@/lib/checkers/complexity", () => ({ checkComplexity: mocks.checkComplexity }));
 vi.mock("@/lib/checkers/codeMetrics", () => ({ checkCodeMetrics: mocks.checkCodeMetrics }));
+vi.mock("@/lib/checkers/owaspSecureCoding", () => ({ checkOwaspSecureCoding: mocks.checkOwaspSecureCoding }));
 vi.mock("@/lib/checkers/adrValidator", () => ({ checkAdrValidator: mocks.checkAdrValidator }));
 vi.mock("@/lib/checkers/sourcecode", () => ({ checkSourceCode: mocks.checkSourceCode }));
 vi.mock("@/lib/checkers/semver", () => ({ checkSemver: mocks.checkSemver }));
@@ -138,6 +143,7 @@ describe("runChecks", () => {
     mocks.checkTests.mockReturnValue(resultFor("tests", "pass"));
     mocks.checkComplexity.mockResolvedValue(resultFor("complexity", "pass"));
     mocks.checkCodeMetrics.mockResolvedValue(resultFor("codemetrics", "info"));
+    mocks.checkOwaspSecureCoding.mockResolvedValue(resultFor("owaspsecurecoding", "pass"));
     mocks.checkAdrValidator.mockResolvedValue(resultFor("adrvalidator", "pass"));
     mocks.checkContributing.mockReturnValue(resultFor("contributing", "pass"));
     mocks.checkCodeOfConduct.mockReturnValue(resultFor("codeofconduct", "pass"));
@@ -173,7 +179,7 @@ describe("runChecks", () => {
     expect(report.scoringConfigId).toBe("cfg-1");
     expect(report.score).toBe(25);
     expect(mocks.checkOpenApi).not.toHaveBeenCalled();
-    expect(report.results).toHaveLength(19);
+    expect(report.results).toHaveLength(20);
 
     const openApiResult = report.results.find((result) => result.id === "openapi");
     expect(openApiResult?.status).toBe("pass");

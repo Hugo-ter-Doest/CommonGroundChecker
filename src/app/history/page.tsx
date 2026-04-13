@@ -1,7 +1,62 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 
-export default async function HistoryHomePage() {
+type SortKey = "date" | "score";
+type SortDirection = "asc" | "desc";
+
+interface HistoryHomePageProps {
+  searchParams: Promise<{
+    sort?: string | string[];
+    direction?: string | string[];
+  }>;
+}
+
+function firstValue(value: string | string[] | undefined): string | undefined {
+  if (Array.isArray(value)) return value[0];
+  return value;
+}
+
+function normalizeSortKey(value: string | undefined): SortKey {
+  return value === "score" ? "score" : "date";
+}
+
+function normalizeSortDirection(value: string | undefined): SortDirection {
+  return value === "asc" ? "asc" : "desc";
+}
+
+function sortRepositories<T extends { analyses: Array<{ checkedAt: Date; score: number }> }>(
+  repositories: T[],
+  sortKey: SortKey,
+  sortDirection: SortDirection
+): T[] {
+  const sorted = [...repositories];
+  const directionMultiplier = sortDirection === "asc" ? 1 : -1;
+
+  sorted.sort((a, b) => {
+    const latestA = a.analyses[0] ?? null;
+    const latestB = b.analyses[0] ?? null;
+
+    if (!latestA && !latestB) return 0;
+    if (!latestA) return 1;
+    if (!latestB) return -1;
+
+    const valueA =
+      sortKey === "date" ? latestA.checkedAt.getTime() : latestA.score;
+    const valueB =
+      sortKey === "date" ? latestB.checkedAt.getTime() : latestB.score;
+
+    if (valueA === valueB) return 0;
+    return valueA > valueB ? directionMultiplier : -directionMultiplier;
+  });
+
+  return sorted;
+}
+
+export default async function HistoryHomePage({ searchParams }: HistoryHomePageProps) {
+  const query = await searchParams;
+  const sortKey = normalizeSortKey(firstValue(query.sort));
+  const sortDirection = normalizeSortDirection(firstValue(query.direction));
+
   const repositories = await prisma.repo.findMany({
     orderBy: { updatedAt: "desc" },
     include: {
@@ -14,6 +69,15 @@ export default async function HistoryHomePage() {
       },
     },
   });
+
+  const sortedRepositories = sortRepositories(repositories, sortKey, sortDirection);
+
+  const sortOptions: Array<{ label: string; sort: SortKey; direction: SortDirection }> = [
+    { label: "Date ↑", sort: "date", direction: "asc" },
+    { label: "Date ↓", sort: "date", direction: "desc" },
+    { label: "Score ↑", sort: "score", direction: "asc" },
+    { label: "Score ↓", sort: "score", direction: "desc" },
+  ];
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10 space-y-6">
@@ -37,14 +101,33 @@ export default async function HistoryHomePage() {
         <p className="text-gray-600">
           Select a repository to view metadata and historical analyses over time.
         </p>
+        <div className="flex items-center gap-2 flex-wrap pt-1">
+          <span className="text-xs text-gray-500">Sort by:</span>
+          {sortOptions.map((option) => {
+            const isActive = option.sort === sortKey && option.direction === sortDirection;
+            return (
+              <Link
+                key={`${option.sort}-${option.direction}`}
+                href={`/history?sort=${option.sort}&direction=${option.direction}`}
+                className={`inline-flex text-xs font-semibold px-2 py-0.5 rounded-full border transition-colors ${
+                  isActive
+                    ? "border-cg-lightblue text-cg-blue bg-cg-lightblue/10"
+                    : "border-gray-300 text-gray-600 bg-white hover:border-cg-lightblue hover:text-cg-blue"
+                }`}
+              >
+                {option.label}
+              </Link>
+            );
+          })}
+        </div>
       </section>
 
       <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-        {repositories.length === 0 ? (
+        {sortedRepositories.length === 0 ? (
           <p className="text-sm text-gray-500">No repositories analyzed yet.</p>
         ) : (
           <div className="space-y-3">
-            {repositories.map((repository) => {
+            {sortedRepositories.map((repository) => {
               const latest = repository.analyses[0] ?? null;
 
               return (

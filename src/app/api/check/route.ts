@@ -69,12 +69,20 @@ export async function POST(req: NextRequest) {
         owner: report.owner,
         name: report.repo,
         metadata: report.repoMeta as object,
+        helmChartLocations,
+        dockerLocations,
+        apiSpecificationLocations,
+        documentationLocations,
       },
       create: {
         repoUrl: report.repoUrl,
         owner: report.owner,
         name: report.repo,
         metadata: report.repoMeta as object,
+        helmChartLocations,
+        dockerLocations,
+        apiSpecificationLocations,
+        documentationLocations,
       },
     });
 

@@ -50,6 +50,7 @@ export const DEFAULT_CRITERION_CONFIG_BY_CHECK_ID: Record<string, CriterionConfi
   tests: { weight: 0.75, requirementLevel: "mandatory" },
   complexity: { weight: 0.75, requirementLevel: "recommended" },
   codemetrics: { weight: 0, requirementLevel: "informative" },
+  owaspsecurecoding: { weight: 0.75, requirementLevel: "recommended" },
   adrvalidator: { weight: 1, requirementLevel: "mandatory" },
   contributing: { weight: 0.5, requirementLevel: "recommended" },
   codeofconduct: { weight: 0.5, requirementLevel: "recommended" },
@@ -130,30 +131,14 @@ function parseOverridesFromDbPayload(payload: unknown): ScoringConfigOverrides {
   const criterionRequirementLevelsRaw = candidate.criterionRequirementLevels;
   const complexityThresholdRaw = candidate.complexityThreshold;
   const complexityMaxCcnThresholdRaw = candidate.complexityMaxCcnThreshold;
-  if (!criterionWeightsRaw || typeof criterionWeightsRaw !== "object") {
-    const result: ScoringConfigOverrides = {};
-    if (typeof complexityThresholdRaw === "number") {
-      result.complexityThreshold = clampComplexityThreshold(
-        complexityThresholdRaw
-      );
-    }
-    if (typeof complexityMaxCcnThresholdRaw === "number") {
-      result.complexityMaxCcnThreshold = clampComplexityMaxCcnThreshold(
-        complexityMaxCcnThresholdRaw
-      );
-    }
-    if (Object.keys(result).length > 0) {
-      return result;
-    }
-    return {};
-  }
-
   const criterionWeights: Record<string, number> = {};
-  for (const [checkId, weight] of Object.entries(
-    criterionWeightsRaw as Record<string, unknown>
-  )) {
-    if (typeof weight === "number" && Number.isFinite(weight)) {
-      criterionWeights[checkId] = weight;
+  if (criterionWeightsRaw && typeof criterionWeightsRaw === "object") {
+    for (const [checkId, weight] of Object.entries(
+      criterionWeightsRaw as Record<string, unknown>
+    )) {
+      if (typeof weight === "number" && Number.isFinite(weight)) {
+        criterionWeights[checkId] = weight;
+      }
     }
   }
 
@@ -162,7 +147,11 @@ function parseOverridesFromDbPayload(payload: unknown): ScoringConfigOverrides {
     for (const [checkId, level] of Object.entries(
       criterionRequirementLevelsRaw as Record<string, unknown>
     )) {
-      if (level === "mandatory" || level === "recommended") {
+      if (
+        level === "mandatory" ||
+        level === "recommended" ||
+        level === "informative"
+      ) {
         criterionRequirementLevels[checkId] = level;
       }
     }
@@ -280,20 +269,24 @@ export async function saveCriterionWeights(
   for (const [checkId, config] of Object.entries(
     DEFAULT_CRITERION_CONFIG_BY_CHECK_ID
   )) {
-    if (config.requirementLevel === "informative") continue;
     const incoming = criterionWeights[checkId];
-    if (typeof incoming === "number") {
-      const clamped = clampWeight(incoming);
-      if (clamped !== config.weight) {
-        overrides.criterionWeights![checkId] = clamped;
-      }
-    }
+    const clamped =
+      config.requirementLevel === "informative"
+        ? 0
+        : typeof incoming === "number"
+          ? clampWeight(incoming)
+          : clampWeight(config.weight);
+    overrides.criterionWeights![checkId] = clamped;
+
     const incomingLevel = criterionRequirementLevels?.[checkId];
-    if (incomingLevel === "mandatory" || incomingLevel === "recommended") {
-      if (incomingLevel !== config.requirementLevel) {
-        overrides.criterionRequirementLevels![checkId] = incomingLevel;
-      }
-    }
+    const effectiveLevel: RequirementLevel =
+      config.requirementLevel === "informative"
+        ? "informative"
+        : incomingLevel === "mandatory" || incomingLevel === "recommended"
+          ? incomingLevel
+          : config.requirementLevel;
+
+    overrides.criterionRequirementLevels![checkId] = effectiveLevel;
   }
 
   const id = await createDbOverridesRecord(overrides);
