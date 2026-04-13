@@ -124,7 +124,10 @@ export async function checkOpenApi(
     message: hasInfo
       ? `Found valid OpenAPI specification at ${allFound.join(", ")}.`
       : `Found a spec file (${allFound[0]}) but it does not appear to contain an 'info' section.`,
-    evidence: allFound,
+    evidence: [
+      `API specification was auto-discovered by the checker: ${allFound[0]}`,
+      ...allFound,
+    ],
     referenceUrl: "https://commonground.nl/cms/view/54476259/api-designrules",
   };
 }

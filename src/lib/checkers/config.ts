@@ -8,6 +8,7 @@ export interface CriterionConfig {
 
 interface ScoringConfigOverrides {
   criterionWeights?: Record<string, number>;
+  criterionRequirementLevels?: Record<string, RequirementLevel>;
   complexityThreshold?: number;
   complexityMaxCcnThreshold?: number;
 }
@@ -40,22 +41,22 @@ export const DEFAULT_CRITERION_CONFIG_BY_CHECK_ID: Record<string, CriterionConfi
   sourcecode: { weight: 1, requirementLevel: "mandatory" },
   openapi: { weight: 1, requirementLevel: "mandatory" },
   license: { weight: 1, requirementLevel: "mandatory" },
-  copyrightowner: { weight: 0.75, requirementLevel: "recommended" },
+  copyrightowner: { weight: 0.75, requirementLevel: "mandatory" },
   publiccode: { weight: 1, requirementLevel: "mandatory" },
   docker: { weight: 1, requirementLevel: "mandatory" },
   dockerimage: { weight: 1, requirementLevel: "mandatory" },
   helmchart: { weight: 1, requirementLevel: "mandatory" },
   documentation: { weight: 1, requirementLevel: "mandatory" },
-  tests: { weight: 0.75, requirementLevel: "recommended" },
+  tests: { weight: 0.75, requirementLevel: "mandatory" },
   complexity: { weight: 0.75, requirementLevel: "recommended" },
-  codemetrics: { weight: 0, requirementLevel: "recommended" },
+  codemetrics: { weight: 0, requirementLevel: "informative" },
   adrvalidator: { weight: 1, requirementLevel: "mandatory" },
   contributing: { weight: 0.5, requirementLevel: "recommended" },
   codeofconduct: { weight: 0.5, requirementLevel: "recommended" },
   security: { weight: 0.75, requirementLevel: "recommended" },
   semver: { weight: 0.75, requirementLevel: "recommended" },
   sbom: { weight: 0.75, requirementLevel: "recommended" },
-  filelayer: { weight: 0.75, requirementLevel: "recommended" },
+  fivelayer: { weight: 0.75, requirementLevel: "mandatory" },
 };
 
 function clampWeight(value: number): number {
@@ -80,14 +81,25 @@ function buildScoringConfig(overrides?: ScoringConfigOverrides): ScoringConfig {
     Object.fromEntries(
       Object.entries(DEFAULT_CRITERION_CONFIG_BY_CHECK_ID).map(([checkId, config]) => {
         const overrideWeight = overrides?.criterionWeights?.[checkId];
+        const overrideLevel = overrides?.criterionRequirementLevels?.[checkId];
+        const effectiveLevel: RequirementLevel =
+          config.requirementLevel === "informative"
+            ? "informative"
+            : overrideLevel === "mandatory" || overrideLevel === "recommended"
+              ? overrideLevel
+              : config.requirementLevel;
+        const effectiveWeight =
+          effectiveLevel === "informative"
+            ? 0
+            : typeof overrideWeight === "number"
+              ? clampWeight(overrideWeight)
+              : config.weight;
+
         return [
           checkId,
           {
-            requirementLevel: config.requirementLevel,
-            weight:
-              typeof overrideWeight === "number"
-                ? clampWeight(overrideWeight)
-                : config.weight,
+            requirementLevel: effectiveLevel,
+            weight: effectiveWeight,
           },
         ];
       })
@@ -115,6 +127,7 @@ function parseOverridesFromDbPayload(payload: unknown): ScoringConfigOverrides {
 
   const candidate = payload as Record<string, unknown>;
   const criterionWeightsRaw = candidate.criterionWeights;
+  const criterionRequirementLevelsRaw = candidate.criterionRequirementLevels;
   const complexityThresholdRaw = candidate.complexityThreshold;
   const complexityMaxCcnThresholdRaw = candidate.complexityMaxCcnThreshold;
   if (!criterionWeightsRaw || typeof criterionWeightsRaw !== "object") {
@@ -144,8 +157,20 @@ function parseOverridesFromDbPayload(payload: unknown): ScoringConfigOverrides {
     }
   }
 
+  const criterionRequirementLevels: Record<string, RequirementLevel> = {};
+  if (criterionRequirementLevelsRaw && typeof criterionRequirementLevelsRaw === "object") {
+    for (const [checkId, level] of Object.entries(
+      criterionRequirementLevelsRaw as Record<string, unknown>
+    )) {
+      if (level === "mandatory" || level === "recommended") {
+        criterionRequirementLevels[checkId] = level;
+      }
+    }
+  }
+
   return {
     criterionWeights,
+    criterionRequirementLevels: Object.keys(criterionRequirementLevels).length > 0 ? criterionRequirementLevels : undefined,
     complexityThreshold:
       typeof complexityThresholdRaw === "number"
         ? clampComplexityThreshold(complexityThresholdRaw)
@@ -166,6 +191,7 @@ async function readLatestDbOverrides(): Promise<{
     select: {
       id: true,
       criterionWeights: true,
+      criterionRequirementLevels: true,
       complexityThreshold: true,
       complexityMaxCcnThreshold: true,
     },
@@ -177,6 +203,7 @@ async function readLatestDbOverrides(): Promise<{
     id: row.id,
     overrides: parseOverridesFromDbPayload({
       criterionWeights: row.criterionWeights,
+      criterionRequirementLevels: row.criterionRequirementLevels,
       complexityThreshold: row.complexityThreshold,
       complexityMaxCcnThreshold: row.complexityMaxCcnThreshold,
     }),
@@ -189,6 +216,7 @@ async function createDbOverridesRecord(
   const created = await prisma.scoringConfig.create({
     data: {
       criterionWeights: overrides.criterionWeights ?? {},
+      criterionRequirementLevels: overrides.criterionRequirementLevels ?? {},
       complexityThreshold: clampComplexityThreshold(
         overrides.complexityThreshold ?? DEFAULT_COMPLEXITY_THRESHOLD
       ),
@@ -233,10 +261,12 @@ export async function getActiveScoringConfig(): Promise<ActiveScoringConfig> {
 export async function saveCriterionWeights(
   criterionWeights: Record<string, number>,
   complexityThreshold?: number,
-  complexityMaxCcnThreshold?: number
+  complexityMaxCcnThreshold?: number,
+  criterionRequirementLevels?: Record<string, string>
 ): Promise<ActiveScoringConfig> {
   const overrides: ScoringConfigOverrides = {
     criterionWeights: {},
+    criterionRequirementLevels: {},
     complexityThreshold:
       typeof complexityThreshold === "number"
         ? clampComplexityThreshold(complexityThreshold)
@@ -250,11 +280,19 @@ export async function saveCriterionWeights(
   for (const [checkId, config] of Object.entries(
     DEFAULT_CRITERION_CONFIG_BY_CHECK_ID
   )) {
+    if (config.requirementLevel === "informative") continue;
     const incoming = criterionWeights[checkId];
-    if (typeof incoming !== "number") continue;
-    const clamped = clampWeight(incoming);
-    if (clamped !== config.weight) {
-      overrides.criterionWeights![checkId] = clamped;
+    if (typeof incoming === "number") {
+      const clamped = clampWeight(incoming);
+      if (clamped !== config.weight) {
+        overrides.criterionWeights![checkId] = clamped;
+      }
+    }
+    const incomingLevel = criterionRequirementLevels?.[checkId];
+    if (incomingLevel === "mandatory" || incomingLevel === "recommended") {
+      if (incomingLevel !== config.requirementLevel) {
+        overrides.criterionRequirementLevels![checkId] = incomingLevel;
+      }
     }
   }
 

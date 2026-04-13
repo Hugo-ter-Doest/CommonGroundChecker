@@ -17,10 +17,24 @@ export default async function AdminPage() {
     ])
   );
 
+  const initialRequirementLevels = Object.fromEntries(
+    Object.entries(scoringConfig.criterionConfigByCheckId).map(([checkId, config]) => [
+      checkId,
+      config.requirementLevel,
+    ])
+  );
+
   const defaultWeights = Object.fromEntries(
     Object.entries(DEFAULT_CRITERION_CONFIG_BY_CHECK_ID).map(([checkId, config]) => [
       checkId,
       config.weight,
+    ])
+  );
+
+  const defaultRequirementLevels = Object.fromEntries(
+    Object.entries(DEFAULT_CRITERION_CONFIG_BY_CHECK_ID).map(([checkId, config]) => [
+      checkId,
+      config.requirementLevel,
     ])
   );
 
@@ -48,9 +62,28 @@ export default async function AdminPage() {
         </p>
       </section>
 
+      <section className="rounded-2xl border border-gray-200 bg-gray-50 p-5 space-y-3 text-sm text-gray-700">
+        <h3 className="text-base font-semibold text-gray-900">How the overall score is calculated</h3>
+        <p>
+          The overall score is a weighted average of <strong>mandatory</strong> checker results only. Each mandatory criterion has a weight,
+          and each result status is converted to a numeric score: <strong>pass = 1</strong>, <strong>warn = 0.5</strong>, and <strong>fail = 0</strong>.
+        </p>
+        <p>
+          For each mandatory criterion, the status score is multiplied by its configured weight. The checker then divides the total weighted score by the sum of mandatory weights and converts that to a percentage.
+        </p>
+        <p>
+          <strong>Recommended</strong> and <strong>informative</strong> criteria are shown in reports, but they do <strong>not</strong> contribute to the numeric score.
+        </p>
+        <p>
+          A repository with an EUPL license can receive an additional <strong>+10 bonus points</strong>, capped so the final score never exceeds <strong>100</strong>.
+        </p>
+      </section>
+
       <AdminWeightsForm
         initialWeights={initialWeights}
         defaultWeights={defaultWeights}
+        initialRequirementLevels={initialRequirementLevels}
+        defaultRequirementLevels={defaultRequirementLevels}
         initialComplexityThreshold={scoringConfig.complexityThreshold}
         defaultComplexityThreshold={DEFAULT_COMPLEXITY_THRESHOLD}
         initialComplexityMaxCcnThreshold={

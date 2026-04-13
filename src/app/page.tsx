@@ -15,6 +15,46 @@ type CriteriaCategory =
   | "Software Quality"
   | "Deployment & Operations";
 
+type RequirementLevelLabel = "mandatory" | "recommended" | "informative";
+
+const CRITERION_REQUIREMENT_BY_LABEL: Record<string, RequirementLevelLabel> = {
+  "Source Code": "mandatory",
+  "5-Layer Architecture": "mandatory",
+  "OSI License": "mandatory",
+  "Copyright / IP owner": "mandatory",
+  "publiccode.yml": "mandatory",
+  "Docker support": "mandatory",
+  "Available Docker image": "mandatory",
+  "OpenAPI / API-first": "mandatory",
+  "NL API Design Rules": "mandatory",
+  "Helm chart (Kubernetes)": "mandatory",
+  "SBOM": "recommended",
+  Documentation: "mandatory",
+  "Test suite presence": "mandatory",
+  "Cyclomatic complexity": "recommended",
+  "Code Metrics": "informative",
+  "Contributing guide": "recommended",
+  "Code of Conduct": "recommended",
+  "Security policy": "recommended",
+  "Semantic Versioning": "recommended",
+};
+
+function formatRequirementLabel(level: RequirementLevelLabel): string {
+  return level.charAt(0).toUpperCase() + level.slice(1);
+}
+
+function getRequirementBadgeClass(level: RequirementLevelLabel): string {
+  switch (level) {
+    case "mandatory":
+      return "border-red-300 text-red-700 bg-red-50";
+    case "recommended":
+      return "border-amber-300 text-amber-700 bg-amber-50";
+    case "informative":
+    default:
+      return "border-blue-300 text-blue-700 bg-blue-50";
+  }
+}
+
 const CRITERIA_OVERVIEW = [
   {
     icon: "�",
@@ -127,6 +167,14 @@ const CRITERIA_OVERVIEW = [
     desc: "Lizard analysis on target repo",
     tooltip:
       "Clones the analyzed repository and runs Lizard locally to measure cyclomatic complexity across supported languages.",
+  },
+  {
+    icon: "📊",
+    label: "Code Metrics",
+    category: "Software Quality" as CriteriaCategory,
+    desc: "Lines of code and function count",
+    tooltip:
+      "Provides additional software quality metrics as supporting information: total lines of code (NLOC) and function count. This criterion is informative only and does not affect the overall score.",
   },
   {
     icon: "🤝",
@@ -354,29 +402,39 @@ export default function HomePage() {
                   {category}
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {criteria.map((c) => (
-                    <div
-                      key={c.label}
-                      className="relative group/chip h-full min-h-[76px] flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm shadow-sm cursor-default"
-                    >
-                      <span>{c.icon}</span>
-                      <div>
-                        <p className="font-semibold text-gray-800 leading-tight">
-                          {c.label}
-                        </p>
-                        <p className="text-xs text-gray-400">{c.desc}</p>
-                      </div>
-                      <span
-                        role="tooltip"
-                        className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-50
+                  {criteria.map((c) => {
+                    const requirementLevel =
+                      CRITERION_REQUIREMENT_BY_LABEL[c.label] ?? "informative";
+
+                    return (
+                      <div
+                        key={c.label}
+                        className="relative group/chip h-full min-h-[76px] flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm shadow-sm cursor-default"
+                      >
+                        <span>{c.icon}</span>
+                        <div>
+                          <p className="font-semibold text-gray-800 leading-tight">
+                            {c.label}
+                          </p>
+                          <p className="text-xs text-gray-400">{c.desc}</p>
+                          <span
+                            className={`inline-block mt-1 px-2 py-0.5 rounded-full border text-[10px] font-semibold uppercase tracking-wide ${getRequirementBadgeClass(requirementLevel)}`}
+                          >
+                            {formatRequirementLabel(requirementLevel)}
+                          </span>
+                        </div>
+                        <span
+                          role="tooltip"
+                          className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-50
                                    w-72 rounded-lg bg-gray-900 text-white text-xs px-3 py-2 shadow-lg
                                    opacity-0 group-hover/chip:opacity-100 transition-opacity duration-150"
-                      >
-                        {c.tooltip}
-                        <span className="absolute left-1/2 -translate-x-1/2 top-full border-4 border-transparent border-t-gray-900" />
-                      </span>
-                    </div>
-                  ))}
+                        >
+                          {c.tooltip}
+                          <span className="absolute left-1/2 -translate-x-1/2 top-full border-4 border-transparent border-t-gray-900" />
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );
@@ -486,10 +544,10 @@ export default function HomePage() {
               <span className="px-2 py-0.5 rounded-full border border-red-300 text-red-700 bg-red-50 font-semibold uppercase tracking-wide">
                 Fail
               </span>
-              <span className="px-2 py-0.5 rounded-full border border-gray-800 text-white bg-gray-800 font-semibold uppercase tracking-wide">
+              <span className="px-2 py-0.5 rounded-full border border-red-300 text-red-700 bg-red-50 font-semibold uppercase tracking-wide">
                 Mandatory
               </span>
-              <span className="px-2 py-0.5 rounded-full border border-gray-300 text-gray-600 bg-white font-semibold uppercase tracking-wide">
+              <span className="px-2 py-0.5 rounded-full border border-amber-300 text-amber-700 bg-amber-50 font-semibold uppercase tracking-wide">
                 Recommended
               </span>
               <span className="px-2 py-0.5 rounded-full border border-blue-300 text-blue-700 bg-blue-50 font-semibold uppercase tracking-wide">

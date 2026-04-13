@@ -14,8 +14,32 @@ function extractWeightsFromPayload(payload: unknown): Record<string, number> {
   const result: Record<string, number> = {};
 
   for (const checkId of Object.keys(DEFAULT_CRITERION_CONFIG_BY_CHECK_ID)) {
+    const criterionConfig = DEFAULT_CRITERION_CONFIG_BY_CHECK_ID[checkId];
+    if (criterionConfig.requirementLevel === "informative") {
+      continue;
+    }
+
     const value = raw[checkId];
     if (typeof value === "number" && Number.isFinite(value)) {
+      result[checkId] = value;
+    }
+  }
+
+  return result;
+}
+
+function extractRequirementLevelsFromPayload(payload: unknown): Record<string, string> {
+  if (!payload || typeof payload !== "object") return {};
+
+  const raw = payload as Record<string, unknown>;
+  const result: Record<string, string> = {};
+
+  for (const checkId of Object.keys(DEFAULT_CRITERION_CONFIG_BY_CHECK_ID)) {
+    const criterionConfig = DEFAULT_CRITERION_CONFIG_BY_CHECK_ID[checkId];
+    if (criterionConfig.requirementLevel === "informative") continue;
+
+    const value = raw[checkId];
+    if (value === "mandatory" || value === "recommended") {
       result[checkId] = value;
     }
   }
@@ -52,12 +76,24 @@ export async function GET() {
           config.weight,
         ])
       ),
+      criterionRequirementLevels: Object.fromEntries(
+        Object.entries(scoringConfig.criterionConfigByCheckId).map(([checkId, config]) => [
+          checkId,
+          config.requirementLevel,
+        ])
+      ),
       complexityThreshold: scoringConfig.complexityThreshold,
       complexityMaxCcnThreshold: scoringConfig.complexityMaxCcnThreshold,
       defaultCriterionWeights: Object.fromEntries(
         Object.entries(DEFAULT_CRITERION_CONFIG_BY_CHECK_ID).map(([checkId, config]) => [
           checkId,
           config.weight,
+        ])
+      ),
+      defaultCriterionRequirementLevels: Object.fromEntries(
+        Object.entries(DEFAULT_CRITERION_CONFIG_BY_CHECK_ID).map(([checkId, config]) => [
+          checkId,
+          config.requirementLevel,
         ])
       ),
       defaultComplexityThreshold: DEFAULT_COMPLEXITY_THRESHOLD,
@@ -81,12 +117,14 @@ export async function POST(req: NextRequest) {
       ? await saveCriterionWeights(
           {},
           DEFAULT_COMPLEXITY_THRESHOLD,
-          DEFAULT_COMPLEXITY_MAX_CCN_THRESHOLD
+          DEFAULT_COMPLEXITY_MAX_CCN_THRESHOLD,
+          {}
         )
       : await saveCriterionWeights(
           extractWeightsFromPayload(body?.criterionWeights),
           incomingThreshold,
-          incomingMaxThreshold
+          incomingMaxThreshold,
+          extractRequirementLevelsFromPayload(body?.criterionRequirementLevels)
         );
 
     return NextResponse.json({
@@ -98,6 +136,12 @@ export async function POST(req: NextRequest) {
         Object.entries(activeConfig.config.criterionConfigByCheckId).map(([checkId, config]) => [
           checkId,
           config.weight,
+        ])
+      ),
+      criterionRequirementLevels: Object.fromEntries(
+        Object.entries(activeConfig.config.criterionConfigByCheckId).map(([checkId, config]) => [
+          checkId,
+          config.requirementLevel,
         ])
       ),
     });

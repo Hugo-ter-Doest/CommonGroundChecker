@@ -162,12 +162,26 @@ export async function runChecks(
   ];
 
   const totalCriterionWeight = results.reduce((sum, result) => {
+    const requirementLevel =
+      scoringConfig.criterionConfigByCheckId[result.id]?.requirementLevel ??
+      "recommended";
+    if (requirementLevel !== "mandatory") {
+      return sum;
+    }
+
     const criterionWeight =
       scoringConfig.criterionConfigByCheckId[result.id]?.weight ?? 1;
     return sum + Math.max(0, criterionWeight);
   }, 0);
 
   const weightedScoreSum = results.reduce((sum, result) => {
+    const requirementLevel =
+      scoringConfig.criterionConfigByCheckId[result.id]?.requirementLevel ??
+      "recommended";
+    if (requirementLevel !== "mandatory") {
+      return sum;
+    }
+
     const criterionWeight =
       scoringConfig.criterionConfigByCheckId[result.id]?.weight ?? 1;
     const statusScore = scoringConfig.statusScoreByStatus[result.status] ?? 0;

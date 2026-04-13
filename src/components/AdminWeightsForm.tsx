@@ -6,6 +6,7 @@ interface CriterionField {
   id: string;
   label: string;
   explanation: string;
+  requirementLevel?: "mandatory" | "recommended" | "informative";
 }
 
 interface CriterionCategory {
@@ -112,6 +113,13 @@ const CRITERION_CATEGORIES: CriterionCategory[] = [
           "Clones the analyzed repository and runs Lizard locally. The criterion passes when average cyclomatic complexity (AvgCCN) stays within the configured threshold.",
       },
       {
+        id: "codemetrics",
+        label: "Code metrics",
+        explanation:
+          "Shows supplementary repository metrics as supporting information: total lines of code (NLOC) and function count. This criterion is informative and does not contribute to the overall score by default.",
+        requirementLevel: "informative",
+      },
+      {
         id: "semver",
         label: "Semantic versioning",
         explanation:
@@ -151,6 +159,8 @@ const ALL_CRITERION_FIELDS = CRITERION_CATEGORIES.flatMap((group) =>
 interface AdminWeightsFormProps {
   initialWeights: Record<string, number>;
   defaultWeights: Record<string, number>;
+  initialRequirementLevels: Record<string, string>;
+  defaultRequirementLevels: Record<string, string>;
   initialComplexityThreshold: number;
   defaultComplexityThreshold: number;
   initialComplexityMaxCcnThreshold: number;
@@ -160,12 +170,15 @@ interface AdminWeightsFormProps {
 export default function AdminWeightsForm({
   initialWeights,
   defaultWeights,
+  initialRequirementLevels,
+  defaultRequirementLevels,
   initialComplexityThreshold,
   defaultComplexityThreshold,
   initialComplexityMaxCcnThreshold,
   defaultComplexityMaxCcnThreshold,
 }: AdminWeightsFormProps) {
   const [weights, setWeights] = useState<Record<string, number>>(initialWeights);
+  const [requirementLevels, setRequirementLevels] = useState<Record<string, string>>(initialRequirementLevels);
   const [complexityThreshold, setComplexityThreshold] = useState<number>(
     initialComplexityThreshold
   );
@@ -182,14 +195,21 @@ export default function AdminWeightsForm({
       return current !== initial;
     });
 
+    const reqLevelChanged = ALL_CRITERION_FIELDS.some(({ id }) => {
+      return (requirementLevels[id] ?? "") !== (initialRequirementLevels[id] ?? "");
+    });
+
     return (
       weightChanged ||
+      reqLevelChanged ||
       complexityThreshold !== initialComplexityThreshold ||
       complexityMaxCcnThreshold !== initialComplexityMaxCcnThreshold
     );
   }, [
     weights,
     initialWeights,
+    requirementLevels,
+    initialRequirementLevels,
     complexityThreshold,
     initialComplexityThreshold,
     complexityMaxCcnThreshold,
@@ -206,6 +226,7 @@ export default function AdminWeightsForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           criterionWeights: weights,
+          criterionRequirementLevels: requirementLevels,
           complexityThreshold,
           complexityMaxCcnThreshold,
         }),
@@ -217,6 +238,9 @@ export default function AdminWeightsForm({
         setMessage("Weights saved. New analyses will use this configuration.");
         if (data?.criterionWeights && typeof data.criterionWeights === "object") {
           setWeights(data.criterionWeights as Record<string, number>);
+        }
+        if (data?.criterionRequirementLevels && typeof data.criterionRequirementLevels === "object") {
+          setRequirementLevels(data.criterionRequirementLevels as Record<string, string>);
         }
         if (typeof data?.complexityThreshold === "number") {
           setComplexityThreshold(data.complexityThreshold);
@@ -234,6 +258,7 @@ export default function AdminWeightsForm({
 
   function resetToDefaults() {
     setWeights(defaultWeights);
+    setRequirementLevels(defaultRequirementLevels);
     setComplexityThreshold(defaultComplexityThreshold);
     setComplexityMaxCcnThreshold(defaultComplexityMaxCcnThreshold);
     setMessage(null);
@@ -251,8 +276,11 @@ export default function AdminWeightsForm({
             <h4 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
               {group.category}
             </h4>
-            {group.criteria.map(({ id, label, explanation }) => {
+            {group.criteria.map(({ id, label, explanation, requirementLevel }) => {
+              const isInformative = requirementLevel === "informative";
               const value = Number(weights[id] ?? 0);
+              const currentLevel = requirementLevels[id] ?? requirementLevel ?? "recommended";
+              const isSliderDisabled = isInformative || currentLevel === "recommended";
               return (
                 <div key={id} className="space-y-1">
                   <p className="text-xs text-gray-500">{explanation}</p>
@@ -263,23 +291,69 @@ export default function AdminWeightsForm({
                     >
                       {label}
                     </label>
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full border border-gray-300 text-gray-700 bg-white min-w-[52px] text-center">
-                      {value.toFixed(2)}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {isInformative ? (
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full border border-blue-300 text-blue-700 bg-blue-50">
+                          Informative
+                        </span>
+                      ) : (
+                        <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs font-medium">
+                          <button
+                            type="button"
+                            onClick={() => setRequirementLevels((prev) => ({ ...prev, [id]: "mandatory" }))}
+                            className={`px-2.5 py-1 transition-colors ${
+                              currentLevel === "mandatory"
+                                ? "bg-red-600 text-white"
+                                : "bg-white text-gray-500 hover:bg-gray-50"
+                            }`}
+                          >
+                            Mandatory
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setRequirementLevels((prev) => ({ ...prev, [id]: "recommended" }))}
+                            className={`px-2.5 py-1 border-l border-gray-200 transition-colors ${
+                              currentLevel === "recommended"
+                                ? "bg-amber-500 text-white"
+                                : "bg-white text-gray-500 hover:bg-gray-50"
+                            }`}
+                          >
+                            Recommended
+                          </button>
+                        </div>
+                      )}
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full border border-gray-300 text-gray-700 bg-white min-w-[52px] text-center">
+                        {isInformative ? "N/A" : value.toFixed(2)}
+                      </span>
+                    </div>
                   </div>
-                  <input
-                    id={`weight-${id}`}
-                    type="range"
-                    min={0}
-                    max={1}
-                    step={0.05}
-                    value={value}
-                    onChange={(event) => {
-                      const next = Number(event.target.value);
-                      setWeights((prev) => ({ ...prev, [id]: next }));
-                    }}
-                    className="w-full accent-cg-lightblue"
-                  />
+                  {!isInformative && (
+                    <input
+                      id={`weight-${id}`}
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.05}
+                      value={value}
+                      disabled={isSliderDisabled}
+                      onChange={(event) => {
+                        if (isSliderDisabled) return;
+                        const next = Number(event.target.value);
+                        setWeights((prev) => ({ ...prev, [id]: next }));
+                      }}
+                      className="w-full accent-cg-lightblue disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                  )}
+                  {isInformative && (
+                    <p className="text-xs text-gray-500">
+                      Informative criteria do not use a weight and are excluded from scoring.
+                    </p>
+                  )}
+                  {!isInformative && currentLevel === "recommended" && (
+                    <p className="text-xs text-gray-500">
+                      Recommended criteria do not contribute to the score, so their weight is disabled.
+                    </p>
+                  )}
 
                   {id === "complexity" && (
                     <div className="mt-3 space-y-2 border border-gray-200 rounded-xl p-4 bg-white/70">

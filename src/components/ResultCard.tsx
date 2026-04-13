@@ -30,11 +30,15 @@ const REQUIREMENT_CONFIG: Record<
 > = {
   mandatory: {
     label: "Mandatory",
-    className: "bg-gray-800 text-white border-gray-800",
+    className: "bg-red-50 text-red-700 border-red-300",
   },
   recommended: {
     label: "Recommended",
-    className: "bg-white text-gray-600 border-gray-300",
+    className: "bg-amber-50 text-amber-700 border-amber-300",
+  },
+  informative: {
+    label: "Informative",
+    className: "bg-blue-50 text-blue-700 border-blue-300",
   },
 };
 

@@ -24,7 +24,9 @@ function normalizeResults(raw: unknown): CheckResult[] {
     .filter((item): item is Record<string, unknown> => !!item && typeof item === "object")
     .map((item) => {
       const requirementLevel =
-        item.requirementLevel === "mandatory" || item.requirementLevel === "recommended"
+        item.requirementLevel === "mandatory" ||
+        item.requirementLevel === "recommended" ||
+        item.requirementLevel === "informative"
           ? item.requirementLevel
           : undefined;
 

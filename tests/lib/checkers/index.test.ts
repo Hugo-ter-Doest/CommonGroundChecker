@@ -194,7 +194,7 @@ describe("runChecks", () => {
     mocks.getActiveScoringConfig.mockResolvedValue({
       id: "cfg-2",
       config: {
-        criterionConfigByCheckId: criterionConfig(1, "recommended"),
+        criterionConfigByCheckId: criterionConfig(1, "mandatory"),
         statusScoreByStatus: { pass: 1, warn: 0.5, info: 0.5, fail: 0 },
         euplBonusPoints: 10,
         complexityThreshold: 12,

@@ -240,6 +240,16 @@ export async function checkAdrValidator(
   }
 
   const targetUrl = resolvedTarget.url;
+  const targetEvidence =
+    resolvedTarget.source === "auto-discovered"
+      ? [
+          `API specification was auto-discovered by the checker: ${targetUrl}`,
+          `Discovery source: ${resolvedTarget.source}`,
+        ]
+      : [
+          `Lint target: ${targetUrl}`,
+          `Target source: ${resolvedTarget.source}`,
+        ];
 
   const spectralArgs = [
     "--yes",
@@ -263,11 +273,14 @@ export async function checkAdrValidator(
       status: "warn",
       message:
         "Spectral CLI is not available. Ensure Node.js and npx are installed.",
-      evidence: result.stderr
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .slice(0, 5),
+      evidence: [
+        ...targetEvidence,
+        ...result.stderr
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .slice(0, 5),
+      ],
       referenceUrl: "https://commonground.nl/cms/view/54476259/api-designrules",
     };
   }
@@ -282,11 +295,14 @@ export async function checkAdrValidator(
         "The component should comply with the Common Ground API Design Rules (ADR).",
       status: "warn",
       message: "Spectral returned non-JSON output; unable to parse structured ADR result.",
-      evidence: combinedOutput
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .slice(0, 10),
+      evidence: [
+        ...targetEvidence,
+        ...combinedOutput
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .slice(0, 10),
+      ],
       referenceUrl: "https://commonground.nl/cms/view/54476259/api-designrules",
     };
   }
@@ -299,16 +315,19 @@ export async function checkAdrValidator(
         "The component should comply with the Common Ground API Design Rules (ADR).",
       status: "fail",
       message: `API Design Rules violations found (${lintResults.length} issue(s)).`,
-      evidence: lintResults
-        .map((issue) => {
-          const code = issue.code ? `[${issue.code}] ` : "";
-          const path = Array.isArray(issue.path) && issue.path.length > 0
-            ? ` @ ${issue.path.join(".")}`
-            : "";
-          const message = issue.message?.trim() || "Rule violation";
-          return `${code}${message}${path}`;
-        })
-        .slice(0, 10),
+      evidence: [
+        ...targetEvidence,
+        ...lintResults
+          .map((issue) => {
+            const code = issue.code ? `[${issue.code}] ` : "";
+            const path = Array.isArray(issue.path) && issue.path.length > 0
+              ? ` @ ${issue.path.join(".")}`
+              : "";
+            const message = issue.message?.trim() || "Rule violation";
+            return `${code}${message}${path}`;
+          })
+          .slice(0, 10),
+      ],
       referenceUrl: "https://commonground.nl/cms/view/54476259/api-designrules",
     };
   }
@@ -321,9 +340,8 @@ export async function checkAdrValidator(
     status: "pass",
     message: `API specification at ${targetUrl} complies with Common Ground API Design Rules.`,
     evidence: [
-      `Lint target: ${targetUrl}`,
+      ...targetEvidence,
       `Ruleset: ${ADR_RULESET_URL}`,
-      `Target source: ${resolvedTarget.source}`,
       "No API Design Rules violations found by Spectral.",
     ],
     referenceUrl: "https://commonground.nl/cms/view/54476259/api-designrules",

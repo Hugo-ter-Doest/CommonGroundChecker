@@ -1,7 +1,7 @@
 // Shared types across checkers and UI
 
 export type CheckStatus = "pass" | "fail" | "warn" | "info";
-export type RequirementLevel = "mandatory" | "recommended";
+export type RequirementLevel = "mandatory" | "recommended" | "informative";
 export type ConfidenceLevel = "high" | "medium" | "low";
 
 export interface VersionEvidence {
@@ -14,7 +14,7 @@ export interface CheckResult {
   title: string;
   /** Short description of what was checked */
   description: string;
-  /** Whether this criterion is mandatory or recommended */
+  /** Whether this criterion is mandatory, recommended, or informative */
   requirementLevel?: RequirementLevel;
   status: CheckStatus;
   /** Detail message explaining why pass/fail */
