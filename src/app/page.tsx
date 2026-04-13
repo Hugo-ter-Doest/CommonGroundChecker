@@ -9,6 +9,99 @@ import RepoMeta from "@/components/RepoMeta";
 import type { CheckReport } from "@/lib/types";
 import { AlertCircle, ClipboardList } from "lucide-react";
 
+function sanitizePdfFileName(value: string): string {
+  return value.replace(/[^a-z0-9-_]+/gi, "-").replace(/-+/g, "-").toLowerCase();
+}
+
+async function exportAnalysisReportAsPdf(report: CheckReport): Promise<void> {
+  const { jsPDF } = await import("jspdf");
+
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const margin = 40;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const contentWidth = pageWidth - margin * 2;
+  let y = margin;
+
+  const ensurePageSpace = (required = 20) => {
+    if (y + required <= pageHeight - margin) return;
+    doc.addPage();
+    y = margin;
+  };
+
+  const addBlock = (text: string, options?: { size?: number; indent?: number; gapAfter?: number }) => {
+    const size = options?.size ?? 10;
+    const indent = options?.indent ?? 0;
+    const gapAfter = options?.gapAfter ?? 8;
+    doc.setFontSize(size);
+    const lines = doc.splitTextToSize(text, contentWidth - indent);
+    const lineHeight = size + 2;
+
+    for (const line of lines) {
+      ensurePageSpace(lineHeight);
+      doc.text(line, margin + indent, y);
+      y += lineHeight;
+    }
+
+    y += gapAfter;
+  };
+
+  doc.setFont("helvetica", "bold");
+  addBlock("Common Ground Component Checker — Analysis Report", {
+    size: 16,
+    gapAfter: 10,
+  });
+
+  doc.setFont("helvetica", "normal");
+  addBlock(`Repository: ${report.owner}/${report.repo}`, { size: 11, gapAfter: 4 });
+  addBlock(`URL: ${report.repoUrl}`, { size: 10, gapAfter: 4 });
+  addBlock(`Checked at: ${new Date(report.checkedAt).toLocaleString("nl-NL")}`, {
+    size: 10,
+    gapAfter: 4,
+  });
+  addBlock(`Score: ${report.score}/100`, { size: 11, gapAfter: 10 });
+
+  const passCount = report.results.filter((r) => r.status === "pass").length;
+  const warnCount = report.results.filter((r) => r.status === "warn").length;
+  const failCount = report.results.filter((r) => r.status === "fail").length;
+  const infoCount = report.results.filter((r) => r.status === "info").length;
+
+  addBlock(
+    `Summary: ${passCount} passed, ${warnCount} warnings, ${failCount} failed, ${infoCount} informational`,
+    { size: 10, gapAfter: 12 }
+  );
+
+  doc.setFont("helvetica", "bold");
+  addBlock("Detailed results", { size: 12, gapAfter: 8 });
+  doc.setFont("helvetica", "normal");
+
+  for (const result of report.results) {
+    ensurePageSpace(40);
+    doc.setFont("helvetica", "bold");
+    addBlock(
+      `${result.title} [${result.status.toUpperCase()}] — ${(result.requirementLevel ?? "recommended").toUpperCase()}`,
+      { size: 10, gapAfter: 2 }
+    );
+
+    doc.setFont("helvetica", "normal");
+    addBlock(`Message: ${result.message}`, { size: 10, indent: 10, gapAfter: 2 });
+
+    if (result.evidence && result.evidence.length > 0) {
+      addBlock("Evidence:", { size: 9, indent: 10, gapAfter: 2 });
+      for (const evidenceItem of result.evidence.slice(0, 6)) {
+        addBlock(`- ${evidenceItem}`, { size: 9, indent: 20, gapAfter: 1 });
+      }
+      y += 3;
+    } else {
+      y += 4;
+    }
+  }
+
+  const checkedDate = new Date(report.checkedAt).toISOString().slice(0, 10);
+  const fileName = `${sanitizePdfFileName(report.owner)}-${sanitizePdfFileName(report.repo)}-analysis-${checkedDate}.pdf`;
+  doc.save(fileName);
+}
+
 type CriteriaCategory =
   | "Governance"
   | "Architecture"
@@ -297,6 +390,7 @@ const RESULT_CATEGORY_BY_ID: Record<string, CriteriaCategory> = {
 
 export default function HomePage() {
   const [loading, setLoading] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
   const [report, setReport] = useState<CheckReport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [requirementLevelsByCheckId, setRequirementLevelsByCheckId] = useState<
@@ -454,7 +548,7 @@ export default function HomePage() {
 
       {/* Criteria overview chips */}
       <section>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 items-start">
+        <div className="flex flex-nowrap gap-2 items-start">
           {CATEGORY_ORDER.map((category) => {
             const criteria = CRITERIA_OVERVIEW.filter(
               (item) => item.category === category
@@ -463,12 +557,12 @@ export default function HomePage() {
             return (
               <div
                 key={category}
-                className="space-y-2 border border-gray-200 rounded-xl p-3 bg-gray-50/40"
+                className="space-y-2 border border-gray-200 rounded-xl p-2.5 bg-gray-50/40 flex-1 min-w-0"
               >
                 <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
                   {category}
                 </h3>
-                <div className="space-y-3">
+                <div className="space-y-3 max-h-[460px] overflow-y-auto overflow-x-hidden pr-1">
                   {criteria.map((c) => {
                     const checkId = CHECK_ID_BY_CRITERION_LABEL[c.label];
                     const requirementLevel =
@@ -593,6 +687,21 @@ export default function HomePage() {
                   <Link href="/history" className="text-cg-lightblue hover:underline">
                     Search history
                   </Link>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setExportingPdf(true);
+                      try {
+                        await exportAnalysisReportAsPdf(report);
+                      } finally {
+                        setExportingPdf(false);
+                      }
+                    }}
+                    disabled={exportingPdf}
+                    className="text-cg-lightblue hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {exportingPdf ? "Exporting PDF…" : "Export analysis as PDF"}
+                  </button>
                 </div>
               </div>
             </div>
