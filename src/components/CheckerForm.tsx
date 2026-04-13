@@ -9,6 +9,7 @@ interface CheckerFormProps {
     helmChartLocations: string[],
     documentationLocations: string[],
     dockerLocations: string[],
+    apiSpecificationLocations: string[],
     isRegister: boolean
   ) => void;
   loading: boolean;
@@ -30,6 +31,9 @@ export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
   const [dockerSomewhereElse, setDockerSomewhereElse] = useState(false);
   const [dockerUrl, setDockerUrl] = useState("");
   const [isRegister, setIsRegister] = useState(false);
+  const [apiSpecificationSomewhereElse, setApiSpecificationSomewhereElse] =
+    useState(false);
+  const [apiSpecificationUrl, setApiSpecificationUrl] = useState("");
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -37,6 +41,7 @@ export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
     if (helmSomewhereElse && !helmChartUrl.trim()) return;
     if (documentationSomewhereElse && !documentationUrl.trim()) return;
     if (dockerSomewhereElse && !dockerUrl.trim()) return;
+    if (isRegister && apiSpecificationSomewhereElse && !apiSpecificationUrl.trim()) return;
 
     const parsedHelmLocations = helmSomewhereElse && helmChartUrl.trim()
       ? [helmChartUrl.trim()]
@@ -48,12 +53,17 @@ export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
     const parsedDockerLocations = dockerSomewhereElse && dockerUrl.trim()
       ? [dockerUrl.trim()]
       : [];
+    const parsedApiSpecificationLocations =
+      isRegister && apiSpecificationSomewhereElse && apiSpecificationUrl.trim()
+        ? [apiSpecificationUrl.trim()]
+        : [];
 
     onSubmit(
       value.trim(),
       parsedHelmLocations,
       parsedDocumentationLocations,
       parsedDockerLocations,
+      parsedApiSpecificationLocations,
       isRegister
     );
   }
@@ -80,7 +90,8 @@ export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
             !value.trim() ||
             (helmSomewhereElse && !helmChartUrl.trim()) ||
             (documentationSomewhereElse && !documentationUrl.trim()) ||
-            (dockerSomewhereElse && !dockerUrl.trim())
+            (dockerSomewhereElse && !dockerUrl.trim()) ||
+            (isRegister && apiSpecificationSomewhereElse && !apiSpecificationUrl.trim())
           }
           className="px-6 py-3 bg-cg-blue text-white font-semibold rounded-lg hover:bg-cg-lightblue transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shrink-0"
         >
@@ -90,7 +101,7 @@ export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
               Checking…
             </>
           ) : (
-            "Check compliance"
+            "Analyze component"
           )}
         </button>
       </div>
@@ -100,12 +111,56 @@ export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
           <input
             type="checkbox"
             checked={isRegister}
-            onChange={(e) => setIsRegister(e.target.checked)}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setIsRegister(checked);
+              if (!checked) {
+                setApiSpecificationSomewhereElse(false);
+                setApiSpecificationUrl("");
+              }
+            }}
             disabled={loading}
             className="h-4 w-4 rounded border-gray-300 text-cg-lightblue focus:ring-cg-lightblue"
           />
           Component is a register
         </label>
+
+        {isRegister && (
+          <>
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={apiSpecificationSomewhereElse}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setApiSpecificationSomewhereElse(checked);
+                  if (!checked) setApiSpecificationUrl("");
+                }}
+                disabled={loading}
+                className="h-4 w-4 rounded border-gray-300 text-cg-lightblue focus:ring-cg-lightblue"
+              />
+              API specification is somewhere else
+            </label>
+
+            {apiSpecificationSomewhereElse && (
+              <div>
+                <label htmlFor="api-specification-url" className="block text-xs text-gray-500 mb-1">
+                  URL or repository path to API specification
+                </label>
+                <input
+                  id="api-specification-url"
+                  type="text"
+                  value={apiSpecificationUrl}
+                  onChange={(e) => setApiSpecificationUrl(e.target.value)}
+                  placeholder="https://example.com/openapi.yaml or api/openapi.yaml"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-cg-lightblue focus:border-transparent disabled:opacity-60"
+                  disabled={loading}
+                  required={isRegister && apiSpecificationSomewhereElse}
+                />
+              </div>
+            )}
+          </>
+        )}
 
         <label className="flex items-center gap-2 text-sm text-gray-700">
           <input

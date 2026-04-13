@@ -11,6 +11,12 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - cgchecker-network
 
 volumes:
   postgres_data:
+
+networks:
+  cgchecker-network:
+    driver: bridge

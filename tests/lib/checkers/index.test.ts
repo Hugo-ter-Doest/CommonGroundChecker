@@ -13,6 +13,8 @@ const ids = [
   "documentation",
   "tests",
   "complexity",
+  "codemetrics",
+  "adrvalidator",
   "contributing",
   "codeofconduct",
   "security",
@@ -43,6 +45,8 @@ const mocks = vi.hoisted(() => ({
   checkSemver: vi.fn(),
   checkFiveLayer: vi.fn(),
   checkHelmChart: vi.fn(),
+  checkCodeMetrics: vi.fn(),
+  checkAdrValidator: vi.fn(),
   getActiveScoringConfig: vi.fn(),
 }));
 
@@ -66,6 +70,8 @@ vi.mock("@/lib/checkers/codeofconduct", () => ({ checkCodeOfConduct: mocks.check
 vi.mock("@/lib/checkers/security", () => ({ checkSecurity: mocks.checkSecurity }));
 vi.mock("@/lib/checkers/tests", () => ({ checkTests: mocks.checkTests }));
 vi.mock("@/lib/checkers/complexity", () => ({ checkComplexity: mocks.checkComplexity }));
+vi.mock("@/lib/checkers/codeMetrics", () => ({ checkCodeMetrics: mocks.checkCodeMetrics }));
+vi.mock("@/lib/checkers/adrValidator", () => ({ checkAdrValidator: mocks.checkAdrValidator }));
 vi.mock("@/lib/checkers/sourcecode", () => ({ checkSourceCode: mocks.checkSourceCode }));
 vi.mock("@/lib/checkers/semver", () => ({ checkSemver: mocks.checkSemver }));
 vi.mock("@/lib/checkers/fiveLayer", () => ({ checkFiveLayer: mocks.checkFiveLayer }));
@@ -131,6 +137,8 @@ describe("runChecks", () => {
     mocks.checkDocumentation.mockReturnValue(resultFor("documentation", "pass"));
     mocks.checkTests.mockReturnValue(resultFor("tests", "pass"));
     mocks.checkComplexity.mockResolvedValue(resultFor("complexity", "pass"));
+    mocks.checkCodeMetrics.mockResolvedValue(resultFor("codemetrics", "info"));
+    mocks.checkAdrValidator.mockResolvedValue(resultFor("adrvalidator", "pass"));
     mocks.checkContributing.mockReturnValue(resultFor("contributing", "pass"));
     mocks.checkCodeOfConduct.mockReturnValue(resultFor("codeofconduct", "pass"));
     mocks.checkSecurity.mockReturnValue(resultFor("security", "pass"));
@@ -165,6 +173,7 @@ describe("runChecks", () => {
     expect(report.scoringConfigId).toBe("cfg-1");
     expect(report.score).toBe(25);
     expect(mocks.checkOpenApi).not.toHaveBeenCalled();
+    expect(report.results).toHaveLength(19);
 
     const openApiResult = report.results.find((result) => result.id === "openapi");
     expect(openApiResult?.status).toBe("pass");

@@ -14,6 +14,8 @@ import { checkCodeOfConduct } from "./codeofconduct";
 import { checkSecurity } from "./security";
 import { checkTests } from "./tests";
 import { checkComplexity } from "./complexity";
+import { checkCodeMetrics } from "./codeMetrics";
+import { checkAdrValidator } from "./adrValidator";
 import { checkSourceCode } from "./sourcecode";
 import { checkSemver } from "./semver";
 import { checkCopyrightOwner } from "./copyrightOwner";
@@ -45,6 +47,7 @@ interface RunChecksOptions {
   helmChartLocations?: string[];
   documentationLocations?: string[];
   dockerLocations?: string[];
+  apiSpecificationLocations?: string[];
   isRegister?: boolean;
 }
 
@@ -75,7 +78,7 @@ export async function runChecks(
   const isRegister = options?.isRegister === true;
 
   const openApiCheckPromise: Promise<CheckResult> = isRegister
-    ? checkOpenApi(owner, repo, tree)
+    ? checkOpenApi(owner, repo, tree, options?.apiSpecificationLocations ?? [])
     : Promise.resolve({
         id: "openapi",
         title: "API-first / OpenAPI Specification",
@@ -103,6 +106,14 @@ export async function runChecks(
     scoringConfig.complexityThreshold,
     scoringConfig.complexityMaxCcnThreshold
   );
+  const codeMetricsPromise = checkCodeMetrics(owner, repo);
+  const adrValidatorPromise = checkAdrValidator(
+    owner,
+    repo,
+    meta.default_branch ?? "main",
+    tree,
+    options?.apiSpecificationLocations ?? []
+  );
 
   // Instant checks — synchronous pure functions on the tree array
   onProgress?.("Running code structure checks\u2026", 45);
@@ -119,9 +130,11 @@ export async function runChecks(
 
   // Instant checks done; emit next step while slower checks complete in parallel
   onProgress?.("Analysing API specs, licence & deployment files\u2026", 60);
-  const [[openapi, license, copyrightowner, publiccode, fivelayer, helmchart], complexity] = await Promise.all([
+  const [[openapi, license, copyrightowner, publiccode, fivelayer, helmchart], complexity, codemetrics, adrvalidator] = await Promise.all([
     networkChecksPromise,
     complexityPromise,
+    codeMetricsPromise,
+    adrValidatorPromise,
   ]);
 
   onProgress?.("Calculating compliance score\u2026", 90);
@@ -138,6 +151,8 @@ export async function runChecks(
     documentation,
     tests,
     complexity,
+    codemetrics,
+    adrvalidator,
     contributing,
     codeofconduct,
     security,
@@ -187,6 +202,8 @@ export async function runChecks(
     documentation,
     tests,
     complexity,
+    codemetrics,
+    adrvalidator,
     contributing,
     codeofconduct,
     security,

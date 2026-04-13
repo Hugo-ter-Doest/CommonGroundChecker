@@ -36,6 +36,14 @@ export async function POST(req: NextRequest) {
         .map((v: string) => v.trim())
         .filter(Boolean)
     : [];
+  const apiSpecificationLocations: string[] = Array.isArray(
+    body?.apiSpecificationLocations
+  )
+    ? body.apiSpecificationLocations
+        .filter((v: unknown) => typeof v === "string")
+        .map((v: string) => v.trim())
+        .filter(Boolean)
+    : [];
   const isRegister = body?.isRegister === true;
 
   const encoder = new TextEncoder();
@@ -70,7 +78,13 @@ export async function POST(req: NextRequest) {
 
         const report = await runChecks(
           repoUrl,
-          { helmChartLocations, documentationLocations, dockerLocations, isRegister },
+          {
+            helmChartLocations,
+            documentationLocations,
+            dockerLocations,
+            apiSpecificationLocations,
+            isRegister,
+          },
           (step, pct) => send({ step, pct })
         );
 

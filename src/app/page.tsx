@@ -25,12 +25,12 @@ const CRITERIA_OVERVIEW = [
       "The repository must contain real source code (Python, JavaScript, Java, Go, etc.), not just documentation or configuration files. This verifies the repository is a real software project.",
   },
   {
-    icon: "�📄",
-    label: "OpenAPI / API-first",
+    icon: "🏛️",
+    label: "5-Layer Architecture",
     category: "Architecture" as CriteriaCategory,
-    desc: "Machine-readable API specification",
+    desc: "Adheres to CG layered model",
     tooltip:
-      "An OpenAPI (Swagger) specification must be present so other services can integrate automatically. Checked via openapi.yaml/json or swagger.yaml/json in the repository.",
+      "Common Ground defines a 5-layer model (Interaction, Process, Integration, Services, Data). Repositories should not combine multiple layers in one codebase. Checked by scanning directory names and publiccode.yml categories.",
   },
   {
     icon: "⚖️",
@@ -73,12 +73,20 @@ const CRITERIA_OVERVIEW = [
       "Checks whether a Docker image location is provided (for example a container registry URL), so deployments can pull a ready-to-run image.",
   },
   {
-    icon: "🏛️",
-    label: "5-Layer Architecture",
+    icon: "📄",
+    label: "OpenAPI / API-first",
     category: "Architecture" as CriteriaCategory,
-    desc: "Adheres to CG layered model",
+    desc: "Machine-readable API specification",
     tooltip:
-      "Common Ground defines a 5-layer model (Interaction, Process, Integration, Services, Data). Repositories should not combine multiple layers in one codebase. Checked by scanning directory names and publiccode.yml categories.",
+      "An OpenAPI (Swagger) specification must be present so other services can integrate automatically. Checked via openapi.yaml/json or swagger.yaml/json in the repository.",
+  },
+  {
+    icon: "🇳🇱",
+    label: "NL API Design Rules",
+    category: "Architecture" as CriteriaCategory,
+    desc: "Conformance to Dutch government standards",
+    tooltip:
+      "API specifications must comply with the Common Ground API Design Rules (ADR), the Dutch government's standard for API design. Rules cover naming conventions, security, versioning, and more.",
   },
   {
     icon: "☸️",
@@ -161,6 +169,50 @@ const CATEGORY_ORDER: CriteriaCategory[] = [
   "Deployment & Operations",
 ];
 
+const RESULT_ORDER_BY_ID: string[] = [
+  "sourcecode",
+  "fivelayer",
+  "license",
+  "copyrightowner",
+  "publiccode",
+  "docker",
+  "dockerimage",
+  "openapi",
+  "adrvalidator",
+  "helmchart",
+  "sbom",
+  "documentation",
+  "tests",
+  "complexity",
+  "codemetrics",
+  "contributing",
+  "codeofconduct",
+  "security",
+  "semver",
+];
+
+const RESULT_CATEGORY_BY_ID: Record<string, CriteriaCategory> = {
+  sourcecode: "Software Quality",
+  openapi: "Architecture",
+  adrvalidator: "Architecture",
+  license: "Governance",
+  copyrightowner: "Governance",
+  publiccode: "Governance",
+  docker: "Deployment & Operations",
+  dockerimage: "Deployment & Operations",
+  helmchart: "Deployment & Operations",
+  sbom: "Software Quality",
+  documentation: "Software Quality",
+  tests: "Software Quality",
+  complexity: "Software Quality",
+  codemetrics: "Software Quality",
+  contributing: "Governance",
+  codeofconduct: "Governance",
+  security: "Governance",
+  semver: "Software Quality",
+  fivelayer: "Architecture",
+};
+
 export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<CheckReport | null>(null);
@@ -175,6 +227,7 @@ export default function HomePage() {
     helmChartLocations: string[],
     documentationLocations: string[],
     dockerLocations: string[],
+    apiSpecificationLocations: string[],
     isRegister: boolean
   ) {
     setLoading(true);
@@ -191,6 +244,7 @@ export default function HomePage() {
           helmChartLocations,
           documentationLocations,
           dockerLocations,
+          apiSpecificationLocations,
           isRegister,
         }),
       });
@@ -452,9 +506,30 @@ export default function HomePage() {
               Confidence indicates how strong the ownership evidence is: high = explicit legal statement, medium = manifest metadata, low = repository-owner fallback or weak evidence.
             </p>
             <div className="space-y-2">
-              {report.results.map((r) => (
-                <ResultCard key={r.id} {...r} />
-              ))}
+              {CATEGORY_ORDER.map((category) => {
+                const sortedResults = report.results
+                  .filter((r) => RESULT_CATEGORY_BY_ID[r.id] === category)
+                  .sort((a, b) => {
+                    const indexA = RESULT_ORDER_BY_ID.indexOf(a.id);
+                    const indexB = RESULT_ORDER_BY_ID.indexOf(b.id);
+                    const safeIndexA = indexA === -1 ? Number.MAX_SAFE_INTEGER : indexA;
+                    const safeIndexB = indexB === -1 ? Number.MAX_SAFE_INTEGER : indexB;
+                    return safeIndexA - safeIndexB;
+                  });
+
+                return sortedResults.length > 0 ? (
+                  <div key={category}>
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mt-4 mb-2">
+                      {category}
+                    </h4>
+                    <div className="space-y-2">
+                      {sortedResults.map((r) => (
+                        <ResultCard key={r.id} {...r} />
+                      ))}
+                    </div>
+                  </div>
+                ) : null;
+              })}
             </div>
           </div>
 

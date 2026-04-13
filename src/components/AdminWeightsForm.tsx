@@ -59,16 +59,22 @@ const CRITERION_CATEGORIES: CriterionCategory[] = [
     category: "Architecture",
     criteria: [
       {
+        id: "fivelayer",
+        label: "5-layer architecture",
+        explanation:
+          "Common Ground defines a 5-layer model (Interaction, Process, Integration, Services, Data). Repositories should not combine multiple layers in one codebase. Checked by scanning directory names and publiccode.yml categories.",
+      },
+      {
         id: "openapi",
         label: "OpenAPI / API-first",
         explanation:
           "An OpenAPI (Swagger) specification must be present so other services can integrate automatically. Checked via openapi.yaml/json or swagger.yaml/json in the repository.",
       },
       {
-        id: "fivelayer",
-        label: "5-layer architecture",
+        id: "adrvalidator",
+        label: "NL API Design Rules",
         explanation:
-          "Common Ground defines a 5-layer model (Interaction, Process, Integration, Services, Data). Repositories should not combine multiple layers in one codebase. Checked by scanning directory names and publiccode.yml categories.",
+          "API specifications must comply with the Common Ground API Design Rules (ADR), the Dutch government's standard for API design. Rules cover naming conventions, security, versioning, and more.",
       },
     ],
   },

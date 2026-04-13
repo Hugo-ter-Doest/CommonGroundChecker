@@ -23,9 +23,58 @@ const OPENAPI_PATTERNS = [
 export async function checkOpenApi(
   owner: string,
   repo: string,
-  tree: string[]
+  tree: string[],
+  apiSpecificationLocations: string[] = []
 ): Promise<CheckResult> {
   const lowerTree = tree.map((p) => p.toLowerCase());
+
+  const providedLocations = apiSpecificationLocations
+    .map((location) => location.trim())
+    .filter(Boolean);
+
+  if (providedLocations.length > 0) {
+    const matchedRepositoryPaths = providedLocations
+      .filter((location) => !/^https?:\/\//i.test(location))
+      .map((location) => location.replace(/^\/+|\/+$/g, ""))
+      .map((location) => {
+        const index = lowerTree.findIndex((path) => path === location.toLowerCase());
+        return index >= 0 ? tree[index] : null;
+      })
+      .filter((path): path is string => path !== null);
+
+    const providedUrls = providedLocations.filter((location) =>
+      /^https?:\/\//i.test(location)
+    );
+
+    const resolved = [...new Set([...matchedRepositoryPaths, ...providedUrls])];
+
+    if (resolved.length > 0) {
+      return {
+        id: "openapi",
+        title: "API-first / OpenAPI Specification",
+        description:
+          "The component must expose a machine-readable OpenAPI (or Swagger) specification.",
+        status: "pass",
+        message: `Found API specification using provided location(s): ${resolved.join(", ")}.`,
+        evidence: resolved,
+        referenceUrl:
+          "https://commonground.nl/cms/view/54476259/api-designrules",
+      };
+    }
+
+    return {
+      id: "openapi",
+      title: "API-first / OpenAPI Specification",
+      description:
+        "The component must expose a machine-readable OpenAPI (or Swagger) specification.",
+      status: "fail",
+      message:
+        "Provided API specification location(s) could not be resolved. Provide a valid URL or repository-relative OpenAPI path.",
+      evidence: providedLocations,
+      referenceUrl:
+        "https://commonground.nl/cms/view/54476259/api-designrules",
+    };
+  }
 
   // Check for exact known filenames
   const found = OPENAPI_PATTERNS.filter((p) => lowerTree.includes(p));

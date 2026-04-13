@@ -48,12 +48,14 @@ export const DEFAULT_CRITERION_CONFIG_BY_CHECK_ID: Record<string, CriterionConfi
   documentation: { weight: 1, requirementLevel: "mandatory" },
   tests: { weight: 0.75, requirementLevel: "recommended" },
   complexity: { weight: 0.75, requirementLevel: "recommended" },
+  codemetrics: { weight: 0, requirementLevel: "recommended" },
+  adrvalidator: { weight: 1, requirementLevel: "mandatory" },
   contributing: { weight: 0.5, requirementLevel: "recommended" },
   codeofconduct: { weight: 0.5, requirementLevel: "recommended" },
   security: { weight: 0.75, requirementLevel: "recommended" },
   semver: { weight: 0.75, requirementLevel: "recommended" },
   sbom: { weight: 0.75, requirementLevel: "recommended" },
-  fivelayer: { weight: 0.75, requirementLevel: "recommended" },
+  filelayer: { weight: 0.75, requirementLevel: "recommended" },
 };
 
 function clampWeight(value: number): number {

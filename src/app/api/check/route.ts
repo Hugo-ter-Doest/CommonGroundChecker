@@ -27,6 +27,14 @@ export async function POST(req: NextRequest) {
             .map((v: string) => v.trim())
             .filter(Boolean)
           : [];
+    const apiSpecificationLocations: string[] = Array.isArray(
+      body?.apiSpecificationLocations
+    )
+      ? body.apiSpecificationLocations
+          .filter((v: unknown) => typeof v === "string")
+          .map((v: string) => v.trim())
+          .filter(Boolean)
+      : [];
     const isRegister = body?.isRegister === true;
 
     if (!repoUrl) {
@@ -50,6 +58,7 @@ export async function POST(req: NextRequest) {
       helmChartLocations,
       documentationLocations,
       dockerLocations,
+      apiSpecificationLocations,
       isRegister,
     });
 
