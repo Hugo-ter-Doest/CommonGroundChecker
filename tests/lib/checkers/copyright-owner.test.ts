@@ -77,4 +77,40 @@ describe("checkCopyrightOwner", () => {
     expect(result.message).not.toContain("holder of the Work");
     expect(result.message).not.toContain("Licensee");
   });
+
+  it("detects author from metadata-style fields in text files", async () => {
+    mocks.getFileContent.mockResolvedValue(
+      "Author: Gemeente Rotterdam\nMaintainer: VNG Realisatie"
+    );
+
+    const result = await checkCopyrightOwner(
+      "org",
+      "repo",
+      { owner: { login: "org" } },
+      ["README.md"]
+    );
+
+    expect(result.status).toBe("pass");
+    expect(result.message).toContain("Gemeente Rotterdam");
+    expect(result.message).toContain("VNG Realisatie");
+  });
+
+  it("detects owner from composer.json authors field", async () => {
+    mocks.getFileContent.mockResolvedValue(
+      JSON.stringify({
+        authors: [{ name: "Conduction b.v.", email: "info@conduction.nl" }],
+      })
+    );
+
+    const result = await checkCopyrightOwner(
+      "org",
+      "repo",
+      { owner: { login: "org" } },
+      ["composer.json"]
+    );
+
+    expect(result.status).toBe("pass");
+    expect(result.confidence).toBe("medium");
+    expect(result.message).toContain("Conduction b.v.");
+  });
 });

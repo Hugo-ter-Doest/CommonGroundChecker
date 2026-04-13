@@ -2,9 +2,14 @@ import { getFileContent } from "../github";
 import type { CheckResult } from "../types";
 
 const COPYRIGHT_CAPTURE_PATTERNS: RegExp[] = [
-  /copyright\s*(?:\(c\)|©)?\s*(?:\d{4}(?:\s*[-–]\s*\d{4})?\s*)?(?:by\s+)?(.+)/i,
-  /(.+?)\s+copyright\s*(?:\(c\)|©)?\s*(?:\d{4}(?:\s*[-–]\s*\d{4})?)?/i,
-  /all rights reserved\.?\s*(?:by\s+)?(.+)/i,
+  /^\s*(?:[#*>-]\s*)?(?:copyright|©)\s*(?:\(c\)|©)?\s*(?:\d{4}(?:\s*[-–]\s*\d{4})?\s*)?(?:by\s+)?(.+)$/i,
+  /^\s*(?:[#*>-]\s*)?all rights reserved\.?\s*(?:by\s+)?(.+)$/i,
+];
+
+const AUTHOR_FIELD_PATTERNS: RegExp[] = [
+  /^\s*(?:[#*>-]\s*)?author(?:s)?\s*[:=-]\s*(.+)$/i,
+  /^\s*(?:[#*>-]\s*)?maintainer(?:s)?\s*[:=-]\s*(.+)$/i,
+  /^\s*(?:[#*>-]\s*)?(?:copyright holder|copyright owner|maincopyrightowner)\s*[:=-]\s*(.+)$/i,
 ];
 
 const BOILERPLATE_FRAGMENTS = [
@@ -20,6 +25,10 @@ const BOILERPLATE_FRAGMENTS = [
   "patent",
   "trademark",
   "modifications he/she",
+  "this licence",
+  "this license",
+  "terms and conditions",
+  "all rights reserved",
 ];
 
 const CANDIDATE_FILES = [
@@ -36,6 +45,7 @@ const CANDIDATE_FILES = [
   "README.rst",
   "README.txt",
   "package.json",
+  "composer.json",
   "pyproject.toml",
 ];
 
@@ -59,6 +69,7 @@ function looksLikePersonOrOrg(name: string): boolean {
   if (!/[a-z]/i.test(name)) return false;
   const words = name.split(/\s+/).filter(Boolean);
   if (words.length > 8) return false;
+  if (!/[A-Z]/.test(name)) return false;
   return true;
 }
 
@@ -72,7 +83,7 @@ function extractOwnersFromText(content: string): string[] {
     .slice(0, 250);
 
   for (const line of lines) {
-    if (!/copyright|all rights reserved/i.test(line)) continue;
+    if (!/copyright|all rights reserved|author|maintainer|maincopyrightowner/i.test(line)) continue;
 
     for (const pattern of COPYRIGHT_CAPTURE_PATTERNS) {
       const match = line.match(pattern);
@@ -84,6 +95,20 @@ function extractOwnersFromText(content: string): string[] {
 
       const candidates = sanitized
         .split(/,|\band\b|\&/i)
+        .map((segment) => normalizeOwnerName(segment))
+        .filter((candidate) => looksLikePersonOrOrg(candidate));
+
+      for (const candidate of candidates) {
+        owners.add(candidate);
+      }
+    }
+
+    for (const pattern of AUTHOR_FIELD_PATTERNS) {
+      const match = line.match(pattern);
+      if (!match?.[1]) continue;
+
+      const candidates = match[1]
+        .split(/,|;|\band\b|\&/i)
         .map((segment) => normalizeOwnerName(segment))
         .filter((candidate) => looksLikePersonOrOrg(candidate));
 
@@ -123,6 +148,51 @@ function extractOwnersFromPackageJson(content: string): string[] {
     if (Array.isArray(parsed.contributors)) {
       for (const contributor of parsed.contributors) {
         pushName(contributor);
+      }
+    }
+
+    if (Array.isArray(parsed.maintainers)) {
+      for (const maintainer of parsed.maintainers) {
+        pushName(maintainer);
+      }
+    }
+
+    return values
+      .map((value) => value.replace(/<[^>]+>|\([^)]*\)/g, ""))
+      .map((value) => normalizeOwnerName(value))
+      .filter((value) => looksLikePersonOrOrg(value));
+  } catch {
+    return [];
+  }
+}
+
+function extractOwnersFromComposerJson(content: string): string[] {
+  try {
+    const parsed = JSON.parse(content) as {
+      author?: unknown;
+      authors?: unknown;
+      maintainers?: unknown;
+    };
+
+    const values: string[] = [];
+    const pushName = (value: unknown) => {
+      if (typeof value === "string") {
+        values.push(value);
+        return;
+      }
+      if (value && typeof value === "object") {
+        const maybeName = (value as { name?: unknown }).name;
+        if (typeof maybeName === "string") {
+          values.push(maybeName);
+        }
+      }
+    };
+
+    pushName(parsed.author);
+
+    if (Array.isArray(parsed.authors)) {
+      for (const author of parsed.authors) {
+        pushName(author);
       }
     }
 
@@ -184,11 +254,14 @@ export async function checkCopyrightOwner(
     if (!content) continue;
 
     const ownersFromText = extractOwnersFromText(content);
-    const ownersFromManifest = file.toLowerCase() === "package.json"
+    const lowerFile = file.toLowerCase();
+    const ownersFromManifest = lowerFile === "package.json"
       ? extractOwnersFromPackageJson(content)
-      : file.toLowerCase() === "pyproject.toml"
-        ? extractOwnersFromPyproject(content)
-        : [];
+      : lowerFile === "composer.json"
+        ? extractOwnersFromComposerJson(content)
+        : lowerFile === "pyproject.toml"
+          ? extractOwnersFromPyproject(content)
+          : [];
 
     if (ownersFromText.length > 0) foundOwnerFromLegalText = true;
     if (ownersFromManifest.length > 0) foundOwnerFromManifest = true;
@@ -201,7 +274,7 @@ export async function checkCopyrightOwner(
     }
   }
 
-  const owners = Array.from(ownerToEvidence.keys());
+  const owners = Array.from(ownerToEvidence.keys()).sort((a, b) => a.localeCompare(b));
   if (owners.length > 0) {
     const confidence = foundOwnerFromLegalText
       ? "high"
@@ -217,6 +290,9 @@ export async function checkCopyrightOwner(
       )
     );
 
+    const shownOwners = owners.slice(0, 4);
+    const hiddenCount = owners.length - shownOwners.length;
+
     return {
       id: "copyrightowner",
       title: "Copyright / IP Owner Disclosure",
@@ -227,7 +303,9 @@ export async function checkCopyrightOwner(
       message:
         owners.length === 1
           ? `Probable copyright owner detected: ${owners[0]} (confidence: ${confidence}).`
-          : `Probable copyright owners detected: ${owners.join(", ")} (confidence: ${confidence}).`,
+          : `Probable copyright owners detected: ${shownOwners.join(", ")}${
+            hiddenCount > 0 ? ` and ${hiddenCount} more` : ""
+          } (confidence: ${confidence}).`,
       evidence,
       referenceUrl: "https://opensource.guide/legal/",
     };
