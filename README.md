@@ -90,58 +90,128 @@ The scan uses `.gitleaks.toml` and runs with `--redact` so findings are masked i
 
 ## Tech stack
 
-- **Next.js 16**(App Router)
-- **TypeScript**
-- **Tailwind CSS**
-- **PostgreSQL + Prisma** — persistent analysis history and versioned scoring configs
-- **GitHub REST API**
+### Framework and runtime
 
-## Architecture
+- **Next.js 16 (App Router)** for UI routes and server API routes in one project.
+- **React 18 + TypeScript** for typed UI and domain models.
+- **Node.js runtime** for check orchestration and API integrations.
 
+### Data and persistence
+
+- **PostgreSQL** as the primary data store.
+- **Prisma ORM + Prisma PostgreSQL adapter (`@prisma/adapter-pg`)** for type-safe DB access.
+- Stores:
+  - repository metadata and discovered locations
+  - per-run analysis results and evidence
+  - versioned scoring configurations linked to each run
+
+### UI and developer tooling
+
+- **Tailwind CSS** for styling.
+- **Lucide React** for UI icons.
+- **Vitest** for tests.
+- **ESLint + TypeScript** for static quality checks.
+
+### Analysis dependencies used by checkers
+
+- **GitHub REST API** for repository content, metadata, and refs.
+- **Lizard** (Python CLI) for cyclomatic complexity checks.
+- **Spectral** (via `npx`) for ADR/OpenAPI style validation use cases.
+- **js-yaml** for YAML parsing (`publiccode.yml`, OpenAPI YAML, Helm-related YAML).
+- **jsPDF** for client-side PDF export of analysis results.
+
+## Application architecture
+
+The application is built as a single Next.js service with clear layers:
+
+1. **Presentation layer (React pages/components)**
+	- Main checker UI (`/`)
+	- Admin scoring UI (`/admin`)
+	- History UI (`/history` and repository detail pages)
+
+2. **API layer (Next.js route handlers under `/api`)**
+	- Validates input, orchestrates checks, persists results, and serves history/config data.
+
+3. **Domain/checker layer (`src/lib/checkers`)**
+	- Independent criterion checkers (license, OpenAPI, Docker, Helm, docs, tests, complexity, OWASP, etc.).
+	- A central orchestrator combines checker results into one weighted score.
+
+4. **Integration layer**
+	- GitHub API client (`src/lib/github.ts`)
+	- External tool invocations (Lizard/Spectral)
+
+5. **Persistence layer**
+	- Prisma client singleton (`src/lib/db.ts`) + PostgreSQL schema (`prisma/schema.prisma`).
+
+### Architecture diagram
+
+```mermaid
+flowchart LR
+	U[User in browser] --> UI[Next.js UI\nReact pages/components]
+	UI --> API[Internal API routes\n/api/check, /api/check/stream, /api/admin/scoring, /api/repositories, /api/repo-history]
+	API --> ORCH[Checker orchestrator\nsrc/lib/checkers/index.ts]
+	ORCH --> CHK[Criterion checkers\nlicense, openapi, docker, helm, docs, tests, complexity, owasp, ...]
+	CHK --> GH[GitHub REST API]
+	CHK --> TOOLS[External tools\nLizard / Spectral]
+	API --> CFG[Scoring config\nversioned weights + levels]
+	API --> DB[(PostgreSQL)]
+	CFG --> DB
+	DB --> HIST[History and admin pages]
+	HIST --> UI
 ```
-src/
-├── app/
-│   ├── api/
-│   │   ├── check/route.ts          # POST /api/check — runs all checks & persists result
-│   │   ├── admin/scoring/route.ts  # GET/POST scoring weights
-│   │   └── repo-history/route.ts   # GET analysis history
-│   ├── admin/page.tsx              # Admin — configure criterion weights
-│   ├── history/                    # History overview + per-repo + per-run detail
-│   ├── about/page.tsx              # About page
-│   ├── page.tsx                    # Main checker UI
-│   └── layout.tsx
-├── components/
-│   ├── CheckerForm.tsx             # URL input, options, and register checkbox
-│   ├── ResultCard.tsx              # Expandable result row
-│   ├── ScoreBadge.tsx              # Circular score dial
-│   ├── RepoMeta.tsx                # Repo metadata + version evidence
-│   └── AdminWeightsForm.tsx        # Admin weight sliders
-├── lib/
-│   ├── db.ts                       # Prisma client singleton
-│   ├── github.ts                   # GitHub API client + version detection
-│   ├── types.ts                    # Shared TypeScript types
-│   └── checkers/
-│       ├── index.ts                # Orchestrator — runs all checks, computes score
-│       ├── config.ts               # Scoring config — defaults, DB persistence
-│       ├── sourcecode.ts
-│       ├── openapi.ts
-│       ├── license.ts
-│       ├── copyrightOwner.ts
-│       ├── publiccode.ts
-│       ├── docker.ts
-│       ├── dockerImage.ts
-│       ├── helmchart.ts
-│       ├── documentation.ts
-│       ├── tests.ts
-│       ├── complexity.ts
-│       ├── contributing.ts
-│       ├── codeofconduct.ts
-│       ├── security.ts
-│       ├── semver.ts
-│       ├── sbom.ts
-│       └── fiveLayer.ts
-└── generated/prisma/               # Auto-generated Prisma client (git-ignored)
-```
+
+	### Streamed check sequence (`/api/check/stream`)
+
+	```mermaid
+	sequenceDiagram
+		participant User as Browser user
+		participant UI as Next.js UI (/)
+		participant API as /api/check/stream
+		participant Orch as Checker orchestrator
+		participant GH as GitHub REST API
+		participant Tools as Lizard/Spectral
+		participant DB as PostgreSQL (Prisma)
+
+		User->>UI: Submit repo URL + options
+		UI->>API: POST /api/check/stream
+		API-->>UI: stream event: started
+		API->>GH: fetch repo metadata + files
+		API-->>UI: stream event: repository loaded
+		API->>Orch: run criteria checks
+		Orch->>GH: read file content/refs (as needed)
+		Orch->>Tools: run complexity/validation tools (as needed)
+		Orch-->>API: per-criterion results + evidence
+		API-->>UI: stream progress events
+		API->>DB: persist repo + analysis + scoring config link
+		API-->>UI: stream event: completed + final report
+	```
+
+## APIs
+
+### Internal API endpoints
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `POST` | `/api/check` | Run full analysis and persist result |
+| `POST` | `/api/check/stream` | Stream progress/events during analysis |
+| `GET` | `/api/admin/scoring` | Retrieve current scoring configuration |
+| `POST` | `/api/admin/scoring` | Save new scoring configuration snapshot |
+| `GET` | `/api/repositories` | List known repositories with latest summary |
+| `GET` | `/api/repo-history` | Return analysis runs/history for repositories |
+
+### External APIs/services
+
+- **GitHub REST API v3** (authenticated with optional `GITHUB_TOKEN`).
+- **PostgreSQL** over `DATABASE_URL`.
+
+### Request flow (high level)
+
+1. User submits repo URL and options in the checker form.
+2. `/api/check` (or `/api/check/stream`) parses owner/repo and loads remote repo context from GitHub.
+3. Checker orchestrator runs criteria (parallel where possible).
+4. Weighted score is computed using the selected/persisted scoring config.
+5. Result + evidence is stored in PostgreSQL and returned to UI.
+6. History/admin pages query internal APIs to show prior runs and config snapshots.
 
 ## Scoring
 
