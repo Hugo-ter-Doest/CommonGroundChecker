@@ -22,7 +22,13 @@ const CRITERION_CATEGORIES: CriterionCategory[] = [
         id: "license",
         label: "OSI license",
         explanation:
-          "The component must carry an OSI-approved open-source license (e.g. EUPL-1.2, MIT, Apache-2.0). A EUPL license earns bonus points because it is the EU recommended licence for public-sector software.",
+          "The component must carry an OSI-approved open-source license (e.g. EUPL-1.2, MIT, Apache-2.0).",
+      },
+      {
+        id: "eupllicense",
+        label: "EUPL license",
+        explanation:
+          "Checks explicitly whether the repository uses the European Union Public Licence (EUPL), which is recommended for public-sector software reuse in Europe.",
       },
       {
         id: "copyrightowner",
@@ -171,6 +177,8 @@ interface AdminWeightsFormProps {
   defaultComplexityThreshold: number;
   initialComplexityMaxCcnThreshold: number;
   defaultComplexityMaxCcnThreshold: number;
+  initialSpectralRulesetSource: string;
+  defaultSpectralRulesetSource: string;
 }
 
 export default function AdminWeightsForm({
@@ -182,6 +190,8 @@ export default function AdminWeightsForm({
   defaultComplexityThreshold,
   initialComplexityMaxCcnThreshold,
   defaultComplexityMaxCcnThreshold,
+  initialSpectralRulesetSource,
+  defaultSpectralRulesetSource,
 }: AdminWeightsFormProps) {
   const [weights, setWeights] = useState<Record<string, number>>(initialWeights);
   const [requirementLevels, setRequirementLevels] = useState<Record<string, string>>(initialRequirementLevels);
@@ -190,6 +200,9 @@ export default function AdminWeightsForm({
   );
   const [complexityMaxCcnThreshold, setComplexityMaxCcnThreshold] =
     useState<number>(initialComplexityMaxCcnThreshold);
+  const [spectralRulesetSource, setSpectralRulesetSource] = useState<string>(
+    initialSpectralRulesetSource
+  );
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -209,7 +222,8 @@ export default function AdminWeightsForm({
       weightChanged ||
       reqLevelChanged ||
       complexityThreshold !== initialComplexityThreshold ||
-      complexityMaxCcnThreshold !== initialComplexityMaxCcnThreshold
+      complexityMaxCcnThreshold !== initialComplexityMaxCcnThreshold ||
+      spectralRulesetSource.trim() !== initialSpectralRulesetSource.trim()
     );
   }, [
     weights,
@@ -220,6 +234,8 @@ export default function AdminWeightsForm({
     initialComplexityThreshold,
     complexityMaxCcnThreshold,
     initialComplexityMaxCcnThreshold,
+    spectralRulesetSource,
+    initialSpectralRulesetSource,
   ]);
 
   async function save() {
@@ -235,13 +251,14 @@ export default function AdminWeightsForm({
           criterionRequirementLevels: requirementLevels,
           complexityThreshold,
           complexityMaxCcnThreshold,
+          spectralRulesetSource,
         }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data?.error ?? "Could not save weights.");
+        setError(data?.error ?? "Could not save configuration.");
       } else {
-        setMessage("Weights saved. New analyses will use this configuration.");
+        setMessage("Configuration saved. New analyses will use this configuration.");
         if (data?.criterionWeights && typeof data.criterionWeights === "object") {
           setWeights(data.criterionWeights as Record<string, number>);
         }
@@ -254,9 +271,12 @@ export default function AdminWeightsForm({
         if (typeof data?.complexityMaxCcnThreshold === "number") {
           setComplexityMaxCcnThreshold(data.complexityMaxCcnThreshold);
         }
+        if (typeof data?.spectralRulesetSource === "string") {
+          setSpectralRulesetSource(data.spectralRulesetSource);
+        }
       }
     } catch {
-      setError("Network error while saving weights.");
+      setError("Network error while saving configuration.");
     } finally {
       setSaving(false);
     }
@@ -267,12 +287,35 @@ export default function AdminWeightsForm({
     setRequirementLevels(defaultRequirementLevels);
     setComplexityThreshold(defaultComplexityThreshold);
     setComplexityMaxCcnThreshold(defaultComplexityMaxCcnThreshold);
+    setSpectralRulesetSource(defaultSpectralRulesetSource);
     setMessage(null);
     setError(null);
   }
 
   return (
     <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-6">
+      <div className="space-y-2 border border-gray-200 rounded-xl p-4 bg-gray-50/40">
+        <h4 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
+          ADR / Spectral configuration
+        </h4>
+        <p className="text-xs text-gray-500">
+          Configure the Spectral ruleset source used by the "NL API Design Rules" check. You can use a URL or a local file path.
+        </p>
+        <div className="space-y-1">
+          <label htmlFor="spectral-ruleset-source" className="text-sm font-medium text-gray-700">
+            Spectral ruleset source
+          </label>
+          <input
+            id="spectral-ruleset-source"
+            type="text"
+            value={spectralRulesetSource}
+            onChange={(event) => setSpectralRulesetSource(event.target.value)}
+            placeholder="https://.../ruleset.yaml or ./rulesets/adr.yaml"
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+          />
+        </div>
+      </div>
+
       <div className="space-y-4">
         {CRITERION_CATEGORIES.map((group) => (
           <div
@@ -425,7 +468,7 @@ export default function AdminWeightsForm({
           disabled={saving || !hasChanges}
           className="px-4 py-2 rounded-lg bg-cg-blue text-white font-semibold hover:bg-cg-lightblue disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {saving ? "Saving…" : "Save weights"}
+          {saving ? "Saving…" : "Save configuration"}
         </button>
         <button
           type="button"

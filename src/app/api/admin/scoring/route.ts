@@ -3,6 +3,7 @@ import {
   DEFAULT_COMPLEXITY_MAX_CCN_THRESHOLD,
   DEFAULT_COMPLEXITY_THRESHOLD,
   DEFAULT_CRITERION_CONFIG_BY_CHECK_ID,
+  DEFAULT_SPECTRAL_RULESET_SOURCE,
   getScoringConfig,
   saveCriterionWeights,
 } from "@/lib/checkers/config";
@@ -65,6 +66,16 @@ function extractComplexityMaxCcnThresholdFromPayload(
   return value;
 }
 
+function extractSpectralRulesetSourceFromPayload(
+  payload: unknown
+): string | undefined {
+  if (!payload || typeof payload !== "object") return undefined;
+  const raw = payload as Record<string, unknown>;
+  const value = raw.spectralRulesetSource;
+  if (typeof value !== "string") return undefined;
+  return value;
+}
+
 export async function GET() {
   try {
     const scoringConfig = await getScoringConfig();
@@ -84,6 +95,7 @@ export async function GET() {
       ),
       complexityThreshold: scoringConfig.complexityThreshold,
       complexityMaxCcnThreshold: scoringConfig.complexityMaxCcnThreshold,
+      spectralRulesetSource: scoringConfig.spectralRulesetSource,
       defaultCriterionWeights: Object.fromEntries(
         Object.entries(DEFAULT_CRITERION_CONFIG_BY_CHECK_ID).map(([checkId, config]) => [
           checkId,
@@ -98,6 +110,7 @@ export async function GET() {
       ),
       defaultComplexityThreshold: DEFAULT_COMPLEXITY_THRESHOLD,
       defaultComplexityMaxCcnThreshold: DEFAULT_COMPLEXITY_MAX_CCN_THRESHOLD,
+      defaultSpectralRulesetSource: DEFAULT_SPECTRAL_RULESET_SOURCE,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unexpected error.";
@@ -112,19 +125,23 @@ export async function POST(req: NextRequest) {
     const incomingThreshold = extractComplexityThresholdFromPayload(body);
     const incomingMaxThreshold =
       extractComplexityMaxCcnThresholdFromPayload(body);
+    const incomingSpectralRulesetSource =
+      extractSpectralRulesetSourceFromPayload(body);
 
     const activeConfig = reset
       ? await saveCriterionWeights(
           {},
           DEFAULT_COMPLEXITY_THRESHOLD,
           DEFAULT_COMPLEXITY_MAX_CCN_THRESHOLD,
-          {}
+          {},
+          DEFAULT_SPECTRAL_RULESET_SOURCE
         )
       : await saveCriterionWeights(
           extractWeightsFromPayload(body?.criterionWeights),
           incomingThreshold,
           incomingMaxThreshold,
-          extractRequirementLevelsFromPayload(body?.criterionRequirementLevels)
+          extractRequirementLevelsFromPayload(body?.criterionRequirementLevels),
+          incomingSpectralRulesetSource
         );
 
     return NextResponse.json({
@@ -132,6 +149,7 @@ export async function POST(req: NextRequest) {
       scoringConfigId: activeConfig.id,
       complexityThreshold: activeConfig.config.complexityThreshold,
       complexityMaxCcnThreshold: activeConfig.config.complexityMaxCcnThreshold,
+      spectralRulesetSource: activeConfig.config.spectralRulesetSource,
       criterionWeights: Object.fromEntries(
         Object.entries(activeConfig.config.criterionConfigByCheckId).map(([checkId, config]) => [
           checkId,

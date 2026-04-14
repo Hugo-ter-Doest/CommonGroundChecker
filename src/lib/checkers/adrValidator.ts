@@ -17,6 +17,12 @@ interface SpectralResultItem {
 
 const ADR_RULESET_URL = "https://static.developer.overheid.nl/adr/ruleset.yaml";
 
+function resolveRulesetSource(source: string | undefined): string {
+  const trimmed = source?.trim();
+  if (!trimmed) return ADR_RULESET_URL;
+  return trimmed;
+}
+
 function runCommand(command: string, args: string[]): Promise<CommandResult> {
   return new Promise((resolve) => {
     const child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"] });
@@ -215,7 +221,8 @@ export async function checkAdrValidator(
   repo: string,
   branch: string,
   tree: string[],
-  apiSpecificationLocations: string[] = []
+  apiSpecificationLocations: string[] = [],
+  spectralRulesetSource?: string
 ): Promise<CheckResult> {
   const resolvedTarget = await resolveSpecTargetUrl(
     owner,
@@ -240,15 +247,18 @@ export async function checkAdrValidator(
   }
 
   const targetUrl = resolvedTarget.url;
+  const resolvedRulesetSource = resolveRulesetSource(spectralRulesetSource);
   const targetEvidence =
     resolvedTarget.source === "auto-discovered"
       ? [
           `API specification was auto-discovered by the checker: ${targetUrl}`,
           `Discovery source: ${resolvedTarget.source}`,
+          `Spectral ruleset source: ${resolvedRulesetSource}`,
         ]
       : [
           `Lint target: ${targetUrl}`,
           `Target source: ${resolvedTarget.source}`,
+          `Spectral ruleset source: ${resolvedRulesetSource}`,
         ];
 
   const spectralArgs = [
@@ -257,7 +267,7 @@ export async function checkAdrValidator(
     "lint",
     targetUrl,
     "--ruleset",
-    ADR_RULESET_URL,
+    resolvedRulesetSource,
     "--format",
     "json",
   ];

@@ -5,6 +5,7 @@ const ids = [
   "sourcecode",
   "openapi",
   "license",
+  "eupllicense",
   "copyrightowner",
   "publiccode",
   "docker",
@@ -49,6 +50,7 @@ const mocks = vi.hoisted(() => ({
   checkHelmChart: vi.fn(),
   checkCodeMetrics: vi.fn(),
   checkOwaspSecureCoding: vi.fn(),
+  checkEuplLicense: vi.fn(),
   checkAdrValidator: vi.fn(),
   getActiveScoringConfig: vi.fn(),
 }));
@@ -76,6 +78,9 @@ vi.mock("@/lib/checkers/tests", () => ({ checkTests: mocks.checkTests }));
 vi.mock("@/lib/checkers/complexity", () => ({ checkComplexity: mocks.checkComplexity }));
 vi.mock("@/lib/checkers/codeMetrics", () => ({ checkCodeMetrics: mocks.checkCodeMetrics }));
 vi.mock("@/lib/checkers/owaspSecureCoding", () => ({ checkOwaspSecureCoding: mocks.checkOwaspSecureCoding }));
+vi.mock("@/lib/checkers/eupl", () => ({
+  checkEuplLicense: mocks.checkEuplLicense,
+}));
 vi.mock("@/lib/checkers/adrValidator", () => ({ checkAdrValidator: mocks.checkAdrValidator }));
 vi.mock("@/lib/checkers/sourcecode", () => ({ checkSourceCode: mocks.checkSourceCode }));
 vi.mock("@/lib/checkers/semver", () => ({ checkSemver: mocks.checkSemver }));
@@ -134,6 +139,7 @@ describe("runChecks", () => {
     mocks.checkSourceCode.mockReturnValue(resultFor("sourcecode", "pass"));
     mocks.checkOpenApi.mockResolvedValue(resultFor("openapi", "pass"));
     mocks.checkLicense.mockResolvedValue(resultFor("license", "pass"));
+    mocks.checkEuplLicense.mockReturnValue(resultFor("eupllicense", "warn"));
     mocks.checkCopyrightOwner.mockResolvedValue(resultFor("copyrightowner", "pass"));
     mocks.checkPublicCode.mockResolvedValue(resultFor("publiccode", "pass"));
     mocks.checkDocker.mockReturnValue(resultFor("docker", "pass"));
@@ -166,9 +172,9 @@ describe("runChecks", () => {
       config: {
         criterionConfigByCheckId: configById,
         statusScoreByStatus: { pass: 1, warn: 0.5, info: 0.5, fail: 0 },
-        euplBonusPoints: 10,
         complexityThreshold: 12,
         complexityMaxCcnThreshold: 20,
+        spectralRulesetSource: "https://static.developer.overheid.nl/adr/ruleset.yaml",
       },
     });
 
@@ -179,14 +185,14 @@ describe("runChecks", () => {
     expect(report.scoringConfigId).toBe("cfg-1");
     expect(report.score).toBe(25);
     expect(mocks.checkOpenApi).not.toHaveBeenCalled();
-    expect(report.results).toHaveLength(20);
+    expect(report.results).toHaveLength(21);
 
     const openApiResult = report.results.find((result) => result.id === "openapi");
     expect(openApiResult?.status).toBe("pass");
     expect(openApiResult?.message).toContain("not marked as a register");
   });
 
-  it("adds EUPL bonus and caps score at 100", async () => {
+  it("does not apply extra EUPL bonus points", async () => {
     mocks.getRepoMeta.mockResolvedValue({
       description: "EUPL repo",
       language: "TypeScript",
@@ -197,14 +203,18 @@ describe("runChecks", () => {
       license: { spdx_id: "EUPL-1.2", name: "European Union Public Licence" },
     });
 
+    const configById = criterionConfig(1, "mandatory");
+    configById.semver = { weight: 1, requirementLevel: "mandatory" };
+    mocks.checkSemver.mockReturnValue(resultFor("semver", "fail"));
+
     mocks.getActiveScoringConfig.mockResolvedValue({
       id: "cfg-2",
       config: {
-        criterionConfigByCheckId: criterionConfig(1, "mandatory"),
+        criterionConfigByCheckId: configById,
         statusScoreByStatus: { pass: 1, warn: 0.5, info: 0.5, fail: 0 },
-        euplBonusPoints: 10,
         complexityThreshold: 12,
         complexityMaxCcnThreshold: 20,
+        spectralRulesetSource: "https://static.developer.overheid.nl/adr/ruleset.yaml",
       },
     });
 
@@ -212,8 +222,8 @@ describe("runChecks", () => {
       isRegister: true,
     });
 
-    expect(report.score).toBe(100);
+    expect(report.score).toBeLessThan(100);
     const licenseResult = report.results.find((result) => result.id === "license");
-    expect(licenseResult?.message).toContain("bonus points applied");
+    expect(licenseResult?.message).not.toContain("bonus points applied");
   });
 });

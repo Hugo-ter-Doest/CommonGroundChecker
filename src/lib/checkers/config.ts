@@ -11,14 +11,15 @@ interface ScoringConfigOverrides {
   criterionRequirementLevels?: Record<string, RequirementLevel>;
   complexityThreshold?: number;
   complexityMaxCcnThreshold?: number;
+  spectralRulesetSource?: string;
 }
 
 export interface ScoringConfig {
   criterionConfigByCheckId: Record<string, CriterionConfig>;
   statusScoreByStatus: Record<CheckStatus, number>;
-  euplBonusPoints: number;
   complexityThreshold: number;
   complexityMaxCcnThreshold: number;
+  spectralRulesetSource: string;
 }
 
 export interface ActiveScoringConfig {
@@ -33,14 +34,16 @@ export const DEFAULT_STATUS_SCORE_BY_STATUS: Record<CheckStatus, number> = {
   fail: 0,
 };
 
-export const DEFAULT_EUPL_BONUS_POINTS = 10;
 export const DEFAULT_COMPLEXITY_THRESHOLD = 15;
 export const DEFAULT_COMPLEXITY_MAX_CCN_THRESHOLD = 30;
+export const DEFAULT_SPECTRAL_RULESET_SOURCE =
+  "https://static.developer.overheid.nl/adr/ruleset.yaml";
 
 export const DEFAULT_CRITERION_CONFIG_BY_CHECK_ID: Record<string, CriterionConfig> = {
   sourcecode: { weight: 1, requirementLevel: "mandatory" },
   openapi: { weight: 1, requirementLevel: "mandatory" },
   license: { weight: 1, requirementLevel: "mandatory" },
+  eupllicense: { weight: 0.75, requirementLevel: "mandatory" },
   copyrightowner: { weight: 0.75, requirementLevel: "mandatory" },
   publiccode: { weight: 1, requirementLevel: "mandatory" },
   docker: { weight: 1, requirementLevel: "mandatory" },
@@ -77,6 +80,12 @@ function clampComplexityMaxCcnThreshold(value: number): number {
   return Math.max(1, Math.min(200, rounded));
 }
 
+function sanitizeSpectralRulesetSource(value: unknown): string {
+  if (typeof value !== "string") return DEFAULT_SPECTRAL_RULESET_SOURCE;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : DEFAULT_SPECTRAL_RULESET_SOURCE;
+}
+
 function buildScoringConfig(overrides?: ScoringConfigOverrides): ScoringConfig {
   const criterionConfigByCheckId: Record<string, CriterionConfig> =
     Object.fromEntries(
@@ -109,7 +118,6 @@ function buildScoringConfig(overrides?: ScoringConfigOverrides): ScoringConfig {
   return {
     criterionConfigByCheckId,
     statusScoreByStatus: { ...DEFAULT_STATUS_SCORE_BY_STATUS },
-    euplBonusPoints: DEFAULT_EUPL_BONUS_POINTS,
     complexityThreshold:
       typeof overrides?.complexityThreshold === "number"
         ? clampComplexityThreshold(overrides.complexityThreshold)
@@ -118,6 +126,9 @@ function buildScoringConfig(overrides?: ScoringConfigOverrides): ScoringConfig {
       typeof overrides?.complexityMaxCcnThreshold === "number"
         ? clampComplexityMaxCcnThreshold(overrides.complexityMaxCcnThreshold)
         : DEFAULT_COMPLEXITY_MAX_CCN_THRESHOLD,
+    spectralRulesetSource: sanitizeSpectralRulesetSource(
+      overrides?.spectralRulesetSource
+    ),
   };
 }
 
@@ -131,6 +142,7 @@ function parseOverridesFromDbPayload(payload: unknown): ScoringConfigOverrides {
   const criterionRequirementLevelsRaw = candidate.criterionRequirementLevels;
   const complexityThresholdRaw = candidate.complexityThreshold;
   const complexityMaxCcnThresholdRaw = candidate.complexityMaxCcnThreshold;
+  const spectralRulesetSourceRaw = candidate.spectralRulesetSource;
   const criterionWeights: Record<string, number> = {};
   if (criterionWeightsRaw && typeof criterionWeightsRaw === "object") {
     for (const [checkId, weight] of Object.entries(
@@ -168,6 +180,10 @@ function parseOverridesFromDbPayload(payload: unknown): ScoringConfigOverrides {
       typeof complexityMaxCcnThresholdRaw === "number"
         ? clampComplexityMaxCcnThreshold(complexityMaxCcnThresholdRaw)
         : undefined,
+    spectralRulesetSource:
+      typeof spectralRulesetSourceRaw === "string"
+        ? sanitizeSpectralRulesetSource(spectralRulesetSourceRaw)
+        : undefined,
   };
 }
 
@@ -183,6 +199,7 @@ async function readLatestDbOverrides(): Promise<{
       criterionRequirementLevels: true,
       complexityThreshold: true,
       complexityMaxCcnThreshold: true,
+      spectralRulesetSource: true,
     },
   });
 
@@ -195,6 +212,7 @@ async function readLatestDbOverrides(): Promise<{
       criterionRequirementLevels: row.criterionRequirementLevels,
       complexityThreshold: row.complexityThreshold,
       complexityMaxCcnThreshold: row.complexityMaxCcnThreshold,
+      spectralRulesetSource: row.spectralRulesetSource,
     }),
   };
 }
@@ -212,6 +230,9 @@ async function createDbOverridesRecord(
       complexityMaxCcnThreshold: clampComplexityMaxCcnThreshold(
         overrides.complexityMaxCcnThreshold ??
           DEFAULT_COMPLEXITY_MAX_CCN_THRESHOLD
+      ),
+      spectralRulesetSource: sanitizeSpectralRulesetSource(
+        overrides.spectralRulesetSource
       ),
     },
   });
@@ -251,7 +272,8 @@ export async function saveCriterionWeights(
   criterionWeights: Record<string, number>,
   complexityThreshold?: number,
   complexityMaxCcnThreshold?: number,
-  criterionRequirementLevels?: Record<string, string>
+  criterionRequirementLevels?: Record<string, string>,
+  spectralRulesetSource?: string
 ): Promise<ActiveScoringConfig> {
   const overrides: ScoringConfigOverrides = {
     criterionWeights: {},
@@ -264,6 +286,7 @@ export async function saveCriterionWeights(
       typeof complexityMaxCcnThreshold === "number"
         ? clampComplexityMaxCcnThreshold(complexityMaxCcnThreshold)
         : DEFAULT_COMPLEXITY_MAX_CCN_THRESHOLD,
+    spectralRulesetSource: sanitizeSpectralRulesetSource(spectralRulesetSource),
   };
 
   for (const [checkId, config] of Object.entries(

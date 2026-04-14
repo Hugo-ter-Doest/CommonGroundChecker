@@ -4,6 +4,7 @@ import {
   DEFAULT_COMPLEXITY_MAX_CCN_THRESHOLD,
   DEFAULT_COMPLEXITY_THRESHOLD,
   DEFAULT_CRITERION_CONFIG_BY_CHECK_ID,
+  DEFAULT_SPECTRAL_RULESET_SOURCE,
   getScoringConfig,
 } from "@/lib/checkers/config";
 
@@ -56,9 +57,9 @@ export default async function AdminPage() {
       </nav>
 
       <section className="space-y-2">
-        <h2 className="text-2xl font-bold text-cg-blue">Admin — Scoring Weights</h2>
+        <h2 className="text-2xl font-bold text-cg-blue">Admin — Scoring Configuration</h2>
         <p className="text-gray-600">
-          Configure criterion weights used for new analyses.
+          Configure scoring weights, thresholds, and ruleset used for new analyses.
         </p>
       </section>
 
@@ -73,9 +74,6 @@ export default async function AdminPage() {
         </p>
         <p>
           <strong>Recommended</strong> and <strong>informative</strong> criteria are shown in reports, but they do <strong>not</strong> contribute to the numeric score.
-        </p>
-        <p>
-          A repository with an EUPL license can receive an additional <strong>+10 bonus points</strong>, capped so the final score never exceeds <strong>100</strong>.
         </p>
       </section>
 
@@ -92,6 +90,8 @@ export default async function AdminPage() {
         defaultComplexityMaxCcnThreshold={
           DEFAULT_COMPLEXITY_MAX_CCN_THRESHOLD
         }
+        initialSpectralRulesetSource={scoringConfig.spectralRulesetSource}
+        defaultSpectralRulesetSource={DEFAULT_SPECTRAL_RULESET_SOURCE}
       />
     </div>
   );

@@ -20,27 +20,10 @@ import { checkSourceCode } from "./sourcecode";
 import { checkSemver } from "./semver";
 import { checkCopyrightOwner } from "./copyrightOwner";
 import { checkOwaspSecureCoding } from "./owaspSecureCoding";
+import { checkEuplLicense } from "./eupl";
 import {
   getActiveScoringConfig,
 } from "./config";
-
-function isEuplLicense(
-  licenseResultMessage: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  repoMeta: any
-): boolean {
-  const spdx = String(repoMeta?.license?.spdx_id ?? "").toLowerCase();
-  const name = String(repoMeta?.license?.name ?? "").toLowerCase();
-  const message = String(licenseResultMessage ?? "").toLowerCase();
-
-  return (
-    spdx.startsWith("eupl") ||
-    name.includes("eupl") ||
-    name.includes("european union public licen") ||
-    message.includes("eupl") ||
-    message.includes("european union public licen")
-  );
-}
 
 export type ProgressCallback = (step: string, pct: number) => void;
 
@@ -114,7 +97,8 @@ export async function runChecks(
     repo,
     meta.default_branch ?? "main",
     tree,
-    options?.apiSpecificationLocations ?? []
+    options?.apiSpecificationLocations ?? [],
+    scoringConfig.spectralRulesetSource
   );
 
   // Instant checks — synchronous pure functions on the tree array
@@ -139,6 +123,7 @@ export async function runChecks(
     owaspSecureCodingPromise,
     adrValidatorPromise,
   ]);
+  const eupllicense = checkEuplLicense(meta, license.message);
 
   onProgress?.("Calculating compliance score\u2026", 90);
 
@@ -146,6 +131,7 @@ export async function runChecks(
     sourcecode,
     openapi,
     license,
+    eupllicense,
     copyrightowner,
     publiccode,
     docker,
@@ -195,23 +181,13 @@ export async function runChecks(
   const baseScore = totalCriterionWeight > 0
     ? Math.round((weightedScoreSum / totalCriterionWeight) * 100)
     : 0;
-  const euplBonus = isEuplLicense(license.message, meta)
-    ? scoringConfig.euplBonusPoints
-    : 0;
-  const score = Math.min(100, baseScore + euplBonus);
+  const score = Math.min(100, baseScore);
 
-  const licenseResult =
-    euplBonus > 0
-      ? {
-          ...license,
-          message: `${license.message} EUPL detected: +${euplBonus} bonus points applied to total score.`,
-        }
-      : license;
-
-  const resultsWithBonusMessage = [
+  const resultsWithRequirementLevels = [
     sourcecode,
     openapi,
-    licenseResult,
+    license,
+    eupllicense,
     copyrightowner,
     publiccode,
     docker,
@@ -229,9 +205,7 @@ export async function runChecks(
     semver,
     fivelayer,
     helmchart,
-  ];
-
-  const resultsWithRequirementLevels = resultsWithBonusMessage.map((result) => ({
+  ].map((result) => ({
     ...result,
     requirementLevel:
       scoringConfig.criterionConfigByCheckId[result.id]?.requirementLevel ??

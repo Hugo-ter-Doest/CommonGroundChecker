@@ -17,37 +17,38 @@ Criteria are grouped into four categories. Each criterion has a requirement leve
 | # | Criterion | Level | Standard |
 |---|-----------|-------|----------|
 | 1 | **OSI-approved open-source license** — LICENSE file with an OSI-approved identifier | Mandatory | [opensource.org/licenses](https://opensource.org/licenses) |
-| 2 | **Copyright / IP owner disclosure** — probable owner inferred from legal files and metadata | Recommended | [opensource.guide/legal](https://opensource.guide/legal/) |
-| 3 | **publiccode.yml** — government metadata file in the repository root | Mandatory | [Standard for Public Code](https://standard.publiccode.net) |
-| 4 | **Contributing guide** — CONTRIBUTING file explaining how to contribute | Recommended | [GitHub docs](https://docs.github.com/en/communities/setting-up-your-project-for-healthy-contributions/setting-guidelines-for-repository-contributors) |
-| 5 | **Code of Conduct** — CODE_OF_CONDUCT file present | Recommended | [opensource.guide](https://opensource.guide/code-of-conduct/) |
-| 6 | **Security policy** — SECURITY file with responsible disclosure info | Recommended | [GitHub docs](https://docs.github.com/en/code-security/getting-started/adding-a-security-policy-to-your-repository) |
+| 2 | **EUPL license preference** — explicit check whether the repository uses the European Union Public Licence | Mandatory | [EU EUPL](https://interoperable-europe.ec.europa.eu/collection/eupl/eupl-text-eupl-12) |
+| 3 | **Copyright / IP owner disclosure** — probable owner inferred from legal files and metadata | Recommended | [opensource.guide/legal](https://opensource.guide/legal/) |
+| 4 | **publiccode.yml** — government metadata file in the repository root | Mandatory | [Standard for Public Code](https://standard.publiccode.net) |
+| 5 | **Contributing guide** — CONTRIBUTING file explaining how to contribute | Recommended | [GitHub docs](https://docs.github.com/en/communities/setting-up-your-project-for-healthy-contributions/setting-guidelines-for-repository-contributors) |
+| 6 | **Code of Conduct** — CODE_OF_CONDUCT file present | Recommended | [opensource.guide](https://opensource.guide/code-of-conduct/) |
+| 7 | **Security policy** — SECURITY file with responsible disclosure info | Recommended | [GitHub docs](https://docs.github.com/en/code-security/getting-started/adding-a-security-policy-to-your-repository) |
 
 ### Architecture
 
 | # | Criterion | Level | Standard |
 |---|-----------|-------|----------|
-| 7 | **API-first / OpenAPI spec** — machine-readable OpenAPI or Swagger spec present *(required only when "Component is a register" is checked)* | Mandatory | [API Design Rules](https://commonground.nl/cms/view/54476259/api-designrules) |
-| 8 | **5-Layer Architecture** — component belongs to a recognised Common Ground layer | Recommended | [5-lagen model](https://commonground.nl/cms/view/54476261/5-lagen-model) |
+| 8 | **API-first / OpenAPI spec** — machine-readable OpenAPI or Swagger spec present *(required only when "Component is a register" is checked)* | Mandatory | [API Design Rules](https://commonground.nl/cms/view/54476259/api-designrules) |
+| 9 | **5-Layer Architecture** — component belongs to a recognised Common Ground layer | Recommended | [5-lagen model](https://commonground.nl/cms/view/54476261/5-lagen-model) |
 
 ### Deployment & Operations
 
 | # | Criterion | Level | Standard |
 |---|-----------|-------|----------|
-| 9 | **Docker support** — Dockerfile (and optionally docker-compose) present | Mandatory | [Haven](https://haven.commonground.nl) |
-| 10 | **Available Docker image** — published registry image URL provided | Mandatory | [Haven](https://haven.commonground.nl) |
-| 11 | **Helm chart (Kubernetes)** — Chart.yaml or K8s manifests present | Mandatory | [Haven](https://haven.commonground.nl) |
+| 10 | **Docker support** — Dockerfile (and optionally docker-compose) present | Mandatory | [Haven](https://haven.commonground.nl) |
+| 11 | **Available Docker image** — published registry image URL provided | Mandatory | [Haven](https://haven.commonground.nl) |
+| 12 | **Helm chart (Kubernetes)** — Chart.yaml or K8s manifests present | Mandatory | [Haven](https://haven.commonground.nl) |
 
 ### Software Quality
 
 | # | Criterion | Level | Standard |
 |---|-----------|-------|----------|
-| 12 | **Actual source code** — repository contains real source files, not just docs or config | Mandatory | [commonground.nl](https://commonground.nl) |
-| 13 | **SBOM** — Software Bill of Materials (SPDX or CycloneDX) published | Recommended | [CISA SBOM](https://www.cisa.gov/sbom) |
-| 14 | **Documentation** — README, docs folder, or external docs URL | Mandatory | [irealisatie.nl](https://www.irealisatie.nl/kennis/common-ground) |
-| 15 | **Test suite** — automated tests or test configuration present | Recommended | [GitHub Actions](https://docs.github.com/en/actions/automating-builds-and-tests) |
-| 16 | **Cyclomatic complexity (Lizard)** — average complexity (AvgCCN) is measured and compared against an admin-configurable threshold | Recommended | [lizard](https://github.com/terryyin/lizard) |
-| 17 | **Semantic versioning** — releases or tags following MAJOR.MINOR.PATCH | Recommended | [semver.org](https://semver.org/) |
+| 13 | **Actual source code** — repository contains real source files, not just docs or config | Mandatory | [commonground.nl](https://commonground.nl) |
+| 14 | **SBOM** — Software Bill of Materials (SPDX or CycloneDX) published | Recommended | [CISA SBOM](https://www.cisa.gov/sbom) |
+| 15 | **Documentation** — README, docs folder, or external docs URL | Mandatory | [irealisatie.nl](https://www.irealisatie.nl/kennis/common-ground) |
+| 16 | **Test suite** — automated tests or test configuration present | Recommended | [GitHub Actions](https://docs.github.com/en/actions/automating-builds-and-tests) |
+| 17 | **Cyclomatic complexity (Lizard)** — average complexity (AvgCCN) is measured and compared against an admin-configurable threshold | Recommended | [lizard](https://github.com/terryyin/lizard) |
+| 18 | **Semantic versioning** — releases or tags following MAJOR.MINOR.PATCH | Recommended | [semver.org](https://semver.org/) |
 
 ## Getting started
 
@@ -199,6 +200,17 @@ flowchart LR
 | `GET` | `/api/repositories` | List known repositories with latest summary |
 | `GET` | `/api/repo-history` | Return analysis runs/history for repositories |
 
+### ADR Spectral ruleset source (Admin)
+
+On the **Admin** page, the field **"Spectral ruleset source"** controls which ruleset is used for the **NL API Design Rules** check.
+
+- Supported values:
+	- URL (for example: `https://static.developer.overheid.nl/adr/ruleset.yaml`)
+	- Local file path (for example: `./rulesets/adr.yaml` or `C:/rulesets/adr.yaml`)
+- This value is persisted in `ScoringConfig` and applied to new analyses.
+- If the field is empty, the app falls back to the default ADR ruleset URL.
+- For local file paths, the file must exist on the machine running the app server (not on a remote end-user browser machine).
+
 ### External APIs/services
 
 - **GitHub REST API v3** (authenticated with optional `GITHUB_TOKEN`).
@@ -224,12 +236,10 @@ repository’s measured AvgCCN is at or below this threshold.
 Score formula:
 ```
 baseScore = round((Σ statusScore × weight) / (Σ weight) × 100)
-score     = min(100, baseScore + euplBonus)
+score     = min(100, baseScore)
 ```
 
 Status scores: **Pass** = 1.0 · **Warn / Info** = 0.5 · **Fail** = 0.
-
-A **+10 bonus** is added when an EUPL license is detected (European Union Public Licence).
 
 | Score | Label |
 |-------|-------|

@@ -114,6 +114,7 @@ const DEFAULT_REQUIREMENT_LEVEL_BY_CHECK_ID: Record<string, RequirementLevelLabe
   sourcecode: "mandatory",
   fivelayer: "mandatory",
   license: "mandatory",
+  eupllicense: "recommended",
   copyrightowner: "mandatory",
   publiccode: "mandatory",
   docker: "mandatory",
@@ -137,6 +138,7 @@ const CHECK_ID_BY_CRITERION_LABEL: Record<string, string> = {
   "Source Code": "sourcecode",
   "5-Layer Architecture": "fivelayer",
   "OSI License": "license",
+  "EUPL License": "eupllicense",
   "Copyright / IP owner": "copyrightowner",
   "publiccode.yml": "publiccode",
   "Docker support": "docker",
@@ -195,7 +197,15 @@ const CRITERIA_OVERVIEW = [
     category: "Governance" as CriteriaCategory,
     desc: "Open-source license required",
     tooltip:
-      "The component must carry an OSI-approved open-source license (e.g. EUPL-1.2, MIT, Apache-2.0). A EUPL license earns bonus points because it is the EU recommended licence for public-sector software.",
+      "The component must carry an OSI-approved open-source license (e.g. EUPL-1.2, MIT, Apache-2.0).",
+  },
+  {
+    icon: "🇪🇺",
+    label: "EUPL License",
+    category: "Governance" as CriteriaCategory,
+    desc: "Explicit EUPL preference check",
+    tooltip:
+      "Checks explicitly whether the repository uses the European Union Public Licence (EUPL), which is recommended for public-sector software reuse in Europe.",
   },
   {
     icon: "©",
@@ -346,6 +356,7 @@ const RESULT_ORDER_BY_ID: string[] = [
   "sourcecode",
   "fivelayer",
   "license",
+  "eupllicense",
   "copyrightowner",
   "publiccode",
   "docker",
@@ -370,6 +381,7 @@ const RESULT_CATEGORY_BY_ID: Record<string, CriteriaCategory> = {
   openapi: "Architecture",
   adrvalidator: "Architecture",
   license: "Governance",
+  eupllicense: "Governance",
   copyrightowner: "Governance",
   publiccode: "Governance",
   docker: "Deployment & Operations",

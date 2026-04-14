@@ -48,6 +48,7 @@ model ScoringConfig {
   criterionRequirementLevels Json           @default("{}")
   complexityThreshold        Int            @default(15)
   complexityMaxCcnThreshold  Int            @default(30)
+  spectralRulesetSource      String         @default("https://static.developer.overheid.nl/adr/ruleset.yaml")
   createdAt                  DateTime       @default(now())
   updatedAt                  DateTime       @updatedAt
   analyses                   RepoAnalysis[]
