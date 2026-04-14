@@ -299,7 +299,7 @@ export default function AdminWeightsForm({
           ADR / Spectral configuration
         </h4>
         <p className="text-xs text-gray-500">
-          Configure the Spectral ruleset source used by the "NL API Design Rules" check. You can use a URL or a local file path.
+          Configure the Spectral ruleset source used by the `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`NL API Design Rules`&quot;`, `&ldquo;`, `&#34;`, `&rdquo;` check. You can use a URL or a local file path.
         </p>
         <div className="space-y-1">
           <label htmlFor="spectral-ruleset-source" className="text-sm font-medium text-gray-700">
