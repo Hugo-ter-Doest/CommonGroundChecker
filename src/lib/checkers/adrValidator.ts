@@ -69,6 +69,16 @@ function parseSpectralJson(output: string): SpectralResultItem[] | null {
     if (!Array.isArray(parsed)) return null;
     return parsed as SpectralResultItem[];
   } catch {
+    // Try to recover a JSON array embedded in extra text (e.g. "[] No results..." or stderr lines).
+    const match = output.match(/\[[\s\S]*\]/);
+    if (match) {
+      try {
+        const parsed = JSON.parse(match[0]) as unknown;
+        if (Array.isArray(parsed)) return parsed as SpectralResultItem[];
+      } catch {
+        // fall through to null
+      }
+    }
     return null;
   }
 }
