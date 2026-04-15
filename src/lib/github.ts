@@ -1,6 +1,3 @@
-import path from "node:path";
-import dotenv from "dotenv";
-
 /**
  * Minimal GitHub REST API client used by the checkers.
  * Supports an optional GITHUB_TOKEN env var for higher rate limits.
