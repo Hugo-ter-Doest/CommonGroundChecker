@@ -128,6 +128,7 @@ const DEFAULT_REQUIREMENT_LEVEL_BY_CHECK_ID: Record<string, RequirementLevelLabe
   tests: "mandatory",
   complexity: "recommended",
   codemetrics: "informative",
+  coverage: "mandatory",
   owaspsecurecoding: "recommended",
   contributing: "recommended",
   codeofconduct: "recommended",
@@ -136,7 +137,7 @@ const DEFAULT_REQUIREMENT_LEVEL_BY_CHECK_ID: Record<string, RequirementLevelLabe
 };
 
 const CHECK_ID_BY_CRITERION_LABEL: Record<string, string> = {
-  "Source Code": "sourcecode",
+  "Actual Source Code": "sourcecode",
   "5-Layer Architecture": "fivelayer",
   "OSI License": "license",
   "EUPL License": "eupllicense",
@@ -150,6 +151,7 @@ const CHECK_ID_BY_CRITERION_LABEL: Record<string, string> = {
   SBOM: "sbom",
   Documentation: "documentation",
   "Test suite presence": "tests",
+  "Code coverage": "coverage",
   "Cyclomatic complexity": "complexity",
   "Code Metrics": "codemetrics",
   "OWASP Secure Coding": "owaspsecurecoding",
@@ -178,11 +180,13 @@ function getRequirementBadgeClass(level: RequirementLevelLabel): string {
 const CRITERIA_OVERVIEW = [
   {
     icon: "�",
-    label: "Source Code",
+    label: "Actual Source Code",
     category: "Software Quality" as CriteriaCategory,
-    desc: "Actual source code files",
+    desc: "Actual source code files and code metrics",
+    extra:
+      "Includes code metrics such as total lines of code, functions, and files analyzed.",
     tooltip:
-      "The repository must contain real source code (Python, JavaScript, Java, Go, etc.), not just documentation or configuration files. This verifies the repository is a real software project.",
+      "The repository must contain real source code (Python, JavaScript, Java, Go, etc.), not just documentation or configuration files. This also includes code metrics analysis for lines, functions, and file count.",
   },
   {
     icon: "🏛️",
@@ -289,20 +293,20 @@ const CRITERIA_OVERVIEW = [
       "Checks for common test directories, test file naming conventions, or test configuration files.",
   },
   {
+    icon: "🧪",
+    label: "Code coverage",
+    category: "Software Quality" as CriteriaCategory,
+    desc: "Coverage above 80%",
+    tooltip:
+      "Checks whether code coverage is reported and exceeds 80% based on available coverage reports.",
+  },
+  {
     icon: "📉",
     label: "Cyclomatic complexity",
     category: "Software Quality" as CriteriaCategory,
     desc: "Lizard analysis on target repo",
     tooltip:
       "Clones the analyzed repository and runs Lizard locally to measure cyclomatic complexity across supported languages.",
-  },
-  {
-    icon: "📊",
-    label: "Code Metrics",
-    category: "Software Quality" as CriteriaCategory,
-    desc: "Lines of code and function count",
-    tooltip:
-      "Provides additional software quality metrics as supporting information: total lines of code (NLOC) and function count. This criterion is informative only and does not affect the overall score.",
   },
   {
     icon: "🛡️",
@@ -369,6 +373,7 @@ const RESULT_ORDER_BY_ID: string[] = [
   "sbom",
   "documentation",
   "tests",
+  "coverage",
   "complexity",
   "codemetrics",
   "owaspsecurecoding",
@@ -392,6 +397,7 @@ const RESULT_CATEGORY_BY_ID: Record<string, CriteriaCategory> = {
   sbom: "Software Quality",
   documentation: "Software Quality",
   tests: "Software Quality",
+  coverage: "Software Quality",
   complexity: "Software Quality",
   codemetrics: "Software Quality",
   owaspsecurecoding: "Security",
@@ -560,9 +566,9 @@ export default function HomePage() {
         </p>
       </section>
 
-      {/* Criteria overview chips */}
+      {/* Criteria overview by category */}
       <section>
-        <div className="flex flex-wrap gap-2">
+        <div className="space-y-6">
           {CATEGORY_ORDER.map((category) => {
             const criteria = CRITERIA_OVERVIEW.filter(
               (item) => item.category === category
@@ -571,12 +577,16 @@ export default function HomePage() {
             return (
               <div
                 key={category}
-                className="space-y-2 border border-gray-200 rounded-xl p-2.5 bg-gray-50/40 flex-1 min-w-[240px]"
+                className="rounded-3xl border border-gray-200 bg-gray-50 p-4 shadow-sm"
               >
-                <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
-                  {category}
-                </h3>
-                <div className="space-y-3 max-h-[460px] overflow-y-auto overflow-x-hidden pr-1">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-base font-semibold text-gray-900">
+                      {category}
+                    </h3>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {criteria.map((c) => {
                     const checkId = CHECK_ID_BY_CRITERION_LABEL[c.label];
                     const requirementLevel =
@@ -585,32 +595,36 @@ export default function HomePage() {
                     return (
                       <div
                         key={c.label}
-                        className="relative group/chip min-h-[64px] flex items-start justify-between gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs shadow-sm cursor-default"
+                        className="group relative rounded-3xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
                       >
-                        <div className="flex items-start gap-3 min-w-0">
-                          <span className="mt-0.5 shrink-0 text-sm">{c.icon}</span>
-                          <div className="min-w-0">
-                            <p className="font-semibold text-gray-800 leading-tight text-sm">
-                              {c.label}
-                            </p>
-                            <p className="text-[11px] text-gray-400 leading-snug">{c.desc}</p>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <span className="rounded-2xl bg-gray-100 p-2 text-lg">
+                              {c.icon}
+                            </span>
+                            <div>
+                              <p className="font-semibold text-gray-900">{c.label}</p>
+                              <p className="text-[11px] text-gray-500 mt-1">{c.desc}</p>
+                              {c.extra && (
+                                <p className="text-[10px] text-gray-400 mt-2">
+                                  {c.extra}
+                                </p>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                        <div className="shrink-0">
                           <span
-                            className={`inline-block px-1.5 py-0.5 rounded-full border text-[9px] font-semibold uppercase tracking-wide ${getRequirementBadgeClass(requirementLevel)}`}
+                            className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${getRequirementBadgeClass(
+                              requirementLevel
+                            )}`}
                           >
                             {formatRequirementLabel(requirementLevel)}
                           </span>
                         </div>
                         <span
                           role="tooltip"
-                          className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-50
-                                   w-72 rounded-lg bg-gray-900 text-white text-xs px-3 py-2 shadow-lg
-                                   opacity-0 group-hover/chip:opacity-100 transition-opacity duration-150"
+                          className="pointer-events-none absolute left-1/2 top-full z-40 mt-2 hidden w-72 rounded-lg bg-gray-900 px-3 py-2 text-xs text-white shadow-lg group-hover:block"
                         >
                           {c.tooltip}
-                          <span className="absolute left-1/2 -translate-x-1/2 top-full border-4 border-transparent border-t-gray-900" />
                         </span>
                       </div>
                     );

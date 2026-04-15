@@ -113,6 +113,12 @@ const CRITERION_CATEGORIES: CriterionCategory[] = [
           "Checks for common test directories, test file naming conventions, or test configuration files.",
       },
       {
+        id: "coverage",
+        label: "Code coverage",
+        explanation:
+          "Checks whether the project has a coverage report and whether line coverage exceeds 80%.",
+      },
+      {
         id: "complexity",
         label: "Cyclomatic complexity",
         explanation:

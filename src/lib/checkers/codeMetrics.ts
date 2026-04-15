@@ -67,9 +67,11 @@ async function detectLizardCommand(): Promise<{ command: string; argsPrefix: str
 function extractMetrics(output: string): {
   totalLines: number;
   functionCount: number;
+  fileCount: number;
 } | null {
   const lines = output.split(/\r?\n/);
   const functionLines: number[] = [];
+  const filePaths = new Set<string>();
   let totalLines = 0;
 
   for (const rawLine of lines) {
@@ -78,12 +80,16 @@ function extractMetrics(output: string): {
     if (/^NLOC\s+CCN\s+token/i.test(line)) continue;
     if (/^\-+$/i.test(line)) continue;
 
-    // Parse individual function lines: NLOC CCN token count ...
-    const match = line.match(/^(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+\S+/);
+    // Parse individual function lines: NLOC CCN token count ... filePath functionName
+    const match = line.match(/^(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\S+)/);
     if (match) {
       const nloc = Number(match[1]);
+      const filePath = match[6];
       if (Number.isFinite(nloc)) {
         functionLines.push(nloc);
+      }
+      if (filePath) {
+        filePaths.add(filePath);
       }
       continue;
     }
@@ -107,6 +113,7 @@ function extractMetrics(output: string): {
   return {
     totalLines,
     functionCount: functionLines.length,
+    fileCount: filePaths.size,
   };
 }
 
@@ -215,19 +222,20 @@ export async function checkCodeMetrics(
       };
     }
 
-    const { totalLines, functionCount } = metrics;
+    const { totalLines, functionCount, fileCount } = metrics;
 
     return {
       id: "codemetrics",
       title: "Code Metrics",
       description:
-        "Informational metrics about code size and structure (lines of code, function count).",
+        "Informational metrics about code size and structure (lines of code, function count, file count).",
       status: "info",
-      message: `Code metrics collected: ${totalLines.toLocaleString()} lines of code, ${functionCount.toLocaleString()} functions.`,
+      message: `Code metrics collected: ${totalLines.toLocaleString()} lines of code, ${functionCount.toLocaleString()} functions across ${fileCount.toLocaleString()} files.`,
       evidence: [
         `Analyzer: ${lizard.command} ${lizard.argsPrefix.join(" ")}`.trim(),
         `Total lines of code (NLOC): ${totalLines.toLocaleString()}`,
         `Function count: ${functionCount.toLocaleString()}`,
+        `Files analyzed: ${fileCount.toLocaleString()}`,
       ].slice(0, 10),
       referenceUrl: "https://github.com/terryyin/lizard",
     };

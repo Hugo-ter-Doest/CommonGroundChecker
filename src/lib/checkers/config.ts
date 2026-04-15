@@ -60,6 +60,7 @@ export const DEFAULT_CRITERION_CONFIG_BY_CHECK_ID: Record<string, CriterionConfi
   security: { weight: 0.75, requirementLevel: "recommended" },
   semver: { weight: 0.75, requirementLevel: "recommended" },
   sbom: { weight: 0.75, requirementLevel: "recommended" },
+  coverage: { weight: 0.75, requirementLevel: "recommended" },
   fivelayer: { weight: 0.75, requirementLevel: "mandatory" },
 };
 

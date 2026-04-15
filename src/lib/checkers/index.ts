@@ -15,6 +15,7 @@ import { checkSecurity } from "./security";
 import { checkTests } from "./tests";
 import { checkComplexity } from "./complexity";
 import { checkCodeMetrics } from "./codeMetrics";
+import { checkCoverage } from "./coverage";
 import { checkAdrValidator } from "./adrValidator";
 import { checkSourceCode } from "./sourcecode";
 import { checkSemver } from "./semver";
@@ -166,12 +167,13 @@ export async function runChecks(
 
   // Instant checks — synchronous pure functions on the tree array
   onProgress?.("Running code structure checks\u2026", 45);
-  const sourcecode = checkSourceCode(tree);
+  let sourcecode = checkSourceCode(tree);
   const docker = checkDocker(tree);
   const dockerimage = checkDockerImage(options?.dockerLocations ?? []);
   const sbom = checkSbom(tree);
   const documentation = checkDocumentation(tree, options?.documentationLocations ?? []);
   const tests = checkTests(tree);
+  const coverage = await checkCoverage(owner, repo, tree);
   const contributing = checkContributing(tree);
   const codeofconduct = checkCodeOfConduct(tree);
   const security = checkSecurity(tree);
@@ -186,6 +188,33 @@ export async function runChecks(
     owaspSecureCodingPromise,
     adrValidatorPromise,
   ]);
+
+  // Always merge code metrics into Actual Source Code result if available
+  if (sourcecode && codemetrics) {
+    let metricsMsg = codemetrics.message || "";
+    let lines = null, funcs = null, files = null;
+    const match = metricsMsg.match(/([\d,]+) lines of code, ([\d,]+) functions across ([\d,]+) files/);
+    if (match) {
+      lines = match[1];
+      funcs = match[2];
+      files = match[3];
+    }
+    let metricsSummary = "";
+    if (lines && funcs && files) {
+      metricsSummary = `<b>Code metrics:</b> ${lines} lines of code, ${funcs} functions, ${files} files analyzed.`;
+    } else if (metricsMsg) {
+      metricsSummary = `<b>Code metrics:</b> ${metricsMsg}`;
+    }
+    sourcecode = {
+      ...sourcecode,
+      // Only show the code metrics summary, not the original file count
+      message: metricsSummary ? metricsSummary : sourcecode.message,
+      evidence: [
+        ...(sourcecode.evidence || []),
+        ...(codemetrics.evidence || []),
+      ],
+    };
+  }
   const eupllicense = checkEuplLicense(meta, license.message);
 
   onProgress?.("Calculating compliance score\u2026", 90);
@@ -202,8 +231,9 @@ export async function runChecks(
     sbom,
     documentation,
     tests,
+    coverage,
     complexity,
-    codemetrics,
+    // codemetrics is now merged into sourcecode, so do not include separately
     owaspsecurecoding,
     adrvalidator,
     contributing,
@@ -259,7 +289,7 @@ export async function runChecks(
     documentation,
     tests,
     complexity,
-    codemetrics,
+    // codemetrics is now merged into sourcecode, so do not include separately
     owaspsecurecoding,
     adrvalidator,
     contributing,
