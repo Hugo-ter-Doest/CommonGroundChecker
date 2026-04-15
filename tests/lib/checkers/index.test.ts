@@ -185,7 +185,7 @@ describe("runChecks", () => {
     expect(report.scoringConfigId).toBe("cfg-1");
     expect(report.score).toBe(25);
     expect(mocks.checkOpenApi).not.toHaveBeenCalled();
-    expect(report.results).toHaveLength(21);
+    expect(report.results).toHaveLength(20);
 
     const openApiResult = report.results.find((result) => result.id === "openapi");
     expect(openApiResult?.status).toBe("pass");
@@ -225,5 +225,51 @@ describe("runChecks", () => {
     expect(report.score).toBeLessThan(100);
     const licenseResult = report.results.find((result) => result.id === "license");
     expect(licenseResult?.message).not.toContain("bonus points applied");
+  });
+
+  it("merges code metrics into Actual Source Code result", async () => {
+    // Arrange: code metrics returns a metrics message
+    mocks.checkSourceCode.mockReturnValue({
+      id: "sourcecode",
+      title: "Actual Source Code",
+      description: "desc",
+      status: "pass",
+      message: "Found 10 source code file(s).",
+      evidence: ["file1.js", "file2.py"],
+    });
+    mocks.checkCodeMetrics.mockResolvedValue({
+      id: "codemetrics",
+      title: "Code Metrics",
+      description: "desc",
+      status: "info",
+      message: "Code metrics collected: 1,234 lines of code, 56 functions across 12 files.",
+      evidence: ["Analyzer: lizard", "Total lines of code (NLOC): 1,234", "Function count: 56", "Files analyzed: 12"],
+    });
+
+    mocks.getActiveScoringConfig.mockResolvedValue({
+      id: "cfg-metrics",
+      config: {
+        criterionConfigByCheckId: criterionConfig(1, "mandatory"),
+        statusScoreByStatus: { pass: 1, warn: 0.5, info: 0.5, fail: 0 },
+        complexityThreshold: 12,
+        complexityMaxCcnThreshold: 20,
+        spectralRulesetSource: "https://static.developer.overheid.nl/adr/ruleset.yaml",
+      },
+    });
+
+    // Act
+    const report = await runChecks("https://github.com/org/repo");
+    const sourceCodeResult = report.results.find((r) => r.id === "sourcecode");
+
+    // Assert
+    expect(sourceCodeResult).toBeDefined();
+    expect(sourceCodeResult?.message).toContain("Code metrics:");
+    expect(sourceCodeResult?.message).not.toContain("Found 10 source code file(s).");
+    expect(sourceCodeResult?.message).toContain("1,234 lines of code");
+    expect(sourceCodeResult?.message).toContain("56 functions");
+    expect(sourceCodeResult?.message).toContain("12 files analyzed");
+    expect(sourceCodeResult?.evidence).toContain("file1.js");
+    expect(sourceCodeResult?.evidence).toContain("file2.py");
+    expect(sourceCodeResult?.evidence).toContain("Analyzer: lizard");
   });
 });
