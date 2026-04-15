@@ -272,4 +272,51 @@ describe("runChecks", () => {
     expect(sourceCodeResult?.evidence).toContain("file2.py");
     expect(sourceCodeResult?.evidence).toContain("Analyzer: lizard");
   });
+
+  it("throws on invalid GitHub URL", async () => {
+    mocks.parseGitHubUrl.mockReturnValue(undefined);
+    await expect(runChecks("invalid-url")).rejects.toThrow("Invalid GitHub repository URL.");
+  });
+
+  it("calls progress callback at key steps", async () => {
+    const progressSteps = [];
+    const progressCb = (step, pct) => progressSteps.push({ step, pct });
+    // Provide a full config with all required keys
+    const allIds = [
+      "sourcecode",
+      "openapi",
+      "license",
+      "eupllicense",
+      "copyrightowner",
+      "publiccode",
+      "docker",
+      "dockerimage",
+      "sbom",
+      "documentation",
+      "tests",
+      "complexity",
+      "owaspsecurecoding",
+      "adrvalidator",
+      "contributing",
+      "codeofconduct",
+      "security",
+      "semver",
+      "fivelayer",
+      "helmchart",
+    ];
+    const configById = Object.fromEntries(allIds.map(id => [id, { weight: 1, requirementLevel: "mandatory" }]))
+    mocks.getActiveScoringConfig.mockResolvedValue({
+      id: "cfg-progress",
+      config: {
+        criterionConfigByCheckId: configById,
+        statusScoreByStatus: { pass: 1, warn: 0.5, info: 0.5, fail: 0 },
+        complexityThreshold: 12,
+        complexityMaxCcnThreshold: 20,
+        spectralRulesetSource: "https://static.developer.overheid.nl/adr/ruleset.yaml",
+      },
+    });
+    await runChecks("https://github.com/org/repo", {}, progressCb);
+    expect(progressSteps.length).toBeGreaterThan(0);
+    expect(progressSteps[0].step).toContain("Fetching repository metadata");
+  });
 });
