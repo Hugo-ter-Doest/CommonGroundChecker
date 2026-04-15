@@ -142,7 +142,8 @@ export async function checkComplexity(
   owner: string,
   repo: string,
   averageThreshold: number,
-  maxCcnThreshold: number
+  maxCcnThreshold: number,
+  localRepoPath?: string
 ): Promise<CheckResult> {
   const lizard = await detectLizardCommand();
 
@@ -160,35 +161,43 @@ export async function checkComplexity(
     };
   }
 
-  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "cgchecker-lizard-"));
-  const repoDir = path.join(tempRoot, "repo");
+  let tempRoot: string | undefined;
+  let repoDir = localRepoPath;
+
+  if (!repoDir) {
+    tempRoot = await mkdtemp(path.join(os.tmpdir(), "cgchecker-lizard-"));
+    repoDir = path.join(tempRoot, "repo");
+  }
+
   const cloneUrl = `https://github.com/${owner}/${repo}.git`;
 
   try {
-    const clone = await runCommand("git", [
-      "clone",
-      "--depth",
-      "1",
-      cloneUrl,
-      repoDir,
-    ]);
+    if (!localRepoPath) {
+      const clone = await runCommand("git", [
+        "clone",
+        "--depth",
+        "1",
+        cloneUrl,
+        repoDir,
+      ]);
 
-    if (clone.code !== 0) {
-      return {
-        id: "complexity",
-        title: "Cyclomatic complexity (Lizard)",
-        description:
-          "The repository should be analyzed with Lizard to track cyclomatic complexity across supported languages.",
-        status: "warn",
-        message:
-          "Could not clone repository for complexity analysis. This may happen for very large repositories or temporary network errors.",
-        evidence: clone.stderr
-          .split(/\r?\n/)
-          .map((line) => line.trim())
-          .filter(Boolean)
-          .slice(0, 5),
-        referenceUrl: "https://github.com/terryyin/lizard",
-      };
+      if (clone.code !== 0) {
+        return {
+          id: "complexity",
+          title: "Cyclomatic complexity (Lizard)",
+          description:
+            "The repository should be analyzed with Lizard to track cyclomatic complexity across supported languages.",
+          status: "warn",
+          message:
+            "Could not clone repository for complexity analysis. This may happen for very large repositories or temporary network errors.",
+          evidence: clone.stderr
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .filter(Boolean)
+            .slice(0, 5),
+          referenceUrl: "https://github.com/terryyin/lizard",
+        };
+      }
     }
 
     const averageThresholdText = String(Math.max(1, Math.round(averageThreshold)));
@@ -328,6 +337,8 @@ export async function checkComplexity(
       referenceUrl: "https://github.com/terryyin/lizard",
     };
   } finally {
-    await rm(tempRoot, { recursive: true, force: true });
+    if (!localRepoPath && tempRoot) {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
   }
 }

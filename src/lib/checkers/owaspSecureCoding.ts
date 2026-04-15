@@ -1,4 +1,6 @@
 import { getFileContent } from "../github";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import type { CheckResult } from "../types";
 
 const SOURCE_FILE_PATTERN = /\.(ts|tsx|js|jsx|mjs|cjs|py|java|go|cs|php|rb)$/i;
@@ -15,19 +17,21 @@ const RISKY_PATTERNS: Array<{ label: string; pattern: RegExp }> = [
   { label: "Possible hardcoded secret", pattern: /(?:api[_-]?key|secret|password|token)\s*[:=]\s*["'][^"'\n]{8,}["']/i },
 ];
 
-function getScannableFiles(tree: string[]): string[] {
-  return tree
+function getScannableFiles(tree: string[], scanAllFiles: boolean): string[] {
+  const filtered = tree
     .filter((path) => SOURCE_FILE_PATTERN.test(path))
-    .filter((path) => !EXCLUDED_PATH_PATTERN.test(path))
-    .slice(0, MAX_FILES_TO_SCAN);
+    .filter((path) => !EXCLUDED_PATH_PATTERN.test(path));
+
+  return scanAllFiles ? filtered : filtered.slice(0, MAX_FILES_TO_SCAN);
 }
 
 export async function checkOwaspSecureCoding(
   owner: string,
   repo: string,
-  tree: string[]
+  tree: string[],
+  localRepoPath?: string
 ): Promise<CheckResult> {
-  const filesToScan = getScannableFiles(tree);
+  const filesToScan = getScannableFiles(tree, Boolean(localRepoPath));
 
   if (filesToScan.length === 0) {
     return {
@@ -45,10 +49,12 @@ export async function checkOwaspSecureCoding(
   }
 
   const contents = await Promise.all(
-    filesToScan.map(async (path) => ({
-      path,
-      content: await getFileContent(owner, repo, path),
-    }))
+    filesToScan.map(async (relativePath) => {
+      const content = localRepoPath
+        ? await readFile(path.join(localRepoPath, relativePath), "utf-8").catch(() => "")
+        : await getFileContent(owner, repo, relativePath);
+      return { path: relativePath, content };
+    })
   );
 
   const findings: string[] = [];
@@ -88,7 +94,7 @@ export async function checkOwaspSecureCoding(
         "Performs a heuristic static scan for common risky coding patterns aligned with OWASP secure coding concerns.",
       status: "pass",
       message:
-        `No obvious OWASP-style risky coding patterns were detected in ${scannedFileCount} sampled source files.`,
+        `No obvious OWASP-style risky coding patterns were detected in ${scannedFileCount} scanned source files.`,
       evidence: filesToScan.slice(0, 10),
       referenceUrl:
         "https://cheatsheetseries.owasp.org/IndexTopTen.html",

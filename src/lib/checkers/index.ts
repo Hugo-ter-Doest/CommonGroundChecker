@@ -24,6 +24,48 @@ import { checkEuplLicense } from "./eupl";
 import {
   getActiveScoringConfig,
 } from "./config";
+import { mkdtemp, rm } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { spawn } from "node:child_process";
+
+interface CommandResult {
+  code: number;
+  stdout: string;
+  stderr: string;
+}
+
+function runCommand(command: string, args: string[]): Promise<CommandResult> {
+  return new Promise((resolve) => {
+    const child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"] });
+    let stdout = "";
+    let stderr = "";
+
+    child.stdout.on("data", (chunk) => {
+      stdout += String(chunk);
+    });
+
+    child.stderr.on("data", (chunk) => {
+      stderr += String(chunk);
+    });
+
+    child.on("error", (error) => {
+      resolve({
+        code: 127,
+        stdout,
+        stderr: `${stderr}\n${error.message}`,
+      });
+    });
+
+    child.on("close", (code) => {
+      resolve({
+        code: code ?? 1,
+        stdout,
+        stderr,
+      });
+    });
+  });
+}
 
 export type ProgressCallback = (step: string, pct: number) => void;
 
@@ -61,7 +103,20 @@ export async function runChecks(
   const scoringConfig = activeScoringConfig.config;
   const isRegister = options?.isRegister === true;
 
-  const openApiCheckPromise: Promise<CheckResult> = isRegister
+  let tempRoot: string | undefined;
+  let localRepoPath: string | undefined;
+
+  try {
+    tempRoot = await mkdtemp(path.join(os.tmpdir(), "cgchecker-repo-"));
+    localRepoPath = path.join(tempRoot, "repo");
+    const cloneUrl = `https://github.com/${owner}/${repo}.git`;
+    const clone = await runCommand("git", ["clone", "--depth", "1", cloneUrl, localRepoPath]);
+
+    if (clone.code !== 0) {
+      localRepoPath = undefined;
+    }
+
+    const openApiCheckPromise: Promise<CheckResult> = isRegister
     ? checkOpenApi(owner, repo, tree, options?.apiSpecificationLocations ?? [])
     : Promise.resolve({
         id: "openapi",
@@ -88,10 +143,11 @@ export async function runChecks(
     owner,
     repo,
     scoringConfig.complexityThreshold,
-    scoringConfig.complexityMaxCcnThreshold
+    scoringConfig.complexityMaxCcnThreshold,
+    localRepoPath
   );
-  const codeMetricsPromise = checkCodeMetrics(owner, repo);
-  const owaspSecureCodingPromise = checkOwaspSecureCoding(owner, repo, tree);
+  const codeMetricsPromise = checkCodeMetrics(owner, repo, localRepoPath);
+  const owaspSecureCodingPromise = checkOwaspSecureCoding(owner, repo, tree, localRepoPath);
   const adrValidatorPromise = checkAdrValidator(
     owner,
     repo,
@@ -232,4 +288,9 @@ export async function runChecks(
       versionEvidence: versionInfo.evidence,
     },
   };
+  } finally {
+    if (tempRoot) {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  }
 }
