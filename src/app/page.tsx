@@ -179,7 +179,7 @@ function getRequirementBadgeClass(level: RequirementLevelLabel): string {
 
 const CRITERIA_OVERVIEW = [
   {
-    icon: "�",
+    icon: "",
     label: "Actual Source Code",
     category: "Software Quality" as CriteriaCategory,
     desc: "Actual source code files and code metrics",
@@ -408,6 +408,32 @@ const RESULT_CATEGORY_BY_ID: Record<string, CriteriaCategory> = {
   fivelayer: "Architecture",
 };
 
+// Collapsible disclaimer component
+function Disclaimer() {
+  const [open, setOpen] = useState(true);
+  return (
+    <div className={`transition-all duration-200 mb-6 ${open ? "" : "opacity-70"}`}>
+      <div className="flex items-start gap-2 bg-yellow-50 border border-yellow-300 rounded-xl p-4">
+        <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-yellow-600" />
+        <div className="flex-1">
+          <button
+            className="float-right text-xs text-yellow-700 underline hover:text-yellow-900"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+          >
+            {open ? "Hide" : "Show"}
+          </button>
+          {open && (
+            <div>
+              <span className="font-semibold">Disclaimer:</span> The criteria and checks in this tool are <b>not representative or normative</b>. False positives and false negatives are possible because tests are implemented in a rudimentary way. Use results for indicative purposes only.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
@@ -538,285 +564,273 @@ export default function HomePage() {
     report?.results.filter((r) => r.status === "fail").length ?? 0;
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10 space-y-10">
-      <nav className="flex items-center justify-end gap-4 text-sm">
-        <Link href="/" className="text-gray-500 hover:text-cg-lightblue transition-colors">
-          Checker
-        </Link>
-        <Link href="/history" className="text-cg-lightblue hover:underline font-medium">
-          History
-        </Link>
-        <Link href="/admin" className="text-gray-500 hover:text-cg-lightblue transition-colors">
-          Admin
-        </Link>
-        <Link href="/about" className="text-gray-500 hover:text-cg-lightblue transition-colors">
-          About
-        </Link>
-      </nav>
-
-      {/* Hero */}
-      <section className="space-y-3">
-        <h2 className="text-2xl font-bold text-cg-blue">
-          Common Ground Component Checker
-        </h2>
-        <p className="text-gray-600 max-w-2xl">
-          Enter the URL of a public GitHub repository to automatically verify
-          whether the component meets Common Ground standards — used by Dutch
-          municipalities for open, reusable software.
-        </p>
-      </section>
-
-      {/* Criteria overview by category */}
-      <section>
-        <div className="space-y-6">
-          {CATEGORY_ORDER.map((category) => {
-            const criteria = CRITERIA_OVERVIEW.filter(
-              (item) => item.category === category
-            );
-
-            return (
-              <div
-                key={category}
-                className="rounded-3xl border border-gray-200 bg-gray-50 p-4 shadow-sm"
-              >
-                <div className="mb-4 flex items-center justify-between gap-3">
-                  <div>
-                    <h3 className="text-base font-semibold text-gray-900">
-                      {category}
-                    </h3>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {criteria.map((c) => {
-                    const checkId = CHECK_ID_BY_CRITERION_LABEL[c.label];
-                    const requirementLevel =
-                      requirementLevelsByCheckId[checkId] ?? "informative";
-
-                    return (
-                      <div
-                        key={c.label}
-                        className="group relative rounded-3xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            <span className="rounded-2xl bg-gray-100 p-2 text-lg">
-                              {c.icon}
-                            </span>
-                            <div>
-                              <p className="font-semibold text-gray-900">{c.label}</p>
-                              <p className="text-[11px] text-gray-500 mt-1">{c.desc}</p>
-                              {c.extra && (
-                                <p className="text-[10px] text-gray-400 mt-2">
-                                  {c.extra}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <span
-                            className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${getRequirementBadgeClass(
-                              requirementLevel
-                            )}`}
-                          >
-                            {formatRequirementLabel(requirementLevel)}
-                          </span>
-                        </div>
-                        <span
-                          role="tooltip"
-                          className="pointer-events-none absolute left-1/2 top-full z-40 mt-2 hidden w-72 rounded-lg bg-gray-900 px-3 py-2 text-xs text-white shadow-lg group-hover:block"
-                        >
-                          {c.tooltip}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Form */}
-      <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-        <CheckerForm onSubmit={handleCheck} loading={loading} />
-      </section>
-
-      {/* Progress bar */}
-      {loading && (
-        <section className="py-10">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-700 font-medium">{progress.step}</span>
-              <span className="text-cg-blue font-semibold tabular-nums">
-                {progress.pct}%
-              </span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
-              <div
-                className="h-2.5 rounded-full bg-cg-lightblue transition-all duration-500 ease-out"
-                style={{ width: `${progress.pct}%` }}
-              />
-            </div>
-            <p className="text-xs text-gray-400">
-              Analysing repository — this may take a moment for complexity analysis…
-            </p>
-          </div>
-        </section>
-      )}
-
-      {/* Error */}
-      {error && !loading && (
-        <section className="flex items-start gap-3 bg-red-50 border border-red-300 rounded-xl p-5 text-red-700">
-          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-          <p className="text-sm">{error}</p>
-        </section>
-      )}
-
-      {/* Results */}
-      {report && !loading && (
-        <section className="space-y-6">
-          {/* Summary header */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-              <ScoreBadge score={report.score} />
-              <div className="flex-1 space-y-3">
-                <RepoMeta
-                  owner={report.owner}
-                  repo={report.repo}
-                  repoMeta={report.repoMeta}
-                />
-                <div className="flex gap-4 text-sm">
-                  <span className="text-green-600 font-semibold">
-                    ✓ {passCount} passed
-                  </span>
-                  {warnCount > 0 && (
-                    <span className="text-yellow-600 font-semibold">
-                      ⚠ {warnCount} warnings
-                    </span>
-                  )}
-                  {failCount > 0 && (
-                    <span className="text-red-600 font-semibold">
-                      ✗ {failCount} failed
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-gray-400">
-                  Checked at{" "}
-                  {new Date(report.checkedAt).toLocaleString("nl-NL")} —
-                  Branch: {report.repoMeta.defaultBranch}
-                </p>
-                <div className="flex items-center gap-4 text-xs">
-                  <Link
-                    href={`/history/${encodeURIComponent(report.owner)}/${encodeURIComponent(report.repo)}`}
-                    className="text-cg-lightblue hover:underline"
-                  >
-                    View repository history
-                  </Link>
-                  <Link href="/history" className="text-cg-lightblue hover:underline">
-                    Search history
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      setExportingPdf(true);
-                      try {
-                        await exportAnalysisReportAsPdf(report);
-                      } finally {
-                        setExportingPdf(false);
-                      }
-                    }}
-                    disabled={exportingPdf}
-                    className="text-cg-lightblue hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {exportingPdf ? "Exporting PDF…" : "Export analysis as PDF"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Individual results */}
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 mb-3 text-gray-500">
-              <ClipboardList className="w-4 h-4" />
-              <h3 className="font-semibold text-sm uppercase tracking-wide">
-                Detailed results — click a row to expand
-              </h3>
-            </div>
-            <div className="mb-3 flex flex-wrap gap-2 text-xs">
-              <span className="px-2 py-0.5 rounded-full border border-green-300 text-green-700 bg-green-50 font-semibold uppercase tracking-wide">
-                Pass
-              </span>
-              <span className="px-2 py-0.5 rounded-full border border-yellow-300 text-yellow-700 bg-yellow-50 font-semibold uppercase tracking-wide">
-                Warning
-              </span>
-              <span className="px-2 py-0.5 rounded-full border border-red-300 text-red-700 bg-red-50 font-semibold uppercase tracking-wide">
-                Fail
-              </span>
-              <span className="px-2 py-0.5 rounded-full border border-red-300 text-red-700 bg-red-50 font-semibold uppercase tracking-wide">
-                Mandatory
-              </span>
-              <span className="px-2 py-0.5 rounded-full border border-amber-300 text-amber-700 bg-amber-50 font-semibold uppercase tracking-wide">
-                Recommended
-              </span>
-              <span className="px-2 py-0.5 rounded-full border border-blue-300 text-blue-700 bg-blue-50 font-semibold uppercase tracking-wide">
-                High confidence
-              </span>
-              <span className="px-2 py-0.5 rounded-full border border-blue-300 text-blue-700 bg-blue-50/70 font-semibold uppercase tracking-wide">
-                Medium confidence
-              </span>
-              <span className="px-2 py-0.5 rounded-full border border-blue-200 text-blue-600 bg-blue-50/40 font-semibold uppercase tracking-wide">
-                Low confidence
-              </span>
-            </div>
-            <p className="mb-3 text-xs text-gray-500">
-              Confidence indicates how strong the ownership evidence is: high = explicit legal statement, medium = manifest metadata, low = repository-owner fallback or weak evidence.
-            </p>
-            <div className="space-y-2">
-              {CATEGORY_ORDER.map((category) => {
-                const sortedResults = report.results
-                  .filter((r) => RESULT_CATEGORY_BY_ID[r.id] === category)
-                  .sort((a, b) => {
-                    const indexA = RESULT_ORDER_BY_ID.indexOf(a.id);
-                    const indexB = RESULT_ORDER_BY_ID.indexOf(b.id);
-                    const safeIndexA = indexA === -1 ? Number.MAX_SAFE_INTEGER : indexA;
-                    const safeIndexB = indexB === -1 ? Number.MAX_SAFE_INTEGER : indexB;
-                    return safeIndexA - safeIndexB;
-                  });
-
-                return sortedResults.length > 0 ? (
-                  <div key={category}>
-                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mt-4 mb-2">
-                      {category}
-                    </h4>
-                    <div className="space-y-2">
-                      {sortedResults.map((r) => (
-                        <ResultCard key={r.id} {...r} />
-                      ))}
-                    </div>
-                  </div>
-                ) : null;
-              })}
-            </div>
-          </div>
-
-          {/* Disclaimer */}
-          <p className="text-xs text-gray-400 text-center">
-            Automated analysis only — results are indicative. Some criteria
-            (e.g. architecture) require manual review. For official
-            certification, contact{" "}
-            <a
-              href="https://commonground.nl"
-              className="underline"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              commonground.nl
-            </a>
-            .
+    <main className="min-h-screen bg-gray-50 pb-20">
+      <div className="max-w-4xl mx-auto px-4">
+        <Disclaimer />
+        {/* Hero */}
+        <section className="space-y-3">
+          <h2 className="text-2xl font-bold text-cg-blue">
+            Common Ground Component Checker
+          </h2>
+          <p className="text-gray-600 max-w-2xl">
+            Enter the URL of a public GitHub repository to automatically verify
+            whether the component meets Common Ground standards — used by Dutch
+            municipalities for open, reusable software.
           </p>
         </section>
-      )}
-    </div>
+
+        {/* Criteria overview by category */}
+        <section>
+          <div className="space-y-6">
+            {CATEGORY_ORDER.map((category) => {
+              const criteria = CRITERIA_OVERVIEW.filter(
+                (item) => item.category === category
+              );
+
+              return (
+                <div
+                  key={category}
+                  className="rounded-3xl border border-gray-200 bg-gray-50 p-4 shadow-sm"
+                >
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-base font-semibold text-gray-900">
+                        {category}
+                      </h3>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {criteria.map((c) => {
+                      const checkId = CHECK_ID_BY_CRITERION_LABEL[c.label];
+                      const requirementLevel =
+                        requirementLevelsByCheckId[checkId] ?? "informative";
+
+                      return (
+                        <div
+                          key={c.label}
+                          className="group relative rounded-3xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                              <span className="rounded-2xl bg-gray-100 p-2 text-lg">
+                                {c.icon}
+                              </span>
+                              <div>
+                                <p className="font-semibold text-gray-900">{c.label}</p>
+                                <p className="text-[11px] text-gray-500 mt-1">{c.desc}</p>
+                                {c.extra && (
+                                  <p className="text-[10px] text-gray-400 mt-2">
+                                    {c.extra}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <span
+                              className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${getRequirementBadgeClass(
+                                requirementLevel
+                              )}`}
+                            >
+                              {formatRequirementLabel(requirementLevel)}
+                            </span>
+                          </div>
+                          <span
+                            role="tooltip"
+                            className="pointer-events-none absolute left-1/2 top-full z-40 mt-2 hidden w-72 rounded-lg bg-gray-900 px-3 py-2 text-xs text-white shadow-lg group-hover:block"
+                          >
+                            {c.tooltip}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Form */}
+        <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+          <CheckerForm onSubmit={handleCheck} loading={loading} />
+        </section>
+
+        {/* Progress bar */}
+        {loading && (
+          <section className="py-10">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-700 font-medium">{progress.step}</span>
+                <span className="text-cg-blue font-semibold tabular-nums">
+                  {progress.pct}%
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                <div
+                  className="h-2.5 rounded-full bg-cg-lightblue transition-all duration-500 ease-out"
+                  style={{ width: `${progress.pct}%` }}
+                />
+              </div>
+              <p className="text-xs text-gray-400">
+                Analysing repository — this may take a moment for complexity analysis…
+              </p>
+            </div>
+          </section>
+        )}
+
+        {/* Error */}
+        {error && !loading && (
+          <section className="flex items-start gap-3 bg-red-50 border border-red-300 rounded-xl p-5 text-red-700">
+            <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+            <p className="text-sm">{error}</p>
+          </section>
+        )}
+
+        {/* Results */}
+        {report && !loading && (
+          <section className="space-y-6">
+            {/* Summary header */}
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+                <ScoreBadge score={report.score} />
+                <div className="flex-1 space-y-3">
+                  <RepoMeta
+                    owner={report.owner}
+                    repo={report.repo}
+                    repoMeta={report.repoMeta}
+                  />
+                  <div className="flex gap-4 text-sm">
+                    <span className="text-green-600 font-semibold">
+                      ✓ {passCount} passed
+                    </span>
+                    {warnCount > 0 && (
+                      <span className="text-yellow-600 font-semibold">
+                        ⚠ {warnCount} warnings
+                      </span>
+                    )}
+                    {failCount > 0 && (
+                      <span className="text-red-600 font-semibold">
+                        ✗ {failCount} failed
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    Checked at{" "}
+                    {new Date(report.checkedAt).toLocaleString("nl-NL")} —
+                    Branch: {report.repoMeta.defaultBranch}
+                  </p>
+                  <div className="flex items-center gap-4 text-xs">
+                    <Link
+                      href={`/history/${encodeURIComponent(report.owner)}/${encodeURIComponent(report.repo)}`}
+                      className="text-cg-lightblue hover:underline"
+                    >
+                      View repository history
+                    </Link>
+                    <Link href="/history" className="text-cg-lightblue hover:underline">
+                      Search history
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setExportingPdf(true);
+                        try {
+                          await exportAnalysisReportAsPdf(report);
+                        } finally {
+                          setExportingPdf(false);
+                        }
+                      }}
+                      disabled={exportingPdf}
+                      className="text-cg-lightblue hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {exportingPdf ? "Exporting PDF…" : "Export analysis as PDF"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Individual results */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 mb-3 text-gray-500">
+                <ClipboardList className="w-4 h-4" />
+                <h3 className="font-semibold text-sm uppercase tracking-wide">
+                  Detailed results — click a row to expand
+                </h3>
+              </div>
+              <div className="mb-3 flex flex-wrap gap-2 text-xs">
+                <span className="px-2 py-0.5 rounded-full border border-green-300 text-green-700 bg-green-50 font-semibold uppercase tracking-wide">
+                  Pass
+                </span>
+                <span className="px-2 py-0.5 rounded-full border border-yellow-300 text-yellow-700 bg-yellow-50 font-semibold uppercase tracking-wide">
+                  Warning
+                </span>
+                <span className="px-2 py-0.5 rounded-full border border-red-300 text-red-700 bg-red-50 font-semibold uppercase tracking-wide">
+                  Fail
+                </span>
+                <span className="px-2 py-0.5 rounded-full border border-red-300 text-red-700 bg-red-50 font-semibold uppercase tracking-wide">
+                  Mandatory
+                </span>
+                <span className="px-2 py-0.5 rounded-full border border-amber-300 text-amber-700 bg-amber-50 font-semibold uppercase tracking-wide">
+                  Recommended
+                </span>
+                <span className="px-2 py-0.5 rounded-full border border-blue-300 text-blue-700 bg-blue-50 font-semibold uppercase tracking-wide">
+                  High confidence
+                </span>
+                <span className="px-2 py-0.5 rounded-full border border-blue-300 text-blue-700 bg-blue-50/70 font-semibold uppercase tracking-wide">
+                  Medium confidence
+                </span>
+                <span className="px-2 py-0.5 rounded-full border border-blue-200 text-blue-600 bg-blue-50/40 font-semibold uppercase tracking-wide">
+                  Low confidence
+                </span>
+              </div>
+              <p className="mb-3 text-xs text-gray-500">
+                Confidence indicates how strong the ownership evidence is: high = explicit legal statement, medium = manifest metadata, low = repository-owner fallback or weak evidence.
+              </p>
+              <div className="space-y-2">
+                {CATEGORY_ORDER.map((category) => {
+                  const sortedResults = report.results
+                    .filter((r) => RESULT_CATEGORY_BY_ID[r.id] === category)
+                    .sort((a, b) => {
+                      const indexA = RESULT_ORDER_BY_ID.indexOf(a.id);
+                      const indexB = RESULT_ORDER_BY_ID.indexOf(b.id);
+                      const safeIndexA = indexA === -1 ? Number.MAX_SAFE_INTEGER : indexA;
+                      const safeIndexB = indexB === -1 ? Number.MAX_SAFE_INTEGER : indexB;
+                      return safeIndexA - safeIndexB;
+                    });
+
+                  return sortedResults.length > 0 ? (
+                    <div key={category}>
+                      <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mt-4 mb-2">
+                        {category}
+                      </h4>
+                      <div className="space-y-2">
+                        {sortedResults.map((r) => (
+                          <ResultCard key={r.id} {...r} />
+                        ))}
+                      </div>
+                    </div>
+                  ) : null;
+                })}
+              </div>
+            </div>
+
+            {/* Disclaimer */}
+            <p className="text-xs text-gray-400 text-center">
+              Automated analysis only — results are indicative. Some criteria
+              (e.g. architecture) require manual review. For official
+              certification, contact{" "}
+              <a
+                href="https://commonground.nl"
+                className="underline"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                commonground.nl
+              </a>
+              .
+            </p>
+          </section>
+        )}
+      </div>
+    </main>
   );
 }
