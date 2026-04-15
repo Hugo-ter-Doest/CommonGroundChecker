@@ -191,7 +191,7 @@ export async function runChecks(
 
   // Always merge code metrics into Actual Source Code result if available
   if (sourcecode && codemetrics) {
-    let metricsMsg = codemetrics.message || "";
+    const metricsMsg = codemetrics.message || "";
     let lines = null, funcs = null, files = null;
     const match = metricsMsg.match(/([\d,]+) lines of code, ([\d,]+) functions across ([\d,]+) files/);
     if (match) {
