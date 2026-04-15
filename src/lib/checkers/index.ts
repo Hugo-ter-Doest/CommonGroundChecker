@@ -35,9 +35,12 @@ interface CommandResult {
   stderr: string;
 }
 
-function runCommand(command: string, args: string[]): Promise<CommandResult> {
+function runCommand(command: string, args: string[], env?: Partial<NodeJS.ProcessEnv>): Promise<CommandResult> {
   return new Promise((resolve) => {
-    const child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawn(command, args, {
+      stdio: ["ignore", "pipe", "pipe"],
+      env: { ...process.env, ...env },
+    });
     let stdout = "";
     let stderr = "";
 
@@ -110,7 +113,11 @@ export async function runChecks(
     tempRoot = await mkdtemp(path.join(os.tmpdir(), "cgchecker-repo-"));
     localRepoPath = path.join(tempRoot, "repo");
     const cloneUrl = `https://github.com/${owner}/${repo}.git`;
-    const clone = await runCommand("git", ["clone", "--depth", "1", cloneUrl, localRepoPath]);
+    const clone = await runCommand(
+      "git",
+      ["clone", "--depth", "1", cloneUrl, localRepoPath],
+      { GIT_LFS_SKIP_SMUDGE: "1" }
+    );
 
     if (clone.code !== 0) {
       localRepoPath = undefined;

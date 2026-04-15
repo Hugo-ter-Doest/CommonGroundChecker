@@ -104,6 +104,7 @@ async function exportAnalysisReportAsPdf(report: CheckReport): Promise<void> {
 
 type CriteriaCategory =
   | "Governance"
+  | "Security"
   | "Architecture"
   | "Software Quality"
   | "Deployment & Operations";
@@ -306,7 +307,7 @@ const CRITERIA_OVERVIEW = [
   {
     icon: "🛡️",
     label: "OWASP Secure Coding",
-    category: "Software Quality" as CriteriaCategory,
+    category: "Security" as CriteriaCategory,
     desc: "Heuristic secure code scan",
     tooltip:
       "Performs a heuristic static scan for common risky coding patterns aligned with OWASP secure coding concerns, such as eval usage, weak hashes, disabled TLS verification, or hardcoded secrets.",
@@ -330,7 +331,7 @@ const CRITERIA_OVERVIEW = [
   {
     icon: "🔒",
     label: "Security policy",
-    category: "Governance" as CriteriaCategory,
+    category: "Security" as CriteriaCategory,
     desc: "SECURITY.md present",
     tooltip:
       "Checks whether a SECURITY.md file exists, explaining how vulnerabilities should be reported privately and how security handling works.",
@@ -347,6 +348,7 @@ const CRITERIA_OVERVIEW = [
 
 const CATEGORY_ORDER: CriteriaCategory[] = [
   "Governance",
+  "Security",
   "Architecture",
   "Software Quality",
   "Deployment & Operations",
@@ -392,10 +394,10 @@ const RESULT_CATEGORY_BY_ID: Record<string, CriteriaCategory> = {
   tests: "Software Quality",
   complexity: "Software Quality",
   codemetrics: "Software Quality",
-  owaspsecurecoding: "Software Quality",
+  owaspsecurecoding: "Security",
   contributing: "Governance",
   codeofconduct: "Governance",
-  security: "Governance",
+  security: "Security",
   semver: "Software Quality",
   fivelayer: "Architecture",
 };
@@ -560,7 +562,7 @@ export default function HomePage() {
 
       {/* Criteria overview chips */}
       <section>
-        <div className="flex flex-nowrap gap-2 items-start">
+        <div className="flex flex-wrap gap-2">
           {CATEGORY_ORDER.map((category) => {
             const criteria = CRITERIA_OVERVIEW.filter(
               (item) => item.category === category
@@ -569,7 +571,7 @@ export default function HomePage() {
             return (
               <div
                 key={category}
-                className="space-y-2 border border-gray-200 rounded-xl p-2.5 bg-gray-50/40 flex-1 min-w-0"
+                className="space-y-2 border border-gray-200 rounded-xl p-2.5 bg-gray-50/40 flex-1 min-w-[240px]"
               >
                 <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
                   {category}

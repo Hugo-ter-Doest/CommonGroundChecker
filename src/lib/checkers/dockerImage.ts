@@ -13,9 +13,9 @@ export function checkDockerImage(dockerLocations: string[] = []): CheckResult {
       title: "Available Docker image",
       description:
         "A published Docker image location should be available so deployments can pull a ready-to-run container image.",
-      status: "warn",
+      status: "fail",
       message:
-        "No Docker image location was provided. Add a registry/repository URL when an image is available.",
+        "No Docker image location was provided. Add a registry/repository URL for the published image.",
       evidence: [],
       referenceUrl: "https://commonground.nl/cms/view/54476272/haven",
     };

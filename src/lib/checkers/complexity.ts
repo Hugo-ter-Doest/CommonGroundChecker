@@ -10,9 +10,12 @@ interface CommandResult {
   stderr: string;
 }
 
-function runCommand(command: string, args: string[]): Promise<CommandResult> {
+function runCommand(command: string, args: string[], env?: Partial<NodeJS.ProcessEnv>): Promise<CommandResult> {
   return new Promise((resolve) => {
-    const child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawn(command, args, {
+      stdio: ["ignore", "pipe", "pipe"],
+      env: { ...process.env, ...env },
+    });
     let stdout = "";
     let stderr = "";
 
@@ -173,13 +176,11 @@ export async function checkComplexity(
 
   try {
     if (!localRepoPath) {
-      const clone = await runCommand("git", [
-        "clone",
-        "--depth",
-        "1",
-        cloneUrl,
-        repoDir,
-      ]);
+      const clone = await runCommand(
+        "git",
+        ["clone", "--depth", "1", cloneUrl, repoDir],
+        { GIT_LFS_SKIP_SMUDGE: "1" }
+      );
 
       if (clone.code !== 0) {
         return {

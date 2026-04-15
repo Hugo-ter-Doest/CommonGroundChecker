@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { CheckResult } from "../types";
 
-const SOURCE_FILE_PATTERN = /\.(ts|tsx|js|jsx|mjs|cjs|py|java|go|cs|php|rb)$/i;
+const SOURCE_FILE_PATTERN = /\.(ts|tsx|js|jsx|mjs|cjs|py|java|go|cs|php|rb|vue)$/i;
 const EXCLUDED_PATH_PATTERN = /(^|\/)(node_modules|dist|build|coverage|vendor|\.next|generated)(\/|$)/i;
 const MAX_FILES_TO_SCAN = 20;
 
@@ -111,9 +111,9 @@ export async function checkOwaspSecureCoding(
     status,
     message:
       findings.length >= 4
-        ? `Multiple risky coding patterns were detected (${findings.length} findings across ${scannedFileCount} scanned files). Review them against OWASP secure coding guidance.`
-        : `Potential OWASP secure coding issues were detected (${findings.length} findings across ${scannedFileCount} scanned files).`,
-    evidence: findings.slice(0, 10),
+        ? `Multiple risky coding patterns were detected (${findings.length} findings across ${scannedFileCount} scanned source files). Review them against OWASP secure coding guidance.`
+        : `Potential OWASP secure coding issues were detected (${findings.length} findings across ${scannedFileCount} scanned source files).`,
+    evidence: findings,
     referenceUrl:
       "https://cheatsheetseries.owasp.org/IndexTopTen.html",
   };

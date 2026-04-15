@@ -49,7 +49,7 @@ export function checkDocker(tree: string[]): CheckResult {
       id: "docker",
       title: "Docker support",
       description:
-        "The component must be deployable as a container.",
+        "The component must be deployable as a container. A Dockerfile and docker-compose file should be present.",
       status: "pass",
       message: `Dockerfile and docker-compose file(s) found.`,
       evidence: allEvidence,
@@ -61,12 +61,12 @@ export function checkDocker(tree: string[]): CheckResult {
     id: "docker",
     title: "Docker support",
     description:
-      "The component must be deployable as a container.",
-    status: "warn",
+      "The component must be deployable as a container. A Dockerfile and docker-compose file should be present.",
+    status: "fail",
     message:
       dockerfiles.length > 0
-        ? "Dockerfile found but no docker-compose file. Consider adding one for local development."
-        : "Docker-compose file found but no Dockerfile detected.",
+        ? "Dockerfile found but no docker-compose file. A docker-compose file is required for this checker."
+        : "Docker-compose file found but no Dockerfile detected. A Dockerfile is required.",
     evidence: allEvidence,
     referenceUrl: "https://commonground.nl/cms/view/54476272/haven",
   };
