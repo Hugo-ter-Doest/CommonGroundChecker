@@ -35,6 +35,15 @@ export default function RootLayout({
               </p>
             </div>
           </div>
+          {/* Shallow, right-aligned navigation menu */}
+          <nav className="border-b border-blue-900 bg-cg-blue">
+            <div className="max-w-5xl mx-auto px-6 flex items-center justify-end gap-4 py-2 text-sm">
+              <a href="/" className="text-white hover:text-cg-lightblue transition-colors">Checker</a>
+              <a href="/history" className="text-white hover:text-cg-lightblue transition-colors">History</a>
+              <a href="/admin" className="text-white hover:text-cg-lightblue transition-colors">Admin</a>
+              <a href="/about" className="text-white hover:text-cg-lightblue transition-colors">About</a>
+            </div>
+          </nav>
         </header>
 
         <main className="flex-1">{children}</main>

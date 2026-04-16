@@ -81,20 +81,6 @@ export default async function HistoryHomePage({ searchParams }: HistoryHomePageP
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10 space-y-6">
-      <nav className="flex items-center justify-end gap-4 text-sm">
-        <Link href="/" className="text-gray-500 hover:text-cg-lightblue transition-colors">
-          Checker
-        </Link>
-        <Link href="/history" className="text-cg-lightblue hover:underline font-medium">
-          History
-        </Link>
-        <Link href="/admin" className="text-gray-500 hover:text-cg-lightblue transition-colors">
-          Admin
-        </Link>
-        <Link href="/about" className="text-gray-500 hover:text-cg-lightblue transition-colors">
-          About
-        </Link>
-      </nav>
 
       <section className="space-y-2">
         <h2 className="text-2xl font-bold text-cg-blue">Analyzed Repositories</h2>
