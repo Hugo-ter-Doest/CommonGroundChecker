@@ -55,6 +55,39 @@ const mocks = vi.hoisted(() => ({
   getActiveScoringConfig: vi.fn(),
 }));
 
+const childProcessMocks = vi.hoisted(() => ({
+  spawn: vi.fn((command, args, options) => {
+    let stdoutCallback: (chunk: string) => void = () => {};
+    let stderrCallback: (chunk: string) => void = () => {};
+    let closeCallback: (code: number) => void = () => {};
+    let errorCallback: (error: Error) => void = () => {};
+
+    const child = {
+      stdout: { on: (event: string, cb: (chunk: string) => void) => {
+        if (event === "data") stdoutCallback = cb;
+      } },
+      stderr: { on: (event: string, cb: (chunk: string) => void) => {
+        if (event === "data") stderrCallback = cb;
+      } },
+      on: (event: string, cb: (...args: any[]) => void) => {
+        if (event === "close") closeCallback = cb as (code: number) => void;
+        if (event === "error") errorCallback = cb as (error: Error) => void;
+      },
+    } as unknown as ReturnType<typeof import("node:child_process").spawn>;
+
+    setImmediate(() => {
+      stdoutCallback("clone output\n");
+      closeCallback(0);
+    });
+
+    return child;
+  }),
+}));
+
+vi.mock("node:child_process", () => ({
+  spawn: childProcessMocks.spawn,
+}));
+
 vi.mock("@/lib/github", () => ({
   getRepoMeta: mocks.getRepoMeta,
   getRepoTree: mocks.getRepoTree,
@@ -119,6 +152,33 @@ function criterionConfig(
 describe("runChecks", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+
+    childProcessMocks.spawn.mockImplementation((command, args, options) => {
+      let stdoutCallback: (chunk: string) => void = () => {};
+      let stderrCallback: (chunk: string) => void = () => {};
+      let closeCallback: (code: number) => void = () => {};
+      let errorCallback: (error: Error) => void = () => {};
+
+      const child = {
+        stdout: { on: (event: string, cb: (chunk: string) => void) => {
+          if (event === "data") stdoutCallback = cb;
+        } },
+        stderr: { on: (event: string, cb: (chunk: string) => void) => {
+          if (event === "data") stderrCallback = cb;
+        } },
+        on: (event: string, cb: (...args: any[]) => void) => {
+          if (event === "close") closeCallback = cb as (code: number) => void;
+          if (event === "error") errorCallback = cb as (error: Error) => void;
+        },
+      } as unknown as ReturnType<typeof import("node:child_process").spawn>;
+
+      setImmediate(() => {
+        stdoutCallback("clone output\n");
+        closeCallback(0);
+      });
+
+      return child;
+    });
 
     mocks.parseGitHubUrl.mockReturnValue({ owner: "org", repo: "repo" });
     mocks.getRepoMeta.mockResolvedValue({
@@ -225,6 +285,80 @@ describe("runChecks", () => {
     expect(report.score).toBeLessThan(100);
     const licenseResult = report.results.find((result) => result.id === "license");
     expect(licenseResult?.message).not.toContain("bonus points applied");
+  });
+
+  it("uses OpenAPI validation when the repository is marked as a register", async () => {
+    const configById = criterionConfig(1, "mandatory");
+    mocks.getActiveScoringConfig.mockResolvedValue({
+      id: "cfg-openapi",
+      config: {
+        criterionConfigByCheckId: configById,
+        statusScoreByStatus: { pass: 1, warn: 0.5, info: 0.5, fail: 0 },
+        complexityThreshold: 12,
+        complexityMaxCcnThreshold: 20,
+        spectralRulesetSource: "https://static.developer.overheid.nl/adr/ruleset.yaml",
+      },
+    });
+    mocks.checkOpenApi.mockResolvedValue(resultFor("openapi", "pass"));
+
+    await runChecks("https://github.com/org/repo", { isRegister: true });
+
+    expect(mocks.checkOpenApi).toHaveBeenCalled();
+  });
+
+  it("continues analysis even when git clone fails", async () => {
+    childProcessMocks.spawn.mockImplementationOnce((command, args, options) => {
+      let stdoutCallback: (chunk: string) => void = () => {};
+      let stderrCallback: (chunk: string) => void = () => {};
+      let closeCallback: (code: number) => void = () => {};
+      let errorCallback: (error: Error) => void = () => {};
+
+      const child = {
+        stdout: { on: (event: string, cb: (chunk: string) => void) => {
+          if (event === "data") stdoutCallback = cb;
+        } },
+        stderr: { on: (event: string, cb: (chunk: string) => void) => {
+          if (event === "data") stderrCallback = cb;
+        } },
+        on: (event: string, cb: (...args: any[]) => void) => {
+          if (event === "close") closeCallback = cb as (code: number) => void;
+          if (event === "error") errorCallback = cb as (error: Error) => void;
+        },
+      } as unknown as ReturnType<typeof import("node:child_process").spawn>;
+
+      setImmediate(() => {
+        stderrCallback("git clone failed\n");
+        closeCallback(1);
+      });
+
+      return child;
+    });
+
+    const report = await runChecks("https://github.com/org/repo", { isRegister: false });
+
+    expect(childProcessMocks.spawn).toHaveBeenCalled();
+    expect(report.results.find((result) => result.id === "sourcecode")).toBeDefined();
+  });
+
+  it("returns score 0 when no mandatory criteria are configured", async () => {
+    const configById = Object.fromEntries(
+      ids.map((id) => [id, { weight: 1, requirementLevel: "recommended" }])
+    ) as Record<string, { weight: number; requirementLevel: RequirementLevel }>;
+
+    mocks.getActiveScoringConfig.mockResolvedValue({
+      id: "cfg-zero-score",
+      config: {
+        criterionConfigByCheckId: configById,
+        statusScoreByStatus: { pass: 1, warn: 0.5, info: 0.5, fail: 0 },
+        complexityThreshold: 12,
+        complexityMaxCcnThreshold: 20,
+        spectralRulesetSource: "https://static.developer.overheid.nl/adr/ruleset.yaml",
+      },
+    });
+
+    const report = await runChecks("https://github.com/org/repo", { isRegister: false });
+
+    expect(report.score).toBe(0);
   });
 
   it("merges code metrics into Actual Source Code result", async () => {
