@@ -83,6 +83,31 @@ function parseSpectralJson(output: string): SpectralResultItem[] | null {
   }
 }
 
+function formatSeverityLabel(severity?: number): string {
+  switch (severity) {
+    case 0:
+      return "HINT";
+    case 1:
+      return "ERROR";
+    case 2:
+      return "WARNING";
+    default:
+      return "INFO";
+  }
+}
+
+export function formatSpectralIssue(issue: SpectralResultItem): string {
+  const severity = formatSeverityLabel(issue.severity);
+  const code = issue.code ? `[${issue.code}] ` : "";
+  const path = Array.isArray(issue.path) && issue.path.length > 0
+    ? ` @ ${issue.path.join(".")}`
+    : "";
+  const source = issue.source ? ` (${issue.source})` : "";
+  const message = issue.message?.trim() || "Rule violation";
+
+  return `${severity} ${code}${message}${path}${source}`;
+}
+
 function buildRawGitHubUrl(
   owner: string,
   repo: string,
@@ -337,16 +362,7 @@ export async function checkAdrValidator(
       message: `API Design Rules violations found (${lintResults.length} issue(s)).`,
       evidence: [
         ...targetEvidence,
-        ...lintResults
-          .map((issue) => {
-            const code = issue.code ? `[${issue.code}] ` : "";
-            const path = Array.isArray(issue.path) && issue.path.length > 0
-              ? ` @ ${issue.path.join(".")}`
-              : "";
-            const message = issue.message?.trim() || "Rule violation";
-            return `${code}${message}${path}`;
-          })
-          .slice(0, 10),
+        ...lintResults.map((issue) => formatSpectralIssue(issue)),
       ],
       referenceUrl: "https://commonground.nl/cms/view/54476259/api-designrules",
     };

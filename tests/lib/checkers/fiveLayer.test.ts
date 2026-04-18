@@ -58,6 +58,31 @@ describe("checkFiveLayer", () => {
     );
   });
 
+  it("does not classify admin UI hints as Interaction when service/data signals are dominant", async () => {
+    mocks.getFileContent.mockResolvedValueOnce(
+      "This register provides an admin dashboard for managing entries."
+    );
+
+    const result = await checkFiveLayer(
+      "org",
+      "repo",
+      ["src/admin/dashboard.tsx", "src/service/api.js", "src/db/register.js", "README.md"],
+      { topics: [], description: "" }
+    );
+
+    expect(result.status).toBe("warn");
+    expect(result.message).toContain("multiple Common Ground layers");
+    expect(result.evidence).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("service"),
+        expect.stringContaining("register"),
+      ])
+    );
+    expect(result.evidence).not.toEqual(
+      expect.arrayContaining([expect.stringContaining("admin")])
+    );
+  });
+
   it("warns when no layer signal is detected", async () => {
     mocks.getFileContent.mockResolvedValueOnce("A general purpose utility library.");
 

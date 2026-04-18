@@ -3,91 +3,132 @@ import type { CheckResult } from "../types";
 import { load as loadYaml } from "js-yaml";
 
 type LayerKey = "interaction" | "process" | "integration" | "service" | "data";
+type SignalStrength = "strong" | "weak";
 
-const LAYER_DEFINITIONS: Record<LayerKey, {
+type LayerDefinition = {
   label: string;
-  pathKeywords: string[];
-  textKeywords: string[];
-}> = {
+  pathKeywords: Array<{ value: string; strength: SignalStrength }>;
+  textKeywords: Array<{ value: string; strength: SignalStrength }>;
+};
+
+const LAYER_DEFINITIONS: Record<LayerKey, LayerDefinition> = {
   interaction: {
     label: "Interaction layer (frontend / portal)",
-    pathKeywords: ["/frontend/", "/ui/", "/portal/", "/web/", "/client/", "frontend", "ui"],
+    pathKeywords: [
+      { value: "/frontend/", strength: "strong" },
+      { value: "/ui/", strength: "strong" },
+      { value: "/portal/", strength: "strong" },
+      { value: "/web/", strength: "strong" },
+      { value: "/client/", strength: "strong" },
+      { value: "/admin/", strength: "weak" },
+      { value: "/admin-ui/", strength: "weak" },
+      { value: "frontend", strength: "strong" },
+      { value: "ui", strength: "strong" },
+    ],
     textKeywords: [
-      "frontend",
-      "portal",
-      "ui",
-      "interface",
-      "react",
-      "vue",
-      "angular",
-      "next",
-      "nuxt",
-      "web app",
-      "user interface",
-      "dashboard",
+      { value: "frontend", strength: "strong" },
+      { value: "portal", strength: "strong" },
+      { value: "ui", strength: "strong" },
+      { value: "interface", strength: "strong" },
+      { value: "react", strength: "strong" },
+      { value: "vue", strength: "strong" },
+      { value: "angular", strength: "strong" },
+      { value: "next", strength: "strong" },
+      { value: "nuxt", strength: "strong" },
+      { value: "web app", strength: "strong" },
+      { value: "user interface", strength: "strong" },
+      { value: "dashboard", strength: "weak" },
+      { value: "admin", strength: "weak" },
+      { value: "admin panel", strength: "weak" },
+      { value: "management ui", strength: "weak" },
     ],
   },
   process: {
     label: "Process layer (orchestration / BFF)",
-    pathKeywords: ["/process/", "/workflow/", "/orchestration/", "/bff/", "/saga/"],
+    pathKeywords: [
+      { value: "/process/", strength: "strong" },
+      { value: "/workflow/", strength: "strong" },
+      { value: "/orchestration/", strength: "strong" },
+      { value: "/bff/", strength: "strong" },
+      { value: "/saga/", strength: "strong" },
+    ],
     textKeywords: [
-      "process",
-      "orchestration",
-      "bff",
-      "camunda",
-      "flowable",
-      "workflow",
-      "bpmn",
-      "business process",
-      "service bus",
+      { value: "process", strength: "strong" },
+      { value: "orchestration", strength: "strong" },
+      { value: "bff", strength: "strong" },
+      { value: "camunda", strength: "strong" },
+      { value: "flowable", strength: "strong" },
+      { value: "workflow", strength: "strong" },
+      { value: "bpmn", strength: "strong" },
+      { value: "business process", strength: "strong" },
+      { value: "service bus", strength: "strong" },
     ],
   },
   integration: {
     label: "Integration layer (gateway / NLX)",
-    pathKeywords: ["/integration/", "/gateway/", "/nlx/", "/proxy/", "/api-gateway/"],
+    pathKeywords: [
+      { value: "/integration/", strength: "strong" },
+      { value: "/gateway/", strength: "strong" },
+      { value: "/nlx/", strength: "strong" },
+      { value: "/proxy/", strength: "strong" },
+      { value: "/api-gateway/", strength: "strong" },
+    ],
     textKeywords: [
-      "integration",
-      "gateway",
-      "nlx",
-      "zgw",
-      "zaak",
-      "api-gateway",
-      "proxy",
-      "connector",
-      "mediator",
+      { value: "integration", strength: "strong" },
+      { value: "gateway", strength: "strong" },
+      { value: "nlx", strength: "strong" },
+      { value: "zgw", strength: "strong" },
+      { value: "zaak", strength: "strong" },
+      { value: "api-gateway", strength: "strong" },
+      { value: "proxy", strength: "strong" },
+      { value: "connector", strength: "strong" },
+      { value: "mediator", strength: "strong" },
     ],
   },
   service: {
     label: "Service layer (back-end microservice)",
-    pathKeywords: ["/service/", "/services/", "/backend/", "/api/", "/rest/", "/graphql/", "/grpc/"],
+    pathKeywords: [
+      { value: "/service/", strength: "strong" },
+      { value: "/services/", strength: "strong" },
+      { value: "/backend/", strength: "strong" },
+      { value: "/api/", strength: "strong" },
+      { value: "/rest/", strength: "strong" },
+      { value: "/graphql/", strength: "strong" },
+      { value: "/grpc/", strength: "strong" },
+    ],
     textKeywords: [
-      "service",
-      "api",
-      "backend",
-      "microservice",
-      "rest",
-      "graphql",
-      "grpc",
-      "server",
-      "api service",
+      { value: "service", strength: "strong" },
+      { value: "api", strength: "strong" },
+      { value: "backend", strength: "strong" },
+      { value: "microservice", strength: "strong" },
+      { value: "rest", strength: "strong" },
+      { value: "graphql", strength: "strong" },
+      { value: "grpc", strength: "strong" },
+      { value: "server", strength: "strong" },
+      { value: "api service", strength: "strong" },
     ],
   },
   data: {
     label: "Data layer (data store / register)",
-    pathKeywords: ["/data/", "/db/", "/database/", "/register/", "/storage/"],
+    pathKeywords: [
+      { value: "/data/", strength: "strong" },
+      { value: "/db/", strength: "strong" },
+      { value: "/database/", strength: "strong" },
+      { value: "/register/", strength: "strong" },
+      { value: "/storage/", strength: "strong" },
+    ],
     textKeywords: [
-      "database",
-      "register",
-      "data store",
-      "register",
-      "storage",
-      "persistence",
-      "postgres",
-      "mysql",
-      "mongodb",
-      "redis",
-      "sql",
-      "nosql",
+      { value: "database", strength: "strong" },
+      { value: "register", strength: "strong" },
+      { value: "data store", strength: "strong" },
+      { value: "storage", strength: "strong" },
+      { value: "persistence", strength: "strong" },
+      { value: "postgres", strength: "strong" },
+      { value: "mysql", strength: "strong" },
+      { value: "mongodb", strength: "strong" },
+      { value: "redis", strength: "strong" },
+      { value: "sql", strength: "strong" },
+      { value: "nosql", strength: "strong" },
     ],
   },
 };
@@ -108,16 +149,23 @@ function flattenStrings(value: unknown): string[] {
   return [];
 }
 
-function detectLayerSignalsFromPath(repoPath: string): Array<{ layer: LayerKey; evidence: string }> {
-  const normalized = normalizePath(repoPath);
-  const detections: Array<{ layer: LayerKey; evidence: string }> = [];
+interface LayerDetection {
+  layer: LayerKey;
+  evidence: string;
+  strength: SignalStrength;
+}
 
-  for (const [layer, { label, pathKeywords }] of Object.entries(LAYER_DEFINITIONS) as [LayerKey, typeof LAYER_DEFINITIONS[LayerKey]][]) {
-    for (const keyword of pathKeywords) {
-      if (normalized.includes(keyword)) {
+function detectLayerSignalsFromPath(repoPath: string): LayerDetection[] {
+  const normalized = normalizePath(repoPath);
+  const detections: LayerDetection[] = [];
+
+  for (const [layer, definition] of Object.entries(LAYER_DEFINITIONS) as [LayerKey, LayerDefinition][]) {
+    for (const keyword of definition.pathKeywords) {
+      if (normalized.includes(keyword.value)) {
         detections.push({
           layer,
-          evidence: `Found path segment "${keyword.replace(/\//g, "")}" in ${repoPath}`,
+          strength: keyword.strength,
+          evidence: `Found path segment "${keyword.value.replace(/\//g, "")}" in ${repoPath}`,
         });
         break;
       }
@@ -130,16 +178,17 @@ function detectLayerSignalsFromPath(repoPath: string): Array<{ layer: LayerKey; 
 function detectLayerSignalsFromText(
   text: string,
   source: string
-): Array<{ layer: LayerKey; evidence: string }> {
+): LayerDetection[] {
   const lower = text.toLowerCase();
-  const detections: Array<{ layer: LayerKey; evidence: string }> = [];
+  const detections: LayerDetection[] = [];
 
-  for (const [layer, { textKeywords }] of Object.entries(LAYER_DEFINITIONS) as [LayerKey, typeof LAYER_DEFINITIONS[LayerKey]][]) {
-    for (const keyword of textKeywords) {
-      if (lower.includes(keyword)) {
+  for (const [layer, definition] of Object.entries(LAYER_DEFINITIONS) as [LayerKey, LayerDefinition][]) {
+    for (const keyword of definition.textKeywords) {
+      if (lower.includes(keyword.value)) {
         detections.push({
           layer,
-          evidence: `Found "${keyword}" in ${source}`,
+          strength: keyword.strength,
+          evidence: `Found "${keyword.value}" in ${source}`,
         });
         break;
       }
@@ -203,23 +252,45 @@ export async function checkFiveLayer(
   const readme = readmePath ? await getFileContent(owner, repo, readmePath) : "";
   const publiccodeText = await extractPublicCodeText(owner, repo, tree);
 
-  const layerDetections = new Map<LayerKey, string[]>();
+  const allDetections: LayerDetection[] = [];
 
   for (const repoPath of tree) {
-    for (const detection of detectLayerSignalsFromPath(repoPath)) {
-      const existing = layerDetections.get(detection.layer) ?? [];
-      layerDetections.set(detection.layer, [...existing, detection.evidence]);
-    }
+    allDetections.push(...detectLayerSignalsFromPath(repoPath));
   }
 
   const combinedText = [topics.join(" "), repoDescription, readme, publiccodeText].join(" ");
-  for (const detection of detectLayerSignalsFromText(combinedText, "repository metadata and docs")) {
-    const existing = layerDetections.get(detection.layer) ?? [];
-    layerDetections.set(detection.layer, [...existing, detection.evidence]);
+  allDetections.push(
+    ...detectLayerSignalsFromText(combinedText, "repository metadata and docs")
+  );
+
+  const strongDetections = allDetections.filter((d) => d.strength === "strong");
+  const weakDetections = allDetections.filter((d) => d.strength === "weak");
+  const hasStrongInteraction = strongDetections.some((d) => d.layer === "interaction");
+  const hasServiceOrDataStrong = strongDetections.some((d) =>
+    d.layer === "service" || d.layer === "data"
+  );
+
+  const ignoredInteractionWeak =
+    !hasStrongInteraction &&
+    hasServiceOrDataStrong &&
+    weakDetections.some((d) => d.layer === "interaction");
+
+  const finalDetections = [
+    ...strongDetections,
+    ...weakDetections.filter(
+      (d) => !(ignoredInteractionWeak && d.layer === "interaction")
+    ),
+  ];
+
+  const layerDetections = new Map<LayerKey, Set<string>>();
+  for (const detection of finalDetections) {
+    const existing = layerDetections.get(detection.layer) ?? new Set<string>();
+    existing.add(detection.evidence);
+    layerDetections.set(detection.layer, existing);
   }
 
   const detectedLayers = Array.from(layerDetections.keys());
-  const evidence = Array.from(layerDetections.values()).flat();
+  const evidence = Array.from(layerDetections.values()).flatMap((set) => Array.from(set));
   const mentionsCG = /common\s*ground|commonground|5-lagen|vijf\s+lagen|layered architecture/i.test(
     combinedText
   );
@@ -249,6 +320,12 @@ export async function checkFiveLayer(
       ? "This repository appears to span multiple Common Ground layers. Consider splitting responsibilities or clarifying the primary layer."
       : "This repository appears to target a single Common Ground layer.",
   ];
+
+  if (ignoredInteractionWeak) {
+    messageParts.push(
+      "Admin UI or management interface hints were treated as supporting the existing service/data layer rather than a separate Interaction layer."
+    );
+  }
 
   if (mentionsCG) {
     messageParts.push("The repository also references Common Ground.");
