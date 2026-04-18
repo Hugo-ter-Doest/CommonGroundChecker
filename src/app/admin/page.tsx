@@ -1,4 +1,3 @@
-import Link from "next/link";
 import AdminWeightsForm from "@/components/AdminWeightsForm";
 import {
   DEFAULT_COMPLEXITY_MAX_CCN_THRESHOLD,

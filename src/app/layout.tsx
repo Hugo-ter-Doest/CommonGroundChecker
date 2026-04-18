@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -38,10 +39,18 @@ export default function RootLayout({
           {/* Shallow, right-aligned navigation menu */}
           <nav className="border-b border-blue-900 bg-cg-blue">
             <div className="max-w-5xl mx-auto px-6 flex items-center justify-end gap-4 py-2 text-sm">
-              <a href="/" className="text-white hover:text-cg-lightblue transition-colors">Checker</a>
-              <a href="/history" className="text-white hover:text-cg-lightblue transition-colors">History</a>
-              <a href="/admin" className="text-white hover:text-cg-lightblue transition-colors">Admin</a>
-              <a href="/about" className="text-white hover:text-cg-lightblue transition-colors">About</a>
+              <Link href="/" className="text-white hover:text-cg-lightblue transition-colors">
+                Checker
+              </Link>
+              <Link href="/history" className="text-white hover:text-cg-lightblue transition-colors">
+                History
+              </Link>
+              <Link href="/admin" className="text-white hover:text-cg-lightblue transition-colors">
+                Admin
+              </Link>
+              <Link href="/about" className="text-white hover:text-cg-lightblue transition-colors">
+                About
+              </Link>
             </div>
           </nav>
         </header>

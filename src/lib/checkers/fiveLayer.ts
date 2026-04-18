@@ -1,5 +1,4 @@
 import { getFileContent } from "../github";
-import type { CheckResult } from "../types";
 import { load as loadYaml } from "js-yaml";
 
 type LayerKey = "interaction" | "process" | "integration" | "service" | "data";
