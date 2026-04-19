@@ -1,5 +1,4 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import type { CheckResult } from "@/lib/types";
 
 const mocks = vi.hoisted(() => ({
   getFileContent: vi.fn(),

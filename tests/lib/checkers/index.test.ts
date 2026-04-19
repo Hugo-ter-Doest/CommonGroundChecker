@@ -56,32 +56,37 @@ const mocks = vi.hoisted(() => ({
 }));
 
 const childProcessMocks = vi.hoisted(() => ({
-  spawn: vi.fn((command, args, options) => {
-    let stdoutCallback: (chunk: string) => void = () => {};
-    let stderrCallback: (chunk: string) => void = () => {};
-    let closeCallback: (code: number) => void = () => {};
-    let errorCallback: (error: Error) => void = () => {};
+  spawn: vi.fn<
+    (...args: Parameters<typeof import("node:child_process").spawn>) => ReturnType<
+      typeof import("node:child_process").spawn
+    >
+  >((command, args, options) => {
+      let stdoutCallback: (chunk: string) => void = () => {};
+      let stderrCallback: (chunk: string) => void = () => {};
+      let closeCallback: (code: number) => void = () => {};
+      let errorCallback: (error: Error) => void = () => {};
 
-    const child = {
-      stdout: { on: (event: string, cb: (chunk: string) => void) => {
-        if (event === "data") stdoutCallback = cb;
-      } },
-      stderr: { on: (event: string, cb: (chunk: string) => void) => {
-        if (event === "data") stderrCallback = cb;
-      } },
-      on: (event: string, cb: (...args: any[]) => void) => {
-        if (event === "close") closeCallback = cb as (code: number) => void;
-        if (event === "error") errorCallback = cb as (error: Error) => void;
-      },
-    } as unknown as ReturnType<typeof import("node:child_process").spawn>;
+      const child = {
+        stdout: { on: (event: string, cb: (chunk: string) => void) => {
+          if (event === "data") stdoutCallback = cb;
+        } },
+        stderr: { on: (event: string, cb: (chunk: string) => void) => {
+          if (event === "data") stderrCallback = cb;
+        } },
+        on: (event: string, cb: (...args: unknown[]) => void) => {
+          if (event === "close") closeCallback = cb as (code: number) => void;
+          if (event === "error") errorCallback = cb as (error: Error) => void;
+        },
+      } as unknown as ReturnType<typeof import("node:child_process").spawn>;
 
-    setImmediate(() => {
-      stdoutCallback("clone output\n");
-      closeCallback(0);
-    });
+      setImmediate(() => {
+        stdoutCallback("clone output\n");
+        closeCallback(0);
+      });
 
-    return child;
-  }),
+      return child;
+    }
+  ),
 }));
 
 vi.mock("node:child_process", () => ({
@@ -153,24 +158,29 @@ describe("runChecks", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    childProcessMocks.spawn.mockImplementation((command, args, options) => {
-      let stdoutCallback: (chunk: string) => void = () => {};
-      let stderrCallback: (chunk: string) => void = () => {};
-      let closeCallback: (code: number) => void = () => {};
-      let errorCallback: (error: Error) => void = () => {};
+    childProcessMocks.spawn.mockImplementation(
+      (
+        command: string,
+        args: readonly string[] | undefined,
+        options: import("node:child_process").SpawnOptions | undefined
+      ) => {
+        let stdoutCallback: (chunk: string) => void = () => {};
+        let stderrCallback: (chunk: string) => void = () => {};
+        let closeCallback: (code: number) => void = () => {};
+        let errorCallback: (error: Error) => void = () => {};
 
-      const child = {
-        stdout: { on: (event: string, cb: (chunk: string) => void) => {
-          if (event === "data") stdoutCallback = cb;
-        } },
-        stderr: { on: (event: string, cb: (chunk: string) => void) => {
-          if (event === "data") stderrCallback = cb;
-        } },
-        on: (event: string, cb: (...args: any[]) => void) => {
-          if (event === "close") closeCallback = cb as (code: number) => void;
-          if (event === "error") errorCallback = cb as (error: Error) => void;
-        },
-      } as unknown as ReturnType<typeof import("node:child_process").spawn>;
+        const child = {
+          stdout: { on: (event: string, cb: (chunk: string) => void) => {
+            if (event === "data") stdoutCallback = cb;
+          } },
+          stderr: { on: (event: string, cb: (chunk: string) => void) => {
+            if (event === "data") stderrCallback = cb;
+          } },
+          on: (event: string, cb: (...args: unknown[]) => void) => {
+            if (event === "close") closeCallback = cb as (code: number) => void;
+            if (event === "error") errorCallback = cb as (error: Error) => void;
+          },
+        } as unknown as ReturnType<typeof import("node:child_process").spawn>;
 
       setImmediate(() => {
         stdoutCallback("clone output\n");
@@ -307,24 +317,29 @@ describe("runChecks", () => {
   });
 
   it("continues analysis even when git clone fails", async () => {
-    childProcessMocks.spawn.mockImplementationOnce((command, args, options) => {
-      let stdoutCallback: (chunk: string) => void = () => {};
-      let stderrCallback: (chunk: string) => void = () => {};
-      let closeCallback: (code: number) => void = () => {};
-      let errorCallback: (error: Error) => void = () => {};
+    childProcessMocks.spawn.mockImplementationOnce(
+      (
+        command: string,
+        args: readonly string[] | undefined,
+        options: import("node:child_process").SpawnOptions | undefined
+      ) => {
+        let stdoutCallback: (chunk: string) => void = () => {};
+        let stderrCallback: (chunk: string) => void = () => {};
+        let closeCallback: (code: number) => void = () => {};
+        let errorCallback: (error: Error) => void = () => {};
 
-      const child = {
-        stdout: { on: (event: string, cb: (chunk: string) => void) => {
-          if (event === "data") stdoutCallback = cb;
-        } },
-        stderr: { on: (event: string, cb: (chunk: string) => void) => {
-          if (event === "data") stderrCallback = cb;
-        } },
-        on: (event: string, cb: (...args: any[]) => void) => {
-          if (event === "close") closeCallback = cb as (code: number) => void;
-          if (event === "error") errorCallback = cb as (error: Error) => void;
-        },
-      } as unknown as ReturnType<typeof import("node:child_process").spawn>;
+        const child = {
+          stdout: { on: (event: string, cb: (chunk: string) => void) => {
+            if (event === "data") stdoutCallback = cb;
+          } },
+          stderr: { on: (event: string, cb: (chunk: string) => void) => {
+            if (event === "data") stderrCallback = cb;
+          } },
+          on: (event: string, cb: (...args: unknown[]) => void) => {
+            if (event === "close") closeCallback = cb as (code: number) => void;
+            if (event === "error") errorCallback = cb as (error: Error) => void;
+          },
+        } as unknown as ReturnType<typeof import("node:child_process").spawn>;
 
       setImmediate(() => {
         stderrCallback("git clone failed\n");
@@ -413,8 +428,9 @@ describe("runChecks", () => {
   });
 
   it("calls progress callback at key steps", async () => {
-    const progressSteps = [];
-    const progressCb = (step, pct) => progressSteps.push({ step, pct });
+    const progressSteps: Array<{ step: string; pct: number }> = [];
+    const progressCb: (step: string, pct: number) => void = (step, pct) =>
+      progressSteps.push({ step, pct });
     // Provide a full config with all required keys
     const allIds = [
       "sourcecode",
