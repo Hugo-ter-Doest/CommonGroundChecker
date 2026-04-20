@@ -288,6 +288,7 @@ export async function runChecks(
     sbom,
     documentation,
     tests,
+    coverage,
     complexity,
     // codemetrics is now merged into sourcecode, so do not include separately
     owaspsecurecoding,

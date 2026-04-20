@@ -255,11 +255,30 @@ describe("runChecks", () => {
     expect(report.scoringConfigId).toBe("cfg-1");
     expect(report.score).toBe(25);
     expect(mocks.checkOpenApi).not.toHaveBeenCalled();
-    expect(report.results).toHaveLength(20);
+    expect(report.results).toHaveLength(21);
 
     const openApiResult = report.results.find((result) => result.id === "openapi");
     expect(openApiResult?.status).toBe("pass");
     expect(openApiResult?.message).toContain("not marked as a register");
+  });
+
+  it("includes coverage in final report results", async () => {
+    mocks.getActiveScoringConfig.mockResolvedValue({
+      id: "cfg-coverage",
+      config: {
+        criterionConfigByCheckId: criterionConfig(1, "recommended"),
+        statusScoreByStatus: { pass: 1, warn: 0.5, info: 0.5, fail: 0 },
+        complexityThreshold: 12,
+        complexityMaxCcnThreshold: 20,
+        spectralRulesetSource: "https://static.developer.overheid.nl/adr/ruleset.yaml",
+      },
+    });
+
+    const report = await runChecks("https://github.com/org/repo", {
+      isRegister: false,
+    });
+
+    expect(report.results.some((result) => result.id === "coverage")).toBe(true);
   });
 
   it("does not apply extra EUPL bonus points", async () => {
