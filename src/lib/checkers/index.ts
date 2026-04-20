@@ -201,9 +201,9 @@ export async function runChecks(
     }
     let metricsSummary = "";
     if (lines && funcs && files) {
-      metricsSummary = `<b>Code metrics:</b> ${lines} lines of code, ${funcs} functions, ${files} files analyzed.`;
+      metricsSummary = `Code metrics: ${lines} lines of code, ${funcs} functions, ${files} files analyzed.`;
     } else if (metricsMsg) {
-      metricsSummary = `<b>Code metrics:</b> ${metricsMsg}`;
+      metricsSummary = `Code metrics: ${metricsMsg}`;
     }
     sourcecode = {
       ...sourcecode,
