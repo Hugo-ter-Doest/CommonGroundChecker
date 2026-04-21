@@ -10,7 +10,7 @@ An online automatic compliance checker for [Common Ground](https://commonground.
 
 ## What it checks
 
-Criteria are grouped into four categories. Each criterion has a requirement level (mandatory / recommended) and a configurable weight that influences the overall score.
+Criteria are grouped into four categories. Each criterion has a requirement level (mandatory / recommended / informative) and a configurable weight that influences the overall score.
 
 ### Governance
 
@@ -28,27 +28,33 @@ Criteria are grouped into four categories. Each criterion has a requirement leve
 
 | # | Criterion | Level | Standard |
 |---|-----------|-------|----------|
-| 8 | **API-first / OpenAPI spec** — machine-readable OpenAPI or Swagger spec present *(required only when "Component is a register" is checked)* | Mandatory | [API Design Rules](https://commonground.nl/cms/view/54476259/api-designrules) |
-| 9 | **5-Layer Architecture** — component belongs to a recognised Common Ground layer | Recommended | [5-lagen model](https://commonground.nl/cms/view/54476261/5-lagen-model) |
+| 8 | **API-first / OpenAPI spec** — machine-readable OpenAPI or Swagger spec present | Mandatory | [API Design Rules](https://commonground.nl/cms/view/54476259/api-designrules) |
+| 9 | **NL API Design Rules (ADR) validation** — OpenAPI / API design is validated against the configured Spectral ruleset | Mandatory | [API Design Rules](https://commonground.nl/cms/view/54476259/api-designrules) |
+| 10 | **5-Layer Architecture** — component belongs to a recognised Common Ground layer | Recommended | [5-lagen model](https://commonground.nl/cms/view/54476261/5-lagen-model) |
 
 ### Deployment & Operations
 
 | # | Criterion | Level | Standard |
 |---|-----------|-------|----------|
-| 10 | **Docker support** — Dockerfile (and optionally docker-compose) present | Mandatory | [Haven](https://haven.commonground.nl) |
-| 11 | **Available Docker image** — published registry image URL provided | Mandatory | [Haven](https://haven.commonground.nl) |
-| 12 | **Helm chart (Kubernetes)** — Chart.yaml or K8s manifests present | Mandatory | [Haven](https://haven.commonground.nl) |
+| 11 | **Docker support** — Dockerfile (and optionally docker-compose) present | Mandatory | [Haven](https://haven.commonground.nl) |
+| 12 | **Available Docker image** — published registry image URL provided | Mandatory | [Haven](https://haven.commonground.nl) |
+| 13 | **Helm chart (Kubernetes)** — Chart.yaml or K8s manifests present | Mandatory | [Haven](https://haven.commonground.nl) |
 
 ### Software Quality
 
 | # | Criterion | Level | Standard |
 |---|-----------|-------|----------|
-| 13 | **Actual source code** — repository contains real source files, not just docs or config | Mandatory | [commonground.nl](https://commonground.nl) |
-| 14 | **SBOM** — Software Bill of Materials (SPDX or CycloneDX) published | Recommended | [CISA SBOM](https://www.cisa.gov/sbom) |
-| 15 | **Documentation** — README, docs folder, or external docs URL | Mandatory | [irealisatie.nl](https://www.irealisatie.nl/kennis/common-ground) |
-| 16 | **Test suite** — automated tests or test configuration present | Recommended | [GitHub Actions](https://docs.github.com/en/actions/automating-builds-and-tests) |
-| 17 | **Cyclomatic complexity (Lizard)** — average complexity (AvgCCN) is measured and compared against an admin-configurable threshold | Recommended | [lizard](https://github.com/terryyin/lizard) |
-| 18 | **Semantic versioning** — releases or tags following MAJOR.MINOR.PATCH | Recommended | [semver.org](https://semver.org/) |
+| 14 | **Actual source code** — repository contains real source files, not just documentation or configuration | Mandatory | [commonground.nl](https://commonground.nl) |
+| 15 | **SBOM** — Software Bill of Materials (SPDX or CycloneDX) published | Recommended | [CISA SBOM](https://www.cisa.gov/sbom) |
+| 16 | **Documentation** — README, docs folder, or external docs URL | Mandatory | [irealisatie.nl](https://www.irealisatie.nl/kennis/common-ground) |
+| 17 | **Test suite** — automated tests or test configuration present | Recommended | [GitHub Actions](https://docs.github.com/en/actions/automating-builds-and-tests) |
+| 18 | **Code coverage** — coverage report or badge with at least 80% line coverage | Mandatory | [GitHub Actions](https://docs.github.com/en/actions/automating-builds-and-tests) |
+| 19 | **Cyclomatic complexity (Lizard)** — average complexity (AvgCCN) is measured and compared against an admin-configurable threshold | Mandatory | [lizard](https://github.com/terryyin/lizard) |
+| 20 | **Code metrics** — repository metrics such as lines of code and function count are collected as informative context | Informative | [commonground.nl](https://commonground.nl) |
+| 21 | **OWASP Secure Coding** — heuristic static analysis checks for common insecure patterns | Mandatory | [OWASP Secure Coding Practices](https://owasp.org/www-project-secure-coding-practices/) |
+| 22 | **Semantic versioning** — releases or tags following MAJOR.MINOR.PATCH | Recommended | [semver.org](https://semver.org/) |
+
+**Note:** Mandatory criteria are included in the overall score. Recommended criteria still contribute when enabled, while informative criteria are only shown as contextual information and are not used in scoring.
 
 ## Getting started
 
