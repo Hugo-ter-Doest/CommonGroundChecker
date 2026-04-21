@@ -300,27 +300,7 @@ export default function AdminWeightsForm({
 
   return (
     <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-6">
-      <div className="space-y-2 border border-gray-200 rounded-xl p-4 bg-gray-50/40">
-        <h4 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
-          ADR / Spectral configuration
-        </h4>
-        <p className="text-xs text-gray-500">
-          Configure the Spectral ruleset source used by the `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`NL API Design Rules`&quot;`, `&ldquo;`, `&#34;`, `&rdquo;` check. You can use a URL or a local file path.
-        </p>
-        <div className="space-y-1">
-          <label htmlFor="spectral-ruleset-source" className="text-sm font-medium text-gray-700">
-            Spectral ruleset source
-          </label>
-          <input
-            id="spectral-ruleset-source"
-            type="text"
-            value={spectralRulesetSource}
-            onChange={(event) => setSpectralRulesetSource(event.target.value)}
-            placeholder="https://.../ruleset.yaml or ./rulesets/adr.yaml"
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-          />
-        </div>
-      </div>
+
 
       <div className="space-y-4">
         {CRITERION_CATEGORIES.map((group) => (
@@ -408,6 +388,30 @@ export default function AdminWeightsForm({
                     <p className="text-xs text-gray-500">
                       Recommended criteria do not contribute to the score, so their weight is disabled.
                     </p>
+                  )}
+
+                  {id === "adrvalidator" && (
+                    <div className="space-y-2 border border-gray-200 rounded-xl p-4 bg-gray-50/40">
+                      <h4 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
+                        API Design Rules - Spectral ruleset configuration
+                      </h4>
+                      <p className="text-xs text-gray-500">
+                        Configure the Spectral ruleset source used by the NL API Design Rules checker. You can use a URL or a local file path based from the root of the
+                      </p>
+                      <div className="space-y-1">
+                        <label htmlFor="spectral-ruleset-source" className="text-sm font-medium text-gray-700">
+                          Spectral ruleset source
+                        </label>
+                        <input
+                          id="spectral-ruleset-source"
+                          type="text"
+                          value={spectralRulesetSource}
+                          onChange={(event) => setSpectralRulesetSource(event.target.value)}
+                          placeholder="https://.../ruleset.yaml or ./rulesets/adr.yaml"
+                          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                        />
+                      </div>
+                    </div>
                   )}
 
                   {id === "complexity" && (
