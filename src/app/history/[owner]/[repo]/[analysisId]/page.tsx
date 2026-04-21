@@ -2,6 +2,8 @@ import Link from "next/link";
 import ResultCard from "@/components/ResultCard";
 import { prisma } from "@/lib/db";
 import type { CheckReport, CheckResult } from "@/lib/types";
+import type { CriteriaCategory } from "@/lib/criteria";
+import { CATEGORY_ORDER, RESULT_CATEGORY_BY_ID, RESULT_ORDER_BY_ID } from "@/lib/criteria";
 
 interface AnalysisDetailPageProps {
   params: Promise<{
@@ -226,20 +228,43 @@ export default async function AnalysisDetailPage({ params }: AnalysisDetailPageP
           </p>
         ) : (
           <div className="space-y-2">
-            {results.map((result, index) => (
-              <ResultCard
-                key={`${result.id}-${index}`}
-                id={result.id}
-                title={result.title}
-                description={result.description}
-                requirementLevel={result.requirementLevel}
-                confidence={result.confidence}
-                status={result.status}
-                message={result.message}
-                evidence={result.evidence}
-                referenceUrl={result.referenceUrl}
-              />
-            ))}
+            {CATEGORY_ORDER.map((category) => {
+              const sortedResults = results
+                .filter((r) => RESULT_CATEGORY_BY_ID[r.id] === category)
+                .sort((a, b) => {
+                  const indexA = RESULT_ORDER_BY_ID.indexOf(a.id);
+                  const indexB = RESULT_ORDER_BY_ID.indexOf(b.id);
+                  const safeIndexA = indexA === -1 ? Number.MAX_SAFE_INTEGER : indexA;
+                  const safeIndexB = indexB === -1 ? Number.MAX_SAFE_INTEGER : indexB;
+                  return safeIndexA - safeIndexB;
+                });
+
+              if (sortedResults.length === 0) return null;
+
+              return (
+                <div key={category} className="space-y-2">
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mt-4 mb-2">
+                    {category}
+                  </h4>
+                  <div className="space-y-2">
+                    {sortedResults.map((result, index) => (
+                      <ResultCard
+                        key={`${result.id}-${index}`}
+                        id={result.id}
+                        title={result.title}
+                        description={result.description}
+                        requirementLevel={result.requirementLevel}
+                        confidence={result.confidence}
+                        status={result.status}
+                        message={result.message}
+                        evidence={result.evidence}
+                        referenceUrl={result.referenceUrl}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </section>

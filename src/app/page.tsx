@@ -7,6 +7,8 @@ import ResultCard from "@/components/ResultCard";
 import ScoreBadge from "@/components/ScoreBadge";
 import RepoMeta from "@/components/RepoMeta";
 import type { CheckReport } from "@/lib/types";
+import type { CriteriaCategory } from "@/lib/criteria";
+import { CATEGORY_ORDER, RESULT_CATEGORY_BY_ID, RESULT_ORDER_BY_ID } from "@/lib/criteria";
 import { AlertCircle, ClipboardList } from "lucide-react";
 
 function sanitizePdfFileName(value: string): string {
@@ -101,13 +103,6 @@ async function exportAnalysisReportAsPdf(report: CheckReport): Promise<void> {
   const fileName = `${sanitizePdfFileName(report.owner)}-${sanitizePdfFileName(report.repo)}-analysis-${checkedDate}.pdf`;
   doc.save(fileName);
 }
-
-type CriteriaCategory =
-  | "Governance"
-  | "Security"
-  | "Architecture"
-  | "Software Quality"
-  | "Deployment & Operations";
 
 type RequirementLevelLabel = "mandatory" | "recommended" | "informative";
 
@@ -350,63 +345,6 @@ const CRITERIA_OVERVIEW = [
   },
 ];
 
-const CATEGORY_ORDER: CriteriaCategory[] = [
-  "Governance",
-  "Security",
-  "Architecture",
-  "Software Quality",
-  "Deployment & Operations",
-];
-
-const RESULT_ORDER_BY_ID: string[] = [
-  "sourcecode",
-  "fivelayer",
-  "license",
-  "eupllicense",
-  "copyrightowner",
-  "publiccode",
-  "docker",
-  "dockerimage",
-  "openapi",
-  "adrvalidator",
-  "helmchart",
-  "sbom",
-  "documentation",
-  "tests",
-  "coverage",
-  "complexity",
-  "codemetrics",
-  "owaspsecurecoding",
-  "contributing",
-  "codeofconduct",
-  "security",
-  "semver",
-];
-
-const RESULT_CATEGORY_BY_ID: Record<string, CriteriaCategory> = {
-  sourcecode: "Software Quality",
-  openapi: "Architecture",
-  adrvalidator: "Architecture",
-  license: "Governance",
-  eupllicense: "Governance",
-  copyrightowner: "Governance",
-  publiccode: "Governance",
-  docker: "Deployment & Operations",
-  dockerimage: "Deployment & Operations",
-  helmchart: "Deployment & Operations",
-  sbom: "Software Quality",
-  documentation: "Software Quality",
-  tests: "Software Quality",
-  coverage: "Software Quality",
-  complexity: "Software Quality",
-  codemetrics: "Software Quality",
-  owaspsecurecoding: "Security",
-  contributing: "Governance",
-  codeofconduct: "Governance",
-  security: "Security",
-  semver: "Software Quality",
-  fivelayer: "Architecture",
-};
 
 // Collapsible disclaimer component
 function Disclaimer() {

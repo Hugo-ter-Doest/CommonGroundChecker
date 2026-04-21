@@ -1,5 +1,6 @@
 import { getFileContent } from "../github";
 import { load as loadYaml } from "js-yaml";
+import type { CheckResult } from "../types";
 
 type LayerKey = "interaction" | "process" | "integration" | "service" | "data";
 type SignalStrength = "strong" | "weak";
