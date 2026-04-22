@@ -87,7 +87,7 @@ export default async function HistoryHomePage({ searchParams }: HistoryHomePageP
         <p className="text-gray-600">
           Select a repository to view metadata and historical analyses over time.
         </p>
-        <div className="flex items-center gap-2 flex-wrap pt-1">
+        <div className="flex flex-wrap items-center gap-2 pt-1">
           <span className="text-xs text-gray-500">Sort by:</span>
           {sortOptions.map((option) => {
             const isActive = option.sort === sortKey && option.direction === sortDirection;
@@ -106,6 +106,17 @@ export default async function HistoryHomePage({ searchParams }: HistoryHomePageP
             );
           })}
         </div>
+        <div className="pt-2">
+          <a
+            href="/api/repositories/export"
+            className="inline-flex text-xs font-semibold px-2 py-0.5 rounded-full border border-cg-lightblue text-cg-blue bg-cg-lightblue/10 hover:border-cg-blue hover:bg-cg-lightblue/20"
+          >
+            Download CSV
+          </a>
+        </div>
+        <p className="text-xs text-gray-500 max-w-2xl">
+          Downloads a CSV export containing the most recent scan result for each analyzed repository.
+        </p>
       </section>
 
       <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
