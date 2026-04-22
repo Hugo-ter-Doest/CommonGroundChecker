@@ -38,8 +38,8 @@ Criteria are grouped into four categories. Each criterion has a requirement leve
 |---|-----------|-------|----------|
 | 11 | **Docker support** — Dockerfile (and optionally docker-compose) present | Mandatory | [Haven](https://haven.commonground.nl) |
 | 12 | **Available Docker image** — published registry image URL provided | Mandatory | [Haven](https://haven.commonground.nl) |
-| 12 | **CI/CD configuration** — workflow or pipeline config present for automated builds/deployments | Recommended | [GitHub Actions](https://docs.github.com/en/actions/automating-builds-and-tests/about-github-actions) |
-| 13 | **Helm chart (Kubernetes)** — Chart.yaml or K8s manifests present | Mandatory | [Haven](https://haven.commonground.nl) |
+| 13 | **CI/CD configuration** — workflow or pipeline config present for automated builds/deployments | Recommended | [GitHub Actions](https://docs.github.com/en/actions/automating-builds-and-tests/about-github-actions) |
+| 14 | **Helm chart (Kubernetes)** — Chart.yaml or K8s manifests present | Mandatory | [Haven](https://haven.commonground.nl) |
 
 ### Software Quality
 
