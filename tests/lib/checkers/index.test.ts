@@ -10,6 +10,7 @@ const ids = [
   "publiccode",
   "docker",
   "dockerimage",
+  "cicd",
   "sbom",
   "documentation",
   "tests",
@@ -37,6 +38,7 @@ const mocks = vi.hoisted(() => ({
   checkCopyrightOwner: vi.fn(),
   checkDocker: vi.fn(),
   checkDockerImage: vi.fn(),
+  checkCiConfig: vi.fn(),
   checkSbom: vi.fn(),
   checkDocumentation: vi.fn(),
   checkContributing: vi.fn(),
@@ -107,6 +109,7 @@ vi.mock("@/lib/checkers/copyrightOwner", () => ({ checkCopyrightOwner: mocks.che
 vi.mock("@/lib/checkers/publiccode", () => ({ checkPublicCode: mocks.checkPublicCode }));
 vi.mock("@/lib/checkers/docker", () => ({ checkDocker: mocks.checkDocker }));
 vi.mock("@/lib/checkers/dockerImage", () => ({ checkDockerImage: mocks.checkDockerImage }));
+vi.mock("@/lib/checkers/ciConfig", () => ({ checkCiConfig: mocks.checkCiConfig }));
 vi.mock("@/lib/checkers/sbom", () => ({ checkSbom: mocks.checkSbom }));
 vi.mock("@/lib/checkers/documentation", () => ({ checkDocumentation: mocks.checkDocumentation }));
 vi.mock("@/lib/checkers/contributing", () => ({ checkContributing: mocks.checkContributing }));
@@ -214,6 +217,7 @@ describe("runChecks", () => {
     mocks.checkPublicCode.mockResolvedValue(resultFor("publiccode", "pass"));
     mocks.checkDocker.mockReturnValue(resultFor("docker", "pass"));
     mocks.checkDockerImage.mockReturnValue(resultFor("dockerimage", "pass"));
+    mocks.checkCiConfig.mockReturnValue(resultFor("cicd", "pass"));
     mocks.checkSbom.mockReturnValue(resultFor("sbom", "pass"));
     mocks.checkDocumentation.mockReturnValue(resultFor("documentation", "pass"));
     mocks.checkTests.mockReturnValue(resultFor("tests", "pass"));
@@ -255,7 +259,7 @@ describe("runChecks", () => {
     expect(report.scoringConfigId).toBe("cfg-1");
     expect(report.score).toBe(25);
     expect(mocks.checkOpenApi).not.toHaveBeenCalled();
-    expect(report.results).toHaveLength(21);
+    expect(report.results).toHaveLength(22);
 
     const openApiResult = report.results.find((result) => result.id === "openapi");
     expect(openApiResult?.status).toBe("pass");

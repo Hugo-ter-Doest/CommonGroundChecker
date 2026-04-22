@@ -161,6 +161,12 @@ const CRITERION_CATEGORIES: CriterionCategory[] = [
           "Checks whether a Docker image location is provided (for example a container registry URL), so deployments can pull a ready-to-run image.",
       },
       {
+        id: "cicd",
+        label: "CI/CD configuration",
+        explanation:
+          "Checks whether the repository contains CI/CD pipeline configuration such as GitHub Actions, GitLab CI, CircleCI, Azure Pipelines, Bitbucket Pipelines, or Jenkins.",
+      },
+      {
         id: "helmchart",
         label: "Helm chart (Kubernetes)",
         explanation:

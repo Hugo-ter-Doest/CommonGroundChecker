@@ -51,6 +51,7 @@ export const DEFAULT_CRITERION_CONFIG_BY_CHECK_ID: Record<string, CriterionConfi
   helmchart: { weight: 1, requirementLevel: "mandatory" },
   documentation: { weight: 1, requirementLevel: "mandatory" },
   tests: { weight: 1, requirementLevel: "mandatory" },
+  cicd: { weight: 1, requirementLevel: "mandatory" },
   complexity: { weight: 1, requirementLevel: "mandatory" },
   codemetrics: { weight: 0, requirementLevel: "informative" },
   owaspsecurecoding: { weight: 1, requirementLevel: "mandatory" },

@@ -5,6 +5,7 @@ import { checkLicense } from "./license";
 import { checkPublicCode } from "./publiccode";
 import { checkDocker } from "./docker";
 import { checkDockerImage } from "./dockerImage";
+import { checkCiConfig } from "./ciConfig";
 import { checkFiveLayer } from "./fiveLayer";
 import { checkHelmChart } from "./helmchart";
 import { checkSbom } from "./sbom";
@@ -170,6 +171,7 @@ export async function runChecks(
   let sourcecode = checkSourceCode(tree);
   const docker = checkDocker(tree);
   const dockerimage = checkDockerImage(options?.dockerLocations ?? []);
+  const cicd = checkCiConfig(tree);
   const sbom = checkSbom(tree);
   const documentation = checkDocumentation(tree, options?.documentationLocations ?? []);
   const tests = checkTests(tree);
@@ -285,6 +287,7 @@ export async function runChecks(
     publiccode,
     docker,
     dockerimage,
+    cicd,
     sbom,
     documentation,
     tests,
