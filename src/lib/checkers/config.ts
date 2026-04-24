@@ -50,6 +50,7 @@ export const DEFAULT_CRITERION_CONFIG_BY_CHECK_ID: Record<string, CriterionConfi
   dockerimage: { weight: 1, requirementLevel: "mandatory" },
   helmchart: { weight: 1, requirementLevel: "mandatory" },
   documentation: { weight: 1, requirementLevel: "mandatory" },
+  changelog: { weight: 1, requirementLevel: "recommended" },
   tests: { weight: 1, requirementLevel: "mandatory" },
   cicd: { weight: 1, requirementLevel: "mandatory" },
   complexity: { weight: 1, requirementLevel: "mandatory" },

@@ -32,7 +32,7 @@ export default function RootLayout({
                 Common Ground Component Checker
               </h1>
               <p className="text-xs text-blue-200">
-                Compliance verification for Dutch municipalities
+                Component assessment for Dutch municipalities
               </p>
             </div>
           </div>

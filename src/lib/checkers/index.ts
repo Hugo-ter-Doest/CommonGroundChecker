@@ -10,6 +10,7 @@ import { checkFiveLayer } from "./fiveLayer";
 import { checkHelmChart } from "./helmchart";
 import { checkSbom } from "./sbom";
 import { checkDocumentation } from "./documentation";
+import { checkChangelog } from "./changelog";
 import { checkContributing } from "./contributing";
 import { checkCodeOfConduct } from "./codeofconduct";
 import { checkSecurity } from "./security";
@@ -174,6 +175,7 @@ export async function runChecks(
   const cicd = checkCiConfig(tree);
   const sbom = checkSbom(tree);
   const documentation = checkDocumentation(tree, options?.documentationLocations ?? []);
+  const changelog = checkChangelog(tree);
   const tests = checkTests(tree);
   const coverage = await checkCoverage(owner, repo, tree);
   const contributing = checkContributing(tree);
@@ -232,6 +234,7 @@ export async function runChecks(
     dockerimage,
     sbom,
     documentation,
+    changelog,
     tests,
     coverage,
     complexity,

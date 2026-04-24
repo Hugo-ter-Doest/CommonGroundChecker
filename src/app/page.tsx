@@ -123,6 +123,7 @@ const DEFAULT_REQUIREMENT_LEVEL_BY_CHECK_ID: Record<string, RequirementLevelLabe
   tests: "mandatory",
   complexity: "recommended",
   codemetrics: "informative",
+  changelog: "recommended",
   coverage: "mandatory",
   owaspsecurecoding: "recommended",
   contributing: "recommended",
@@ -145,6 +146,7 @@ const CHECK_ID_BY_CRITERION_LABEL: Record<string, string> = {
   "Helm chart (Kubernetes)": "helmchart",
   SBOM: "sbom",
   Documentation: "documentation",
+  "Changelog presence": "changelog",
   "Test suite presence": "tests",
   "Code coverage": "coverage",
   "Cyclomatic complexity": "complexity",
@@ -286,6 +288,14 @@ const CRITERIA_OVERVIEW = [
     desc: "Docs in repo or external docs site",
     tooltip:
       "Documentation should be available for users and integrators. This checker looks for common docs files in the repository and optionally accepts a separate documentation site URL.",
+  },
+  {
+    icon: "📝",
+    label: "Changelog presence",
+    category: "Software Quality" as CriteriaCategory,
+    desc: "CHANGELOG or release notes present",
+    tooltip:
+      "A changelog helps users and integrators understand what changed between releases. The checker looks for common changelog or release notes files.",
   },
   {
     icon: "🧪",

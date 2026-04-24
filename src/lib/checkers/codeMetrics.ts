@@ -224,18 +224,20 @@ export async function checkCodeMetrics(
 
     const { totalLines, functionCount, fileCount } = metrics;
 
+    const formatter = new Intl.NumberFormat("en-US");
+
     return {
       id: "codemetrics",
       title: "Code Metrics",
       description:
         "Informational metrics about code size and structure (lines of code, function count, file count).",
       status: "info",
-      message: `Code metrics collected: ${totalLines.toLocaleString()} lines of code, ${functionCount.toLocaleString()} functions across ${fileCount.toLocaleString()} files.`,
+      message: `Code metrics collected: ${formatter.format(totalLines)} lines of code, ${formatter.format(functionCount)} functions across ${formatter.format(fileCount)} files.`,
       evidence: [
         `Analyzer: ${lizard.command} ${lizard.argsPrefix.join(" ")}`.trim(),
-        `Total lines of code (NLOC): ${totalLines.toLocaleString()}`,
-        `Function count: ${functionCount.toLocaleString()}`,
-        `Files analyzed: ${fileCount.toLocaleString()}`,
+        `Total lines of code (NLOC): ${formatter.format(totalLines)}`,
+        `Function count: ${formatter.format(functionCount)}`,
+        `Files analyzed: ${formatter.format(fileCount)}`,
       ].slice(0, 10),
       referenceUrl: "https://github.com/terryyin/lizard",
     };
