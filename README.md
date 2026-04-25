@@ -64,7 +64,7 @@ Criteria are grouped into four categories. Each criterion has a requirement leve
 # 1. Install dependencies
 npm install
 
-# 2. Set up the database (PostgreSQL required)
+# 2. Set up the database (using Postgres)
 docker-compose up -d db
 
 # 3. Set the access token for Github (optional)
