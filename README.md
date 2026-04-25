@@ -86,6 +86,15 @@ Open [http://localhost:3000](http://localhost:3000) and paste a GitHub repositor
 
 A **GitHub personal access token** in `.env` is optional but strongly recommended — the unauthenticated GitHub API rate limit is 60 requests/hour, which is quickly exhausted for newer repos.
 
+## Tech stack
+
+- **Next.js 16 + React 18 + TypeScript** for the app and server API routes.
+- **Tailwind CSS** for styling.
+- **PostgreSQL** as the database, accessed through **Prisma** with `@prisma/client` and `@prisma/adapter-pg`.
+- **Node.js** runtime for the application and check orchestration.
+- **Docker Compose** for local Postgres startup (`docker-compose up -d db`).
+- **Vitest** for tests and **ESLint** for linting.
+
 ## Security scanning
 
 To scan for leaked credentials/secrets locally with Gitleaks:
