@@ -234,7 +234,7 @@ const CRITERIA_OVERVIEW = [
       "Checks for Docker support in the source repository via Dockerfile and/or docker-compose files.",
   },
   {
-    icon: "�",
+    icon: "⚙️",
     label: "CI/CD configuration",
     category: "Deployment & Operations" as CriteriaCategory,
     desc: "Automated pipeline configuration",
@@ -242,7 +242,7 @@ const CRITERIA_OVERVIEW = [
       "Checks whether the repository contains common CI/CD pipeline configuration, such as GitHub Actions, GitLab CI, CircleCI, Azure Pipelines, Bitbucket, or Jenkins.",
   },
   {
-    icon: "�📦",
+    icon: "📦",
     label: "Available Docker image",
     category: "Deployment & Operations" as CriteriaCategory,
     desc: "Published image location",
