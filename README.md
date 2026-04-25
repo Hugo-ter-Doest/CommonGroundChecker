@@ -65,17 +65,20 @@ Criteria are grouped into four categories. Each criterion has a requirement leve
 npm install
 
 # 2. Set up the database (PostgreSQL required)
-cp .env.local.example .env
-# Edit .env and configure DATABASE_URL and optionally GITHUB_TOKEN
+docker-compose up -d db
 
-# 3. Push the Prisma schema and generate the client
+# 3. Set the access token for Github (optional)
+cp .env.local.example .env
+# Edit .env and configure GITHUB_TOKEN
+
+# 4. Push the Prisma schema and generate the client
 npm run db:push
 npm run db:generate
 
-# 3b. Install Lizard (required for cyclomatic complexity criterion)
+# 5. Install Lizard (required for cyclomatic complexity criterion)
 py -m pip install lizard
 
-# 4. Start the development server
+# 6. Start the development server
 npm run dev
 ```
 
