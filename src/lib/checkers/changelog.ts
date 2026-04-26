@@ -1,13 +1,9 @@
 import type { CheckResult } from "../types";
 
 const CHANGELOG_PATTERNS = [
-  "changelog",
-  "changelog.md",
-  "changelog.txt",
-  "news.md",
-  "news.txt",
-  "release-notes.md",
-  "release-notes.txt",
+  /^changelog(?:\.(?:md|txt|rst))?$/,
+  /^news(?:\.(?:md|txt|rst))?$/,
+  /^release[-_]notes(?:\.(?:md|txt|rst))?$/,
 ];
 
 export function checkChangelog(tree: string[]): CheckResult {
@@ -15,17 +11,7 @@ export function checkChangelog(tree: string[]): CheckResult {
 
   const matches = lowerTree.filter((path) => {
     const filename = path.split("/").pop() ?? path;
-    return (
-      CHANGELOG_PATTERNS.includes(path) ||
-      CHANGELOG_PATTERNS.includes(filename) ||
-      path.endsWith("/changelog") ||
-      path.endsWith("/changelog.md") ||
-      path.endsWith("/changelog.txt") ||
-      path.endsWith("/news.md") ||
-      path.endsWith("/news.txt") ||
-      path.endsWith("/release-notes.md") ||
-      path.endsWith("/release-notes.txt")
-    );
+    return CHANGELOG_PATTERNS.some((pattern) => pattern.test(filename));
   });
 
   if (matches.length === 0) {

@@ -107,6 +107,12 @@ const CRITERION_CATEGORIES: CriterionCategory[] = [
           "Documentation should be available for users and integrators. This checker looks for common docs files in the repository and optionally accepts a separate documentation site URL.",
       },
       {
+        id: "changelog",
+        label: "Changelog presence",
+        explanation:
+          "Checks whether a changelog or release notes file exists, so users and integrators can track changes between releases.",
+      },
+      {
         id: "tests",
         label: "Test suite presence",
         explanation:

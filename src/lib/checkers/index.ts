@@ -293,6 +293,7 @@ export async function runChecks(
     cicd,
     sbom,
     documentation,
+    changelog,
     tests,
     coverage,
     complexity,
