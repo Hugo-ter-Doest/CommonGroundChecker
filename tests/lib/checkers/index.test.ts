@@ -13,6 +13,7 @@ const ids = [
   "cicd",
   "sbom",
   "documentation",
+  "changelog",
   "tests",
   "complexity",
   "codemetrics",
@@ -259,7 +260,7 @@ describe("runChecks", () => {
     expect(report.scoringConfigId).toBe("cfg-1");
     expect(report.score).toBe(25);
     expect(mocks.checkOpenApi).not.toHaveBeenCalled();
-    expect(report.results).toHaveLength(22);
+    expect(report.results).toHaveLength(23);
 
     const openApiResult = report.results.find((result) => result.id === "openapi");
     expect(openApiResult?.status).toBe("pass");

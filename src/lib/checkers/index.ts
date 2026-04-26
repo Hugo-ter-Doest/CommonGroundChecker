@@ -232,6 +232,7 @@ export async function runChecks(
     publiccode,
     docker,
     dockerimage,
+    cicd,
     sbom,
     documentation,
     changelog,
