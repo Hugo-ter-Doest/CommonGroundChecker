@@ -4,6 +4,9 @@
   "description": "Online compliance checker for Common Ground (Dutch municipalities architecture)",
   "private": true,
   "license": "EUPL-1.2",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
