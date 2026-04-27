@@ -1,233 +1,233 @@
 # Whitepaper
-## A Municipal SaaS Platform for Reusable Components
+## Een gemeentelijk SaaS-platform voor herbruikbare componenten
 
-**Version:** 1.0  
-**Date:** 2026-04-12  
-**Audience:** Municipal digital teams, CIO offices, architects, security/compliance teams, procurement, and product owners
-
----
-
-## Executive Summary
-
-Municipalities are under pressure to deliver reliable digital services faster, at lower cost, and with stronger security, transparency, and interoperability. A Software-as-a-Service (SaaS) model built around reusable, standards-aligned components offers a practical path forward.
-
-This whitepaper introduces a municipal SaaS concept focused on component reuse and governed onboarding. It proposes a criteria framework that municipalities can use to decide which components can be adopted into the service. Finally, it introduces the Common Ground Checker application built in this repository as a concrete next step for operationalizing the framework.
+**Versie:** 1.0  
+**Datum:** 2026-04-12  
+**Doelgroep:** gemeentelijke digitale teams, CIO-kantoren, architecten, security/compliance teams, inkoop en producteigenaren
 
 ---
 
-## 1) Why a Municipal SaaS Model
+## Samenvatting
 
-### 1.1 Current municipal challenges
+Gemeenten staan onder druk om betrouwbare digitale diensten sneller, goedkoper en met betere beveiliging, transparantie en interoperabiliteit te leveren. Een Software-as-a-Service (SaaS)-model dat is opgebouwd rond herbruikbare, standaarden-gerichte componenten biedt een praktische weg vooruit.
 
-Municipal organizations often face:
-- Fragmented vendor landscapes and overlapping tooling
-- Long lead times for procurement and implementation
-- Inconsistent quality and documentation across software assets
-- Limited portability between municipalities
-- Growing pressure on security and compliance capacity
-
-### 1.2 What a SaaS service changes
-
-A municipal SaaS platform shifts focus from project-by-project delivery to continuously managed capability. Instead of each municipality evaluating components from scratch, the platform centralizes onboarding decisions and distributes trusted components as reusable building blocks.
-
-### 1.3 Strategic outcomes
-
-A well-governed SaaS model enables:
-- **Faster delivery:** less repeated due diligence per municipality
-- **Lower total cost:** shared maintenance and governance
-- **Higher quality:** standardized quality gates and observable metrics
-- **Greater interoperability:** component contracts and API-first integration
-- **Improved trust:** transparent criteria and auditable onboarding decisions
-
-Related background:
-- EU interoperability policy and cross-border digital public services: https://interoperable-europe.ec.europa.eu/
-- NORA (Dutch Government Reference Architecture): https://www.noraonline.nl/
+Dit whitepaper introduceert een gemeentelijk SaaS-concept dat zich richt op hergebruik van componenten en gestuurd onboarden. Het stelt een criteriaramenwerk voor dat gemeenten kunnen gebruiken om te beslissen welke componenten in de dienst kunnen worden opgenomen. Ten slotte introduceert het de Common Ground Checker-applicatie in deze repository als een concreet volgende stap om het raamwerk te operationaliseren.
 
 ---
 
-## 2) Conceptual Service Model
+## 1) Waarom een gemeentelijk SaaS-model
 
-### 2.1 Service scope
+### 1.1 Huidige gemeentelijke uitdagingen
 
-The SaaS service acts as a managed catalog and runtime ecosystem for municipal components:
-- API components
-- process and domain services
-- deployment artifacts (container images/charts)
-- governance metadata (license, policy, contribution model)
+Gemeentelijke organisaties hebben vaak te maken met:
+- versnipperde leverancierslandschappen en overlappende tooling
+- lange doorlooptijden voor inkoop en implementatie
+- inconsistente kwaliteit en documentatie in software-assets
+- beperkte draagkracht tussen gemeenten
+- toenemende druk op beveiligings- en compliancecapaciteit
 
-### 2.2 Operating principles
+### 1.2 Wat een SaaS-service verandert
 
-1. **Reuse-first, not rebuild-first**
-2. **Open by default where legally possible**
-3. **API- and standards-driven interoperability**
-4. **Security and operations built in from day one**
-5. **Transparent acceptance criteria**
+Een gemeentelijk SaaS-platform verlegt de focus van projectmatige levering naar continu beheerde capaciteit. In plaats van dat elke gemeente componenten opnieuw beoordeelt, centraliseert het platform onboardingbeslissingen en verspreidt het vertrouwde componenten als herbruikbare bouwblokken.
 
-### 2.3 Governance pattern
+### 1.3 Strategische uitkomsten
 
-A lightweight governance board (architecture + security + product + operations) owns:
-- onboarding policy
-- criteria thresholds
-- exceptions process
-- periodic re-assessment cadence
+Een goed bestuurd SaaS-model maakt mogelijk:
+- **Snellere levering:** minder herhaalde due diligence per gemeente
+- **Lagere totale kosten:** gedeeld onderhoud en governance
+- **Hogere kwaliteit:** gestandaardiseerde kwaliteitspoorten en zichtbare metrics
+- **Grotere interoperabiliteit:** componentcontracten en API-first integratie
+- **Verbeterd vertrouwen:** transparante criteria en controleerbare onboardingbeslissingen
+
+Gerelateerde achtergrond:
+- EU-beleid voor interoperabiliteit en grensoverschrijdende digitale publieke diensten: https://interoperable-europe.ec.europa.eu/
+- NORA (Nederlandse Overheidsreferentiearchitectuur): https://www.noraonline.nl/
 
 ---
 
-## 3) Framework for Component Adoption
+## 2) Conceptueel servicemodel
 
-The framework below structures component evaluation into four categories. Each criterion should be classified as **Mandatory** or **Recommended**, scored, and tracked over time.
+### 2.1 Reikwijdte van de service
+
+De SaaS-service fungeert als een beheerde catalogus en runtime-ecosysteem voor gemeentelijke componenten:
+- API-componenten
+- proces- en domeindiensten
+- deployment-artifacts (containerimages/charts)
+- governance-metadata (licentie, beleid, bijdragepraktijk)
+
+### 2.2 Operationele principes
+
+1. **Hergebruik eerst, niet opnieuw bouwen**
+2. **Open by default waar juridisch mogelijk**
+3. **API- en standaardengestuurde interoperabiliteit**
+4. **Beveiliging en operatie vanaf dag één ingebouwd**
+5. **Transparante acceptatiecriteria**
+
+### 2.3 Governancepatroon
+
+Een lichte governanceboard (architectuur + security + product + operatie) is eigenaar van:
+- onboardingbeleid
+- criteriadrempels
+- uitzonderingsproces
+- periodieke herbeoordelingscyclus
+
+---
+
+## 3) Raamwerk voor componentacceptatie
+
+Onderstaand raamwerk structureert de beoordeling van componenten in vier categorieën. Elk criterium wordt geclassificeerd als **verplicht** of **aanbevolen**, gescoord en in de tijd gevolgd.
 
 ## 3.1 Governance
 
-Purpose: Ensure legal clarity, responsible collaboration, and maintainability.
+Doel: juridische duidelijkheid, verantwoord samenwerken en onderhoudbaarheid waarborgen.
 
-Example criteria:
-- **OSI-approved license** (Mandatory) — https://opensource.org/licenses
-- **Copyright/IP owner disclosure** (Recommended)
-- **publiccode.yml metadata** (Mandatory) — https://standard.publiccode.net/
-- **Contributing guide** (Recommended)
-- **Code of Conduct** (Recommended) — https://opensource.guide/code-of-conduct/
-- **Security policy / vulnerability disclosure** (Recommended) — https://docs.github.com/en/code-security/getting-started/adding-a-security-policy-to-your-repository
+Voorbeeldcriteria:
+- **OSI-goedgekeurde licentie** (Verplicht) — https://opensource.org/licenses
+- **Copyright/IP-eigenaarschap bekendmaken** (Aanbevolen)
+- **publiccode.yml metadata** (Verplicht) — https://standard.publiccode.net/
+- **Contributing-guide** (Aanbevolen)
+- **Code of Conduct** (Aanbevolen) — https://opensource.guide/code-of-conduct/
+- **Securitybeleid / kwetsbaarheidsmelding** (Aanbevolen) — https://docs.github.com/en/code-security/getting-started/adding-a-security-policy-to-your-repository
 
-Assessment questions:
-- Can this component be reused legally and safely across municipalities?
-- Is ownership and stewardship explicit?
-- Are contribution and disclosure pathways clear?
+Beoordelingsvragen:
+- Kan dit component legaal en veilig door gemeenten worden hergebruikt?
+- Is eigenaarschap en beheer expliciet vastgelegd?
+- Zijn bijdrage- en meldingsroutes helder?
 
-## 3.2 Architecture
+## 3.2 Architectuur
 
-Purpose: Ensure components fit municipal reference architectures and integration patterns.
+Doel: zorgen dat componenten passen binnen gemeentelijke referentiearchitecturen en integratiepatronen.
 
-Example criteria:
-- **OpenAPI/API-first specification** (Mandatory for register-style components) — https://spec.openapis.org/oas/latest.html
-- **Common Ground 5-layer architecture fit** (Recommended) — https://commonground.nl/
+Voorbeeldcriteria:
+- **OpenAPI/API-first specificatie** (Verplicht voor registerachtige componenten) — https://spec.openapis.org/oas/latest.html
+- **Common Ground 5-laags architectuurfit** (Aanbevolen) — https://commonground.nl/
 
-Assessment questions:
-- Is the integration contract machine-readable and testable?
-- Does the component align to intended architectural boundaries?
+Beoordelingsvragen:
+- Is het integratiecontract machineleesbaar en testbaar?
+- Sluit het component aan op de bedoelde architectuurgrenzen?
 
 ## 3.3 Deployment & Operations
 
-Purpose: Ensure deployability, repeatability, and operational readiness.
+Doel: inzetbaarheid, herhaalbaarheid en operationele gereedheid zekerstellen.
 
-Example criteria:
-- **Docker support** (Mandatory) — https://docs.docker.com/
-- **Published container image availability** (Mandatory) — https://github.com/opencontainers/distribution-spec
-- **Helm chart / Kubernetes deployability** (Mandatory) — https://helm.sh/docs/ and https://kubernetes.io/docs/
+Voorbeeldcriteria:
+- **Docker-ondersteuning** (Verplicht) — https://docs.docker.com/
+- **Beschikbaarheid van een gepubliceerd containerimage** (Verplicht) — https://github.com/opencontainers/distribution-spec
+- **Helm-chart / Kubernetes inzetbaarheid** (Verplicht) — https://helm.sh/docs/ en https://kubernetes.io/docs/
 
-Assessment questions:
-- Can the component be deployed consistently across municipal environments?
-- Are baseline operational and platform requirements met?
+Beoordelingsvragen:
+- Kan het component consistent worden uitgerold in gemeentelijke omgevingen?
+- Zijn standaard operationele en platformvereisten vervuld?
 
-## 3.4 Software Quality
+## 3.4 Softwarekwaliteit
 
-Purpose: Ensure technical soundness and maintainability over time.
+Doel: technische degelijkheid en onderhoudbaarheid in de tijd waarborgen.
 
-Example criteria:
-- **Actual source code present** (Mandatory)
-- **Documentation quality/presence** (Mandatory)
-- **Test suite presence** (Recommended)
-- **Cyclomatic complexity thresholds** (Recommended) — https://github.com/terryyin/lizard
-- **Semantic versioning discipline** (Recommended) — https://semver.org/
-- **SBOM availability** (Recommended) — https://www.cisa.gov/sbom and https://cyclonedx.org/ and https://spdx.dev/
+Voorbeeldcriteria:
+- **Werkelijke broncode aanwezig** (Verplicht)
+- **Documentatiekwaliteit / aanwezigheid** (Verplicht)
+- **Aanwezigheid van een testset** (Aanbevolen)
+- **Cyclomatische complexiteitsdrempels** (Aanbevolen) — https://github.com/terryyin/lizard
+- **Semantische versievoering** (Aanbevolen) — https://semver.org/
+- **SBOM-beschikbaarheid** (Aanbevolen) — https://www.cisa.gov/sbom en https://cyclonedx.org/ en https://spdx.dev/
 
-Assessment questions:
-- Is the component understandable, testable, and maintainable?
-- Can risk and change be managed over time?
+Beoordelingsvragen:
+- Is het component begrijpelijk, testbaar en onderhoudbaar?
+- Kan risico en verandering in de tijd beheerd worden?
 
 ---
 
-## 4) Decision Model and Lifecycle
+## 4) Beslissingsmodel en levenscyclus
 
-### 4.1 Suggested decision states
+### 4.1 Voorgestelde besluitstatussen
 
-- **Accepted:** Meets all mandatory criteria; recommended criteria at or above threshold
-- **Conditionally accepted:** Mandatory criteria pass; specific remediations required
-- **Rejected:** One or more mandatory criteria fail
-- **Retired:** Previously accepted but no longer compliant/maintainable
+- **Geaccepteerd:** voldoet aan alle verplichte criteria; aanbevolen criteria op of boven de drempel
+- **Voorwaardelijk geaccepteerd:** verplichte criteria slagen; specifieke remediaties vereist
+- **Afgewezen:** een of meer verplichte criteria falen
+- **Uitgefaseerd:** eerder geaccepteerd maar niet langer compliant of onderhoudbaar
 
-### 4.2 Suggested workflow
+### 4.2 Voorgesteld werkproces
 
-1. Intake and metadata collection
-2. Automated criteria scan
-3. Targeted manual review for ambiguous criteria
-4. Acceptance decision with remediation notes
-5. Publish in municipal component catalog
-6. Periodic re-validation (e.g., monthly/quarterly)
+1. Intake en metadata-verzameling
+2. Geautomatiseerde criteria-scan
+3. Gerichte handmatige beoordeling van onduidelijke criteria
+4. Acceptatiebeslissing met remedianotities
+5. Publicatie in de gemeentelijke componentcatalogus
+6. Periodieke hervalidatie (bijv. maandelijks/kwartaal)
 
-### 4.3 Scoring guidance
+### 4.3 Richtlijnen voor scoring
 
-- Use weighted scores to balance maturity dimensions
-- Keep mandatory criteria as hard gates
-- Allow configurable thresholds by component type/risk class
+- Gebruik gewogen scores om verschillende volwassenheidsdimensies te balanceren
+- Houd verplichte criteria als harde poorten
+- Maak drempels configureerbaar per componenttype/risicoklasse
 
-Related guidance:
+Gerelateerde richtlijnen:
 - OWASP Software Assurance Maturity Model (SAMM): https://owaspsamm.org/
 - NIST Secure Software Development Framework (SSDF): https://csrc.nist.gov/Projects/ssdf
 
 ---
 
-## 5) Implementation Considerations
+## 5) Implementatieoverwegingen
 
-### 5.1 Organizational
+### 5.1 Organisatorisch
 
-- Define ownership of the onboarding framework
-- Align architecture, legal, procurement, and operations on gating policy
-- Start with a minimal criteria set and iterate
+- Definieer eigenaarschap van het onboarding-raamwerk
+- Stem architectuur, juridische zaken, inkoop en operatie af op het gatingbeleid
+- Begin met een minimaal criteriapakket en itereren
 
-### 5.2 Technical
+### 5.2 Technisch
 
-- Automate evidence collection via repository and artifact analysis
-- Persist scoring configuration and results for auditability
-- Expose historical trend views and per-component drill-downs
+- Automatiseer bewijsgaring via repository- en artifactanalyse
+- Sla scoringconfiguratie en resultaten op voor audittrail en reproduceerbaarheid
+- Bied historische trendinzichten en per-component diepgaande overzichten
 
-### 5.3 Change management
+### 5.3 Verandermanagement
 
-- Publish clear guidance for suppliers and internal teams
-- Provide remediation checklists for failed criteria
-- Treat onboarding as a collaborative quality improvement cycle
-
----
-
-## 6) Next Step: Introducing the Common Ground Checker App
-
-To operationalize this framework, the app in this repository provides a practical starting point.
-
-### 6.1 What the app does
-
-The Common Ground Checker:
-- Analyzes a GitHub repository
-- Runs criteria checks across Governance, Architecture, Deployment & Operations, and Software Quality
-- Produces a weighted compliance score
-- Stores historical analysis runs and scoring configurations
-- Provides admin controls for criterion weights and complexity thresholds
-
-### 6.2 Why it matters for a municipal SaaS rollout
-
-The app can serve as the onboarding gate for candidate components before publication into a municipal SaaS catalog. It creates:
-- **Consistency:** same checks for every candidate component
-- **Transparency:** explicit evidence and messages per criterion
-- **Traceability:** historical runs and score evolution over time
-- **Actionability:** concrete remediation targets for teams
-
-### 6.3 Suggested adoption path
-
-1. **Pilot phase:** evaluate a small set of candidate components
-2. **Calibration phase:** tune criteria weights and thresholds with governance stakeholders
-3. **Operational phase:** embed checker outcomes in onboarding workflow and release gates
-4. **Scale phase:** integrate with procurement and portfolio governance
+- Publiceer duidelijke richtlijnen voor leveranciers en interne teams
+- Bied remedialijsten voor niet-geslaagde criteria
+- Behandel onboarding als een gezamenlijke kwaliteitsverbeteringscyclus
 
 ---
 
-## 7) Conclusion
+## 6) Volgende stap: de Common Ground Checker-app introduceren
 
-A municipal SaaS model built on reusable components can significantly improve delivery speed, quality, and interoperability. Success depends on a clear, transparent, and enforceable onboarding framework.
+Om dit raamwerk te operationaliseren, biedt de app in deze repository een praktisch startpunt.
 
-The Common Ground Checker app offers a concrete way to put this framework into practice today: automate what can be automated, make decisions evidence-based, and keep human governance where judgment is still required.
+### 6.1 Wat de app doet
+
+De Common Ground Checker:
+- analyseert een GitHub-repository
+- voert criteria-controles uit over Governance, Architectuur, Deployment & Operations en Softwarekwaliteit
+- genereert een gewogen compliance-score
+- slaat historische analyseruns en scoringconfiguraties op
+- biedt beheercontrols voor criteriagewichten en complexiteitsdrempels
+
+### 6.2 Waarom het belangrijk is voor een gemeentelijke SaaS-rollout
+
+De app kan dienen als de onboardingpoort voor kandidaatcomponenten voordat ze gepubliceerd worden in een gemeentelijke SaaS-catalogus. Het biedt:
+- **Consistentie:** dezelfde controles voor elk kandidaatcomponent
+- **Transparantie:** expliciet bewijs en berichten per criterium
+- **Traceerbaarheid:** historische runs en score-evolutie in de tijd
+- **Actiegerichtheid:** concrete remediatiedoelen voor teams
+
+### 6.3 Voorgesteld adoptiepad
+
+1. **Pilotfase:** evalueer een kleine set kandidaatcomponenten
+2. **Kalibratiefase:** stem criteriagewichten en drempels af met governance-stakeholders
+3. **Operationele fase:** veranker checker-uitkomsten in onboardingprocessen en releasepoorten
+4. **Schaalfase:** integreer met inkoop en portfoliogovernance
 
 ---
 
-## 8) References
+## 7) Conclusie
+
+Een gemeentelijk SaaS-model dat is opgebouwd rond herbruikbare componenten kan de snelheid van levering, kwaliteit en interoperabiliteit aanzienlijk verbeteren. Succes hangt af van een helder, transparant en afdwingbaar onboarding-raamwerk.
+
+De Common Ground Checker-app biedt een concreet middel om dit raamwerk vandaag in de praktijk te brengen: automatiseer wat kan, baseer beslissingen op bewijs en handhaaf menselijke governance waar beoordeling nog nodig is.
+
+---
+
+## 8) Referenties
 
 1. Common Ground (NL): https://commonground.nl/  
 2. API Design Rules (NL): https://commonground.nl/cms/view/54476259/api-designrules  
@@ -250,13 +250,13 @@ The Common Ground Checker app offers a concrete way to put this framework into p
 
 ---
 
-## Appendix A — Example Criteria Matrix (Starter)
+## Appendix A — Voorbeeldcriteria-matrix (Starter)
 
-| Category | Criterion | Level | Automated? |
+| Categorie | Criterium | Niveau | Geautomatiseerd? |
 |---|---|---|---|
-| Governance | OSI license | Mandatory | Yes |
-| Governance | Copyright/IP owner disclosure | Recommended | Yes (heuristic) |
-| Governance | publiccode.yml | Mandatory | Yes |
+| Governance | OSI-licentie | Verplicht | Ja |
+| Governance | Copyright/IP-eigenaarschapsvermelding | Aanbevolen | Ja (heuristisch) |
+| Governance | publiccode.yml | Verplicht | Ja |
 | Governance | Contributing guide | Recommended | Yes |
 | Governance | Code of Conduct | Recommended | Yes |
 | Governance | Security policy | Recommended | Yes |
