@@ -2,7 +2,6 @@ import Link from "next/link";
 import ResultCard from "@/components/ResultCard";
 import { prisma } from "@/lib/db";
 import type { CheckReport, CheckResult } from "@/lib/types";
-import type { CriteriaCategory } from "@/lib/criteria";
 import { CATEGORY_ORDER, RESULT_CATEGORY_BY_ID, RESULT_ORDER_BY_ID } from "@/lib/criteria";
 
 interface AnalysisDetailPageProps {

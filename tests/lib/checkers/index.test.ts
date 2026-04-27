@@ -63,7 +63,7 @@ const childProcessMocks = vi.hoisted(() => ({
     (...args: Parameters<typeof import("node:child_process").spawn>) => ReturnType<
       typeof import("node:child_process").spawn
     >
-  >((command, args, options) => {
+  >(() => {
       let stdoutCallback: (chunk: string) => void = () => {};
       let stderrCallback: (chunk: string) => void = () => {};
       let closeCallback: (code: number) => void = () => {};
@@ -164,9 +164,6 @@ describe("runChecks", () => {
 
     childProcessMocks.spawn.mockImplementation(
       (
-        command: string,
-        args: readonly string[] | undefined,
-        options: import("node:child_process").SpawnOptions | undefined
       ) => {
         let stdoutCallback: (chunk: string) => void = () => {};
         let stderrCallback: (chunk: string) => void = () => {};
@@ -343,9 +340,6 @@ describe("runChecks", () => {
   it("continues analysis even when git clone fails", async () => {
     childProcessMocks.spawn.mockImplementationOnce(
       (
-        command: string,
-        args: readonly string[] | undefined,
-        options: import("node:child_process").SpawnOptions | undefined
       ) => {
         let stdoutCallback: (chunk: string) => void = () => {};
         let stderrCallback: (chunk: string) => void = () => {};

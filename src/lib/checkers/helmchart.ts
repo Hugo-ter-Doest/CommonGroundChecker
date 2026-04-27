@@ -7,7 +7,7 @@ export async function checkHelmChart(
   tree: string[],
   helmChartLocations: string[] = []
 ): Promise<CheckResult> {
-  const lowerTree = tree.map((p) => p.toLowerCase());
+  //const lowerTree = tree.map((p) => p.toLowerCase());
   const normalizedHints = helmChartLocations.map((p) => p.toLowerCase());
   const localPathHints = normalizedHints.filter(
     (h) => !h.startsWith("http://") && !h.startsWith("https://")
