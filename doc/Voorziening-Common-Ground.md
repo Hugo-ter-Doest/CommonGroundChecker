@@ -33,16 +33,24 @@ Automatische detectie maakt het mogelijk om snel te bepalen of een component vol
 ## Security
 De Security-categorie toetst of een component voldoet aan de relevante gemeentelijke en Europese compliancekaders, zoals NIS2 en de Baseline Informatiebeveiliging Overheid (BIO). Dit betekent dat een component niet alleen technisch veilig moet zijn, maar ook binnen de organisatorische en procesmatige normen voor het publieke domein moet passen.
 
-Essentieel is het shift-left principe: beveiliging en risicobeheersing moeten zo vroeg mogelijk in de ontwikkelketen worden ingebouwd. Dit omvat bijvoorbeeld het toepassen van OWASP-richtlijnen, het analyseren van broncode op veelvoorkomende kwetsbaarheden, en het voorkomen van credentials in code of configuratiebestanden. Daarmee worden risico’s vroeg herkend en kan een component al in de ontwikkelfase aan de juiste beveiligingscriteria voldoen.
+Essentieel is het shift-left principe: beveiliging en risicobeheersing moeten zo vroeg mogelijk in de ontwikkelketen worden geadresseerd. Dit omvat bijvoorbeeld het toepassen van OWASP-richtlijnen, het analyseren van broncode op veelvoorkomende kwetsbaarheden, en het voorkomen van credentials in code of configuratiebestanden. Daarmee worden risico’s tijdig herkend en kan een component al in de ontwikkelfase aan de juiste beveiligingscriteria voldoen.
 
-Daarnaast moet er duidelijkheid zijn over kwetsbaarheidsmanagement: hoe worden beveiligingslekken ontdekt, gerapporteerd en opgelost, welke dependency security-praktijken zijn aanwezig en welke maatregelen zijn genomen tegen risico’s zoals onveilige authenticatie, onvoldoende autorisatie en onveilige communicatie. Security is daarmee geen optionele wens, maar een randvoorwaarde voor opname in de Basisset.
+Daarnaast moet er duidelijkheid zijn over kwetsbaarheidsmanagement: hoe worden beveiligingslekken ontdekt, gerapporteerd en opgelost, welke dependency security-praktijken zijn aanwezig en welke maatregelen zijn genomen tegen risico’s zoals onveilige authenticatie, onvoldoende autorisatie en onveilige communicatie. Security is daarmee maar een randvoorwaarde voor opname in de Basisset.
 
-## Deployment & Operations
-inzetbaarheid via container- of Helm-artefacten, CI/CD-ondersteuning en een deploymentmodel dat compatibel is met Haven/Haven+ en gemeentelijke platformen.
+## DevOps
+Binnen Common Ground wordt ervan uitgegaan dat componenten als Docker containers beschikbaar zijn en kunnen worden uitgerold op een Haven-compliant infrastructuur. Hiervoor moeten, naast de container images zelf, ook Helm charts beschikbaar zijn voor de uitrol.
 
-Een component moet dus niet alleen de vraag van gemeenten bedienen, maar ook genoeg bewijs leveren dat het betrouwbaar, veilig, interoperabel en beheerbaar is in een gedeelde gemeentelijke voorziening. Deze criteria moeten voorkomen dat alleen op basis van populariteit of functionalitie wordt gekozen zonder voldoende oog voor duurzame exploitatie.
+Een DevOps-geschikte component heeft een deploymentmodel dat past bij Haven/Haven+ en gemeenschappelijke gemeentelijke platformen, en is zodanig ingericht dat installatie, update en rollback beheersbaar blijven. Daarbij gaat het ook om beheerbaarheid: duidelijke deploymentdocumentatie, configuratie-informatie, monitoring- en loggingmogelijkheden en een duidelijke release- en rollbackstrategie.
+
+Als een component DevOps-mature is, kan het sneller, veiliger en met minder handmatige inzet in de gezamenlijke voorziening worden opgenomen. Dit voorkomt dat alleen functionele geschiktheid leidt tot opname, zonder voldoende aandacht voor beheersbaarheid, continuïteit en operationele stabiliteit.
+
+Een component moet dus niet alleen de vraag van gemeenten bedienen, maar moet ook aantoonbaar betrouwbaar, veilig, interoperabel en beheerbaar zijn in een gedeelde gemeentelijke voorziening. Deze criteria moeten voorkomen dat alleen op basis van populariteit of functionaliteit wordt gekozen zonder voldoende oog voor duurzame exploitatie.
 
 # Automatische beoordeling van componenten
+Automatische beoordeling van componenten is efficiënt omdat het herhaalde controles over veel repositories kan schalen en omdat het menselijke bias uit de de beoordeling haalt. Door structurele kenmerken zoals bestandsnamen, licenties, documentatie, API-specificaties en container-artefacten automatisch te herkennen, ontstaat een objectief startpunt voor de beoordeling. Dit versnelt de doorlooptijd en maakt het eenvoudiger om componenten te vergelijken en selecteren.
+
+In deze aanpak worden automatisch af te leiden kenmerken en metrieken gecombineerd met de opbouw van de repository: de repositorystructuur wordt geanalyseerd, specifieke bestanden en metadata worden herkend, en waar nodig worden externe tools ingezet voor diepere analyses. Voor softwarekwaliteit kan dit bijvoorbeeld betekenen dat de complexiteit van de code wordt geanalyseerd of dat de aanwezigheid van een changelog wordt gecontroleerd. Voor security betekent het dat OWASP-gerelateerde patronen, credentials in code en bekende configuratierisico’s automatisch worden doorzocht. Voor DevOps betekent het dat deploymentinformatie en container/Helm-artefacten worden gevalideerd.
+
+Het doel is niet om handmatige beoordeling te vervangen, maar om deze te versterken. Voor bepaalde kenmerken blijft handmatige controle of analyse nodig.
 
 # Bronnen
-
