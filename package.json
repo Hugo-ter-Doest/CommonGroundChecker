@@ -19,7 +19,7 @@
     "test:watch": "vitest",
     "security": "npm audit --audit-level=high",
     "security:secrets": "gitleaks git . --config .gitleaks.toml --redact",
-    "db:start": "docker compose up -d",
+    "db:start": "docker compose up -d db",
     "db:stop": "docker compose down",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",

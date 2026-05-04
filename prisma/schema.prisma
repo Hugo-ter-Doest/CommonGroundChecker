@@ -29,7 +29,16 @@ model Repo {
   repoUrl   String         @unique
   owner     String
   name      String
-  metadata  Json
+  description            String?
+  language               String?
+  stars                  Int      @default(0)
+  forks                  Int      @default(0)
+  defaultBranch          String?
+  topics                 String[] @default([])
+  license                String?
+  version                String?
+  versionEvidenceSource  String?
+  versionEvidenceDetail  String?
   helmChartLocations       String[]
   dockerLocations          String[]
   apiSpecificationLocations String[]

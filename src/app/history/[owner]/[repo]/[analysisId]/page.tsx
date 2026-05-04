@@ -60,57 +60,41 @@ function normalizeResults(raw: unknown): CheckResult[] {
     });
 }
 
-function normalizeRepoMeta(raw: unknown): CheckReport["repoMeta"] {
-  const fallback: CheckReport["repoMeta"] = {
-    description: null,
-    language: null,
-    stars: 0,
-    forks: 0,
-    defaultBranch: "main",
-    topics: [],
-    license: null,
-    version: null,
-    versionEvidence: {
-      source: "none",
-      detail: "No saved version evidence for this historical record",
-    },
-  };
-
-  if (!raw || typeof raw !== "object") return fallback;
-  const meta = raw as Partial<CheckReport["repoMeta"]>;
-
+function normalizeRepoMeta(raw: {
+  description: string | null;
+  language: string | null;
+  stars: number;
+  forks: number;
+  defaultBranch: string | null;
+  topics: string[];
+  license: string | null;
+  version: string | null;
+  versionEvidenceSource: string | null;
+  versionEvidenceDetail: string | null;
+}): CheckReport["repoMeta"] {
   return {
-    description: typeof meta.description === "string" ? meta.description : null,
-    language: typeof meta.language === "string" ? meta.language : null,
-    stars: typeof meta.stars === "number" ? meta.stars : 0,
-    forks: typeof meta.forks === "number" ? meta.forks : 0,
-    defaultBranch:
-      typeof meta.defaultBranch === "string" ? meta.defaultBranch : "main",
-    topics: Array.isArray(meta.topics)
-      ? meta.topics.filter((v): v is string => typeof v === "string")
-      : [],
-    license: typeof meta.license === "string" ? meta.license : null,
-    version: typeof meta.version === "string" ? meta.version : null,
-    versionEvidence:
-      meta.versionEvidence && typeof meta.versionEvidence === "object"
-        ? {
-            source:
-              meta.versionEvidence.source === "release" ||
-              meta.versionEvidence.source === "tag" ||
-              meta.versionEvidence.source === "manifest" ||
-              meta.versionEvidence.source === "readme" ||
-              meta.versionEvidence.source === "none"
-                ? meta.versionEvidence.source
-                : "none",
-            detail:
-              typeof meta.versionEvidence.detail === "string"
-                ? meta.versionEvidence.detail
-                : "No saved version evidence for this historical record",
-          }
-        : {
-            source: "none",
-            detail: "No saved version evidence for this historical record",
-          },
+    description: raw.description,
+    language: raw.language,
+    stars: raw.stars,
+    forks: raw.forks,
+    defaultBranch: raw.defaultBranch ?? "main",
+    topics: Array.isArray(raw.topics) ? raw.topics : [],
+    license: raw.license,
+    version: raw.version,
+    versionEvidence: {
+      source:
+        raw.versionEvidenceSource === "release" ||
+        raw.versionEvidenceSource === "tag" ||
+        raw.versionEvidenceSource === "manifest" ||
+        raw.versionEvidenceSource === "readme" ||
+        raw.versionEvidenceSource === "none"
+          ? raw.versionEvidenceSource
+          : "none",
+      detail:
+        typeof raw.versionEvidenceDetail === "string"
+          ? raw.versionEvidenceDetail
+          : "No saved version evidence for this historical record",
+    },
   };
 }
 
@@ -151,7 +135,7 @@ export default async function AnalysisDetailPage({ params }: AnalysisDetailPageP
   }
 
   const results = normalizeResults(analysis.results);
-  const repoMeta = normalizeRepoMeta(analysis.repository.metadata);
+  const repoMeta = normalizeRepoMeta(analysis.repository);
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10 space-y-6">

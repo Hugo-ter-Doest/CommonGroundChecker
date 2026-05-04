@@ -39,13 +39,35 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    const repoMeta = {
+      description: repository.description,
+      language: repository.language,
+      stars: repository.stars,
+      forks: repository.forks,
+      defaultBranch: repository.defaultBranch,
+      topics: repository.topics,
+      license: repository.license,
+      version: repository.version,
+      versionEvidence: {
+        source:
+          repository.versionEvidenceSource === "release" ||
+          repository.versionEvidenceSource === "tag" ||
+          repository.versionEvidenceSource === "manifest" ||
+          repository.versionEvidenceSource === "readme" ||
+          repository.versionEvidenceSource === "none"
+            ? repository.versionEvidenceSource
+            : "none",
+        detail: repository.versionEvidenceDetail ?? "",
+      },
+    };
+
     return NextResponse.json({
       repository: {
         id: repository.id,
         repoUrl: repository.repoUrl,
         owner: repository.owner,
         name: repository.name,
-        metadata: repository.metadata,
+        metadata: repoMeta,
         createdAt: repository.createdAt,
         updatedAt: repository.updatedAt,
       },
