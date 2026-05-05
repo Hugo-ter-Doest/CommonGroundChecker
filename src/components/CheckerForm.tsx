@@ -183,9 +183,9 @@ export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
     let apiSpecificationLocations = normalizeLocations(repository.apiSpecificationLocations);
 
     const needsFallback =
-      helmChartLocations.length === 0 &&
-      documentationLocations.length === 0 &&
-      dockerLocations.length === 0 &&
+      helmChartLocations.length === 0 ||
+      documentationLocations.length === 0 ||
+      dockerLocations.length === 0 ||
       apiSpecificationLocations.length === 0;
 
     if (needsFallback) {
@@ -193,10 +193,19 @@ export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
         repository.owner,
         repository.name
       );
-      helmChartLocations = fallback.helmChartLocations;
-      documentationLocations = fallback.documentationLocations;
-      dockerLocations = fallback.dockerLocations;
-      apiSpecificationLocations = fallback.apiSpecificationLocations;
+
+      if (helmChartLocations.length === 0) {
+        helmChartLocations = fallback.helmChartLocations;
+      }
+      if (documentationLocations.length === 0) {
+        documentationLocations = fallback.documentationLocations;
+      }
+      if (dockerLocations.length === 0) {
+        dockerLocations = fallback.dockerLocations;
+      }
+      if (apiSpecificationLocations.length === 0) {
+        apiSpecificationLocations = fallback.apiSpecificationLocations;
+      }
     }
 
     const helmLocation = helmChartLocations[0] ?? "";

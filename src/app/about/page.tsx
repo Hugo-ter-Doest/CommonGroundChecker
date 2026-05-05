@@ -27,6 +27,21 @@ export default function AboutPage() {
           and make reusable public-sector software easier to evaluate over time.
         </p>
       </section>
+
+      <section className="text-sm text-gray-500 border-t border-gray-200 pt-4 space-y-1">
+        <p>© 2026 VNG Realisatie</p>
+        <p>Author: Hugo W.L. ter Doest</p>
+        <p>
+          <a
+            href="https://github.com/Hugo-ter-Doest/CommonGroundChecker"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-cg-lightblue hover:underline"
+          >
+            View source on GitHub
+          </a>
+        </p>
+      </section>
     </div>
   );
 }
