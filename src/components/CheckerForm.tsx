@@ -42,6 +42,13 @@ function normalizeLocations(values?: string[]): string[] {
   return values.map((value) => value.trim()).filter(Boolean);
 }
 
+function parseLocationsInput(value: string): string[] {
+  return value
+    .split(/\r?\n|,+/)
+    .map((location) => location.trim())
+    .filter(Boolean);
+}
+
 function extractFromEvidenceByCheckId(
   results: StoredCheckResult[] | undefined,
   checkId: string
@@ -166,7 +173,8 @@ export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
   const [isRegister, setIsRegister] = useState(false);
   const [apiSpecificationSomewhereElse, setApiSpecificationSomewhereElse] =
     useState(false);
-  const [apiSpecificationUrl, setApiSpecificationUrl] = useState("");
+  const [apiSpecificationLocationsInput, setApiSpecificationLocationsInput] =
+    useState("");
 
   async function applyRepositoryPrefill(repository: RecentRepository) {
     let helmChartLocations = normalizeLocations(repository.helmChartLocations);
@@ -195,6 +203,7 @@ export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
     const documentationLocation = documentationLocations[0] ?? "";
     const dockerLocation = dockerLocations[0] ?? "";
     const apiSpecificationLocation = apiSpecificationLocations[0] ?? "";
+    const apiSpecificationLocationsText = apiSpecificationLocations.join("\n");
 
     setValue(repository.repoUrl);
 
@@ -210,7 +219,7 @@ export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
     const hasApiSpecificationLocation = Boolean(apiSpecificationLocation);
     setIsRegister(hasApiSpecificationLocation);
     setApiSpecificationSomewhereElse(hasApiSpecificationLocation);
-    setApiSpecificationUrl(apiSpecificationLocation);
+    setApiSpecificationLocationsInput(apiSpecificationLocationsText);
   }
 
   async function handleExampleSelect(url: string) {
@@ -261,7 +270,7 @@ export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
     if (helmSomewhereElse && !helmChartUrl.trim()) return;
     if (documentationSomewhereElse && !documentationUrl.trim()) return;
     if (dockerSomewhereElse && !dockerUrl.trim()) return;
-    if (isRegister && apiSpecificationSomewhereElse && !apiSpecificationUrl.trim()) return;
+    if (isRegister && apiSpecificationSomewhereElse && !apiSpecificationLocationsInput.trim()) return;
 
     const parsedHelmLocations = helmSomewhereElse && helmChartUrl.trim()
       ? [helmChartUrl.trim()]
@@ -274,8 +283,8 @@ export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
       ? [dockerUrl.trim()]
       : [];
     const parsedApiSpecificationLocations =
-      isRegister && apiSpecificationSomewhereElse && apiSpecificationUrl.trim()
-        ? [apiSpecificationUrl.trim()]
+      isRegister && apiSpecificationSomewhereElse && apiSpecificationLocationsInput.trim()
+        ? parseLocationsInput(apiSpecificationLocationsInput)
         : [];
 
     onSubmit(
@@ -311,7 +320,7 @@ export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
             (helmSomewhereElse && !helmChartUrl.trim()) ||
             (documentationSomewhereElse && !documentationUrl.trim()) ||
             (dockerSomewhereElse && !dockerUrl.trim()) ||
-            (isRegister && apiSpecificationSomewhereElse && !apiSpecificationUrl.trim())
+            (isRegister && apiSpecificationSomewhereElse && !apiSpecificationLocationsInput.trim())
           }
           className="px-6 py-3 bg-cg-blue text-white font-semibold rounded-lg hover:bg-cg-lightblue transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shrink-0"
         >
@@ -336,7 +345,7 @@ export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
               setIsRegister(checked);
               if (!checked) {
                 setApiSpecificationSomewhereElse(false);
-                setApiSpecificationUrl("");
+                setApiSpecificationLocationsInput("");
               }
             }}
             disabled={loading}
@@ -357,7 +366,7 @@ export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
                 onChange={(e) => {
                   const checked = e.target.checked;
                   setApiSpecificationSomewhereElse(checked);
-                  if (!checked) setApiSpecificationUrl("");
+                  if (!checked) setApiSpecificationLocationsInput("");
                 }}
                 disabled={loading}
                 className="h-4 w-4 rounded border-gray-300 text-cg-lightblue focus:ring-cg-lightblue"
@@ -367,15 +376,15 @@ export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
 
             {apiSpecificationSomewhereElse && (
               <div>
-                <label htmlFor="api-specification-url" className="block text-xs text-gray-500 mb-1">
-                  URL or repository path to API specification
+                <label htmlFor="api-specification-locations" className="block text-xs text-gray-500 mb-1">
+                  One or more API specification URLs/paths, one per line
                 </label>
-                <input
-                  id="api-specification-url"
-                  type="text"
-                  value={apiSpecificationUrl}
-                  onChange={(e) => setApiSpecificationUrl(e.target.value)}
-                  placeholder="https://example.com/openapi.yaml or api/openapi.yaml"
+                <textarea
+                  id="api-specification-locations"
+                  value={apiSpecificationLocationsInput}
+                  onChange={(e) => setApiSpecificationLocationsInput(e.target.value)}
+                  placeholder="https://example.com/openapi.yaml\napi/openapi.yaml"
+                  rows={4}
                   className="w-full px-4 py-3 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-cg-lightblue focus:border-transparent disabled:opacity-60"
                   disabled={loading}
                   required={isRegister && apiSpecificationSomewhereElse}

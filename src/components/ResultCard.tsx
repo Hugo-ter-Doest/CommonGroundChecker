@@ -148,9 +148,9 @@ export default function ResultCard({
                 Evidence
               </p>
               <ul className="space-y-0.5">
-                {evidence.map((e) => (
+                {evidence.map((e, index) => (
                   <li
-                    key={e}
+                    key={`${e}-${index}`}
                     className="text-xs font-mono bg-white/60 rounded px-2 py-1 text-gray-700"
                   >
                     {e}

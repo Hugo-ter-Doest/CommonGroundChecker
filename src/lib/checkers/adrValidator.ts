@@ -145,17 +145,29 @@ async function isReachableSpecUrl(url: string): Promise<boolean> {
   }
 }
 
-async function resolveSpecTargetUrl(
+interface ResolvedTarget {
+  url: string;
+  source: string;
+}
+
+async function resolveSpecTargetUrls(
   owner: string,
   repo: string,
   branch: string,
   tree: string[],
   apiSpecificationLocations: string[]
-): Promise<{ url: string; source: string } | null> {
+): Promise<ResolvedTarget[]> {
   const lowerTree = tree.map((path) => path.toLowerCase());
   const providedLocations = apiSpecificationLocations
     .map((location) => location.trim())
     .filter(Boolean);
+
+  const resolvedTargets: ResolvedTarget[] = [];
+  const addTarget = (target: ResolvedTarget) => {
+    if (!resolvedTargets.some((item) => item.url === target.url)) {
+      resolvedTargets.push(target);
+    }
+  };
 
   const knownSpecSuffixes = [
     "openapi.json",
@@ -169,8 +181,7 @@ async function resolveSpecTargetUrl(
   for (const location of providedLocations) {
     if (/^https?:\/\//i.test(location)) {
       let normalized = location.replace(/\/+$/g, "");
-      
-      // Convert GitHub web URLs to raw URLs
+
       const rawGitHubUrl = convertGitHubWebUrlToRaw(normalized);
       if (rawGitHubUrl) {
         normalized = rawGitHubUrl;
@@ -178,14 +189,15 @@ async function resolveSpecTargetUrl(
 
       if (/(openapi|swagger)\.(json|ya?ml)$/i.test(normalized)) {
         if (await isReachableSpecUrl(normalized)) {
-          return { url: normalized, source: "provided-url" };
+          addTarget({ url: normalized, source: "provided-url" });
+          continue;
         }
       }
 
       for (const suffix of knownSpecSuffixes) {
         const candidate = `${normalized}/${suffix}`;
         if (await isReachableSpecUrl(candidate)) {
-          return { url: candidate, source: "provided-api-base" };
+          addTarget({ url: candidate, source: "provided-api-base" });
         }
       }
     } else {
@@ -194,12 +206,16 @@ async function resolveSpecTargetUrl(
         (path) => path === normalizedPath.toLowerCase()
       );
       if (index !== -1) {
-        return {
+        addTarget({
           url: buildRawGitHubUrl(owner, repo, branch, tree[index]),
           source: "provided-repo-path",
-        };
+        });
       }
     }
+  }
+
+  if (resolvedTargets.length > 0) {
+    return resolvedTargets;
   }
 
   const fallbackCandidates = [
@@ -224,31 +240,31 @@ async function resolveSpecTargetUrl(
   for (const candidate of fallbackCandidates) {
     const index = lowerTree.findIndex((path) => path === candidate);
     if (index !== -1) {
-      return {
+      addTarget({
         url: buildRawGitHubUrl(owner, repo, branch, tree[index]),
         source: "auto-discovered",
-      };
+      });
     }
   }
 
-  const deepMatchIndex = lowerTree.findIndex(
-    (path) =>
+  for (let i = 0; i < lowerTree.length; i += 1) {
+    const path = lowerTree[i];
+    if (
       path.endsWith("/openapi.yaml") ||
       path.endsWith("/openapi.yml") ||
       path.endsWith("/openapi.json") ||
       path.endsWith("/swagger.yaml") ||
       path.endsWith("/swagger.yml") ||
       path.endsWith("/swagger.json")
-  );
-
-  if (deepMatchIndex !== -1) {
-    return {
-      url: buildRawGitHubUrl(owner, repo, branch, tree[deepMatchIndex]),
-      source: "auto-discovered",
-    };
+    ) {
+      addTarget({
+        url: buildRawGitHubUrl(owner, repo, branch, tree[i]),
+        source: "auto-discovered",
+      });
+    }
   }
 
-  return null;
+  return resolvedTargets;
 }
 
 export async function checkAdrValidator(
@@ -259,7 +275,7 @@ export async function checkAdrValidator(
   apiSpecificationLocations: string[] = [],
   spectralRulesetSource?: string
 ): Promise<CheckResult> {
-  const resolvedTarget = await resolveSpecTargetUrl(
+  const resolvedTargets = await resolveSpecTargetUrls(
     owner,
     repo,
     branch,
@@ -267,7 +283,7 @@ export async function checkAdrValidator(
     apiSpecificationLocations
   );
 
-  if (!resolvedTarget) {
+  if (resolvedTargets.length === 0) {
     return {
       id: "adrvalidator",
       title: "API Design Rules",
@@ -281,35 +297,102 @@ export async function checkAdrValidator(
     };
   }
 
-  const targetUrl = resolvedTarget.url;
   const resolvedRulesetSource = resolveRulesetSource(spectralRulesetSource);
-  const targetEvidence =
-    resolvedTarget.source === "auto-discovered"
-      ? [
-          `API specification was auto-discovered by the checker: ${targetUrl}`,
-          `Discovery source: ${resolvedTarget.source}`,
-          `Spectral ruleset source: ${resolvedRulesetSource}`,
-        ]
-      : [
-          `Lint target: ${targetUrl}`,
-          `Target source: ${resolvedTarget.source}`,
-          `Spectral ruleset source: ${resolvedRulesetSource}`,
-        ];
 
-  const spectralArgs = [
-    "--yes",
-    "@stoplight/spectral-cli",
-    "lint",
-    targetUrl,
-    "--ruleset",
-    resolvedRulesetSource,
-    "--format",
-    "json",
-  ];
+  let totalIssues = 0;
+  let hasWarn = false;
+  const evidence: string[] = [];
 
-  const result = await runSpectralCommand(spectralArgs);
+  for (const resolvedTarget of resolvedTargets) {
+    const targetUrl = resolvedTarget.url;
+    const targetSource = resolvedTarget.source;
+    const targetEvidenceBase =
+      targetSource === "auto-discovered"
+        ? [
+            `API specification was auto-discovered by the checker: ${targetUrl}`,
+            `Discovery source: ${targetSource}`,
+            `Spectral ruleset source: ${resolvedRulesetSource}`,
+          ]
+        : [
+            `Lint target: ${targetUrl}`,
+            `Target source: ${targetSource}`,
+            `Spectral ruleset source: ${resolvedRulesetSource}`,
+          ];
 
-  if (result.code === 127) {
+    const spectralArgs = [
+      "--yes",
+      "@stoplight/spectral-cli",
+      "lint",
+      targetUrl,
+      "--ruleset",
+      resolvedRulesetSource,
+      "--format",
+      "json",
+    ];
+
+    const result = await runSpectralCommand(spectralArgs);
+
+    if (result.code === 127) {
+      return {
+        id: "adrvalidator",
+        title: "API Design Rules",
+        description:
+          "The component should comply with the Common Ground API Design Rules (ADR).",
+        status: "warn",
+        message:
+          "Spectral CLI is not available. Ensure Node.js and npx are installed.",
+        evidence: [
+          ...targetEvidenceBase,
+          ...result.stderr
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .filter(Boolean)
+            .slice(0, 5),
+        ],
+        referenceUrl: "https://commonground.nl/cms/view/54476259/api-designrules",
+      };
+    }
+
+    const lintResults = parseSpectralJson(result.stdout);
+    if (lintResults === null) {
+      const combinedOutput = `${result.stdout}\n${result.stderr}`;
+      evidence.push(...targetEvidenceBase);
+      evidence.push(
+        ...combinedOutput
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .slice(0, 10)
+      );
+      hasWarn = true;
+      continue;
+    }
+
+    if (lintResults.length > 0) {
+      totalIssues += lintResults.length;
+      evidence.push(...targetEvidenceBase);
+      evidence.push(...lintResults.map((issue) => formatSpectralIssue(issue)));
+      continue;
+    }
+
+    evidence.push(...targetEvidenceBase);
+    evidence.push(`No API Design Rules violations found for ${targetUrl}.`);
+  }
+
+  if (totalIssues > 0) {
+    return {
+      id: "adrvalidator",
+      title: "API Design Rules",
+      description:
+        "The component should comply with the Common Ground API Design Rules (ADR).",
+      status: "fail",
+      message: `API Design Rules violations found across ${resolvedTargets.length} specification(s): ${totalIssues} issue(s).`,
+      evidence,
+      referenceUrl: "https://commonground.nl/cms/view/54476259/api-designrules",
+    };
+  }
+
+  if (hasWarn) {
     return {
       id: "adrvalidator",
       title: "API Design Rules",
@@ -317,53 +400,8 @@ export async function checkAdrValidator(
         "The component should comply with the Common Ground API Design Rules (ADR).",
       status: "warn",
       message:
-        "Spectral CLI is not available. Ensure Node.js and npx are installed.",
-      evidence: [
-        ...targetEvidence,
-        ...result.stderr
-          .split(/\r?\n/)
-          .map((line) => line.trim())
-          .filter(Boolean)
-          .slice(0, 5),
-      ],
-      referenceUrl: "https://commonground.nl/cms/view/54476259/api-designrules",
-    };
-  }
-
-  const lintResults = parseSpectralJson(result.stdout);
-  if (lintResults === null) {
-    const combinedOutput = `${result.stdout}\n${result.stderr}`;
-    return {
-      id: "adrvalidator",
-      title: "API Design Rules",
-      description:
-        "The component should comply with the Common Ground API Design Rules (ADR).",
-      status: "warn",
-      message: "Spectral returned non-JSON output; unable to parse structured ADR result.",
-      evidence: [
-        ...targetEvidence,
-        ...combinedOutput
-          .split(/\r?\n/)
-          .map((line) => line.trim())
-          .filter(Boolean)
-          .slice(0, 10),
-      ],
-      referenceUrl: "https://commonground.nl/cms/view/54476259/api-designrules",
-    };
-  }
-
-  if (lintResults.length > 0) {
-    return {
-      id: "adrvalidator",
-      title: "API Design Rules",
-      description:
-        "The component should comply with the Common Ground API Design Rules (ADR).",
-      status: "fail",
-      message: `API Design Rules violations found (${lintResults.length} issue(s)).`,
-      evidence: [
-        ...targetEvidence,
-        ...lintResults.map((issue) => formatSpectralIssue(issue)),
-      ],
+        "One or more API specifications could not be fully validated due to Spectral output parsing issues.",
+      evidence,
       referenceUrl: "https://commonground.nl/cms/view/54476259/api-designrules",
     };
   }
@@ -374,9 +412,11 @@ export async function checkAdrValidator(
     description:
       "The component should comply with the Common Ground API Design Rules (ADR).",
     status: "pass",
-    message: `API specification at ${targetUrl} complies with Common Ground API Design Rules.`,
+    message: `API specification(s) at ${resolvedTargets
+      .map((target) => target.url)
+      .join(", ")} comply with Common Ground API Design Rules.`,
     evidence: [
-      ...targetEvidence,
+      ...evidence,
       `Ruleset: ${ADR_RULESET_URL}`,
       "No API Design Rules violations found by Spectral.",
     ],
