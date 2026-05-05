@@ -344,6 +344,9 @@ export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
           />
           Component is a register
         </label>
+        <p className="text-xs text-gray-500">
+          When selected, the checker will require an OpenAPI/Swagger specification and try to discover the API definition.
+        </p>
 
         {isRegister && (
           <>

@@ -13,8 +13,8 @@ export default function AboutPage() {
         </p>
       </section>
 
-      <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-3">
-        <h3 className="text-lg font-semibold text-gray-800">Purpose of this checker</h3>
+      <section className="space-y-3">
+        <h2 className="text-2xl font-bold text-cg-blue">Component Checker</h2>
         <p className="text-gray-700">
           The Common Ground Component Checker helps teams quickly assess whether a
           public GitHub repository aligns with key Common Ground practices. It runs
