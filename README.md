@@ -213,6 +213,9 @@ flowchart LR
 
 | Method | Endpoint | Purpose |
 |---|---|---|
+| `GET` | `/api/openapi` | Retrieve the machine-readable OpenAPI specification |
+| `POST` | `/api/repositories` | Create or update repository metadata |
+| `POST` | `/api/repositories/{repoId}/analyses` | Persist a new analysis result for an existing repository |
 | `POST` | `/api/check` | Run full analysis and persist result |
 | `POST` | `/api/check/stream` | Stream progress/events during analysis |
 | `GET` | `/api/admin/scoring` | Retrieve current scoring configuration |
