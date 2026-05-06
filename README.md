@@ -168,19 +168,19 @@ The application is built as a single Next.js service with clear layers:
 
 ```mermaid
 flowchart TB
-    subgraph FRONTEND[Component Checker frontend]
-        FRONTEND_UI[Multiple checkers\nhistory\nadmin]
+    subgraph FRONTEND["Component Checker frontend"]
+        FRONTEND_UI["Multiple checkers<br/>history<br/>admin"]
     end
-    subgraph BACKEND[Component Checker backend]
-        BACKEND_API[API client connects to API]
+    subgraph BACKEND["Component Checker backend"]
+        BACKEND_API["API client connects to API"]
     end
-    subgraph API[Component Checker API]
-        API_CHECK[/api/check]
-        API_REPOS[/api/repositories]
-        API_HISTORY[/api/repo-history]
-        API_SCORING[/api/admin/scoring]
+    subgraph API["Component Checker API"]
+        API_CHECK["/api/check"]
+        API_REPOS["/api/repositories"]
+        API_HISTORY["/api/repo-history"]
+        API_SCORING["/api/admin/scoring"]
     end
-    subgraph REGISTER[Component Register]
+    subgraph REGISTER["Component Register"]
         DB[(PostgreSQL database)]
     end
 
