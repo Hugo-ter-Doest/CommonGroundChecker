@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { useEffect, useState } from "react";
+import { getRepositories, getRepoHistory, RepoSummary } from "@/lib/apiClient";
 
 interface CheckerFormProps {
   onSubmit: (
@@ -16,21 +17,7 @@ interface CheckerFormProps {
   loading: boolean;
 }
 
-interface RecentRepository {
-  id: string;
-  owner: string;
-  name: string;
-  repoUrl: string;
-  helmChartLocations?: string[];
-  dockerLocations?: string[];
-  apiSpecificationLocations?: string[];
-  documentationLocations?: string[];
-  analysisCount: number;
-  latestAnalysis: {
-    checkedAt: string;
-    score: number;
-  } | null;
-}
+type RecentRepository = RepoSummary;
 
 type StoredCheckResult = {
   id?: string;
@@ -117,23 +104,7 @@ async function fetchLatestLocationsFromHistory(
   documentationLocations: string[];
 }> {
   try {
-    const response = await fetch(
-      `/api/repo-history?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}&limit=1`,
-      { cache: "no-store" }
-    );
-    if (!response.ok) {
-      return {
-        helmChartLocations: [],
-        dockerLocations: [],
-        apiSpecificationLocations: [],
-        documentationLocations: [],
-      };
-    }
-
-    const data = (await response.json()) as {
-      analyses?: Array<{ results?: StoredCheckResult[] }>;
-    };
-
+    const data = await getRepoHistory(owner, repo, 1);
     const latestResults = data.analyses?.[0]?.results;
 
     return {
@@ -249,18 +220,10 @@ export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
 
     async function loadRecentRepositories() {
       try {
-        const response = await fetch("/api/repositories?limit=8", {
-          cache: "no-store",
-        });
-        if (!response.ok) return;
+        const repositories = await getRepositories(8);
+        if (cancelled) return;
 
-        const data = (await response.json()) as {
-          repositories?: RecentRepository[];
-        };
-
-        if (!cancelled && Array.isArray(data.repositories)) {
-          setRecentRepositories(data.repositories);
-        }
+        setRecentRepositories(repositories);
       } catch {
         // Ignore and keep the static examples only.
       }

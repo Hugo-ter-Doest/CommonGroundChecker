@@ -9,6 +9,7 @@ import RepoMeta from "@/components/RepoMeta";
 import type { CheckReport } from "@/lib/types";
 import type { CriteriaCategory } from "@/lib/criteria";
 import { CATEGORY_ORDER, RESULT_CATEGORY_BY_ID, RESULT_ORDER_BY_ID } from "@/lib/criteria";
+import { getAdminScoring, streamCheck } from "@/lib/apiClient";
 import { AlertCircle, ClipboardList } from "lucide-react";
 
 function sanitizePdfFileName(value: string): string {
@@ -408,12 +409,7 @@ export default function HomePage() {
 
     async function loadRequirementLevels() {
       try {
-        const response = await fetch("/api/admin/scoring", { cache: "no-store" });
-        if (!response.ok) return;
-
-        const data = (await response.json()) as {
-          criterionRequirementLevels?: Record<string, RequirementLevelLabel>;
-        };
+        const data = await getAdminScoring();
 
         if (cancelled || !data.criterionRequirementLevels) return;
 
@@ -447,66 +443,27 @@ export default function HomePage() {
     setProgress({ step: "Starting analysis…", pct: 0 });
 
     try {
-      const res = await fetch("/api/check/stream", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const result = await streamCheck(
+        {
           repoUrl: url,
           helmChartLocations,
           documentationLocations,
           dockerLocations,
           apiSpecificationLocations,
           isRegister,
-        }),
-      });
-
-      if (!res.body) throw new Error("No response stream.");
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-
-        // SSE events are separated by double newlines
-        const events = buffer.split("\n\n");
-        buffer = events.pop() ?? "";
-
-        for (const event of events) {
-          const dataLine = event
-            .split("\n")
-            .find((l) => l.startsWith("data: "));
-          if (!dataLine) continue;
-
-          const payload = JSON.parse(dataLine.slice(6)) as {
-            step: string;
-            pct: number;
-            done?: boolean;
-            result?: CheckReport;
-            error?: string;
-          };
-
-          if (payload.error) {
-            setError(payload.error);
-            setLoading(false);
-            return;
-          }
-
-          setProgress({ step: payload.step, pct: payload.pct });
-
-          if (payload.done && payload.result) {
-            setReport(payload.result);
-            setLoading(false);
-            return;
-          }
+        },
+        (step, pct) => {
+          setProgress({ step, pct });
         }
-      }
-    } catch {
-      setError("Network error — could not reach the server.");
+      );
+
+      setReport(result);
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Network error — could not reach the server."
+      );
     } finally {
       setLoading(false);
     }

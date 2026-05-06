@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { postAdminScoring } from "@/lib/apiClient";
 
 interface CriterionField {
   id: string;
@@ -261,40 +262,39 @@ export default function AdminWeightsForm({
     setError(null);
     setMessage(null);
     try {
-      const res = await fetch("/api/admin/scoring", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          criterionWeights: weights,
-          criterionRequirementLevels: requirementLevels,
-          complexityThreshold,
-          complexityMaxCcnThreshold,
-          spectralRulesetSource,
-        }),
+      const data = await postAdminScoring({
+        criterionWeights: weights,
+        criterionRequirementLevels: requirementLevels as Record<
+          string,
+          "mandatory" | "recommended"
+        >,
+        complexityThreshold,
+        complexityMaxCcnThreshold,
+        spectralRulesetSource,
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data?.error ?? "Could not save configuration.");
-      } else {
-        setMessage("Configuration saved. New analyses will use this configuration.");
-        if (data?.criterionWeights && typeof data.criterionWeights === "object") {
-          setWeights(data.criterionWeights as Record<string, number>);
-        }
-        if (data?.criterionRequirementLevels && typeof data.criterionRequirementLevels === "object") {
-          setRequirementLevels(data.criterionRequirementLevels as Record<string, string>);
-        }
-        if (typeof data?.complexityThreshold === "number") {
-          setComplexityThreshold(data.complexityThreshold);
-        }
-        if (typeof data?.complexityMaxCcnThreshold === "number") {
-          setComplexityMaxCcnThreshold(data.complexityMaxCcnThreshold);
-        }
-        if (typeof data?.spectralRulesetSource === "string") {
-          setSpectralRulesetSource(data.spectralRulesetSource);
-        }
+
+      setMessage("Configuration saved. New analyses will use this configuration.");
+      if (data?.criterionWeights && typeof data.criterionWeights === "object") {
+        setWeights(data.criterionWeights as Record<string, number>);
       }
-    } catch {
-      setError("Network error while saving configuration.");
+      if (data?.criterionRequirementLevels && typeof data.criterionRequirementLevels === "object") {
+        setRequirementLevels(data.criterionRequirementLevels as Record<string, string>);
+      }
+      if (typeof data?.complexityThreshold === "number") {
+        setComplexityThreshold(data.complexityThreshold);
+      }
+      if (typeof data?.complexityMaxCcnThreshold === "number") {
+        setComplexityMaxCcnThreshold(data.complexityMaxCcnThreshold);
+      }
+      if (typeof data?.spectralRulesetSource === "string") {
+        setSpectralRulesetSource(data.spectralRulesetSource);
+      }
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Network error while saving configuration."
+      );
     } finally {
       setSaving(false);
     }

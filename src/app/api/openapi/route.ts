@@ -98,6 +98,68 @@ const openApiSpec = {
         },
       },
     },
+    "/api/check": {
+      post: {
+        summary: "Run full analysis and persist result",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/CheckRequest" },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Analysis report",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/CheckReport" },
+              },
+            },
+          },
+          "400": {
+            description: "Invalid analysis request",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
+              },
+            },
+          },
+        },
+      },
+    },
+    "/api/check/stream": {
+      post: {
+        summary: "Stream progress events during analysis",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/CheckRequest" },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Analysis progress streamed as text/event-stream",
+            content: {
+              "text/event-stream": {
+                schema: { type: "string" },
+              },
+            },
+          },
+          "400": {
+            description: "Invalid analysis request",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
+              },
+            },
+          },
+        },
+      },
+    },
     "/api/repositories/{repoId}/analyses": {
       post: {
         summary: "Create a new analysis result for an existing repository",
@@ -314,6 +376,30 @@ const openApiSpec = {
             type: "array",
             items: { type: "string" },
           },
+        },
+        required: ["repoUrl"],
+      },
+      CheckRequest: {
+        type: "object",
+        properties: {
+          repoUrl: { type: "string" },
+          helmChartLocations: {
+            type: "array",
+            items: { type: "string" },
+          },
+          documentationLocations: {
+            type: "array",
+            items: { type: "string" },
+          },
+          dockerLocations: {
+            type: "array",
+            items: { type: "string" },
+          },
+          apiSpecificationLocations: {
+            type: "array",
+            items: { type: "string" },
+          },
+          isRegister: { type: "boolean" },
         },
         required: ["repoUrl"],
       },
