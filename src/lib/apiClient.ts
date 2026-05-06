@@ -1,5 +1,7 @@
 import type { CheckReport } from "@/lib/types";
 import { ApiClient } from "@/generated/openapi-client";
+import type { ApiRequestOptions } from "@/generated/openapi-client/core/ApiRequestOptions";
+import { getHeaders } from "@/generated/openapi-client/core/request";
 import type {
   CheckRequest,
   RepoAnalysisInput,
@@ -79,9 +81,20 @@ export async function streamCheck(
   options: StreamOptions,
   onProgress?: (step: string, pct: number) => void
 ) {
-  const response = await fetch("/api/check/stream", {
+  const requestOptions: ApiRequestOptions = {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    url: "/api/check/stream",
+    body: options,
+    mediaType: "application/json",
+  };
+
+  const baseUrl = apiClient.request.config.BASE?.toString().replace(/\/$/, "") ?? "";
+  const url = baseUrl ? `${baseUrl}/api/check/stream` : "/api/check/stream";
+  const headers = await getHeaders(apiClient.request.config, requestOptions);
+
+  const response = await fetch(url, {
+    method: requestOptions.method,
+    headers,
     body: JSON.stringify(options),
   });
 
