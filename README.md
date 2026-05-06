@@ -167,21 +167,35 @@ The application is built as a single Next.js service with clear layers:
 ### Architecture diagram
 
 ```mermaid
-flowchart LR
-	U[User in browser] --> UI[Next.js UI\nReact pages/components]
-	UI --> API[Internal API routes\n/api/check, /api/check/stream, /api/admin/scoring, /api/repositories, /api/repo-history]
-	API --> ORCH[Checker orchestrator\nsrc/lib/checkers/index.ts]
-	ORCH --> CHK[Criterion checkers\nlicense, openapi, docker, helm, docs, tests, complexity, owasp, ...]
-	CHK --> GH[GitHub REST API]
-	CHK --> TOOLS[External tools\nLizard / Spectral]
-	API --> CFG[Scoring config\nversioned weights + levels]
-	API --> DB[(PostgreSQL)]
-	CFG --> DB
-	DB --> HIST[History and admin pages]
-	HIST --> UI
+flowchart TB
+    subgraph FRONTEND[Component Checker frontend]
+        FRONTEND_UI[Multiple checkers\nhistory\nadmin]
+    end
+    subgraph BACKEND[Component Checker backend]
+        BACKEND_API[API client connects to API]
+    end
+    subgraph API[Component Checker API]
+        API_CHECK[/api/check]
+        API_REPOS[/api/repositories]
+        API_HISTORY[/api/repo-history]
+        API_SCORING[/api/admin/scoring]
+    end
+    subgraph REGISTER[Component Register]
+        DB[(PostgreSQL database)]
+    end
+
+    FRONTEND_UI --> BACKEND_API
+    BACKEND_API --> API_CHECK
+    BACKEND_API --> API_REPOS
+    BACKEND_API --> API_HISTORY
+    BACKEND_API --> API_SCORING
+    API_CHECK --> DB
+    API_REPOS --> DB
+    API_HISTORY --> DB
+    API_SCORING --> DB
 ```
 
-	### Streamed check sequence (`/api/check/stream`)
+### Streamed check sequence (`/api/check/stream`)
 
 	```mermaid
 	sequenceDiagram
