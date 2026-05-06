@@ -197,29 +197,29 @@ flowchart TB
 
 ### Streamed check sequence (`/api/check/stream`)
 
-	```mermaid
-	sequenceDiagram
-		participant User as Browser user
-		participant UI as Next.js UI (/)
-		participant API as /api/check/stream
-		participant Orch as Checker orchestrator
-		participant GH as GitHub REST API
-		participant Tools as Lizard/Spectral
-		participant DB as PostgreSQL (Prisma)
+```mermaid
+sequenceDiagram
+    participant User as Browser user
+    participant UI as Next.js UI (/)
+    participant API as /api/check/stream
+    participant Orch as Checker orchestrator
+    participant GH as GitHub REST API
+    participant Tools as Lizard/Spectral
+    participant DB as PostgreSQL (Prisma)
 
-		User->>UI: Submit repo URL + options
-		UI->>API: POST /api/check/stream
-		API-->>UI: stream event: started
-		API->>GH: fetch repo metadata + files
-		API-->>UI: stream event: repository loaded
-		API->>Orch: run criteria checks
-		Orch->>GH: read file content/refs (as needed)
-		Orch->>Tools: run complexity/validation tools (as needed)
-		Orch-->>API: per-criterion results + evidence
-		API-->>UI: stream progress events
-		API->>DB: persist repo + analysis + scoring config link
-		API-->>UI: stream event: completed + final report
-	```
+    User->>UI: Submit repo URL + options
+    UI->>API: POST /api/check/stream
+    API-->>UI: stream event: started
+    API->>GH: fetch repo metadata + files
+    API-->>UI: stream event: repository loaded
+    API->>Orch: run criteria checks
+    Orch->>GH: read file content/refs (as needed)
+    Orch->>Tools: run complexity/validation tools (as needed)
+    Orch-->>API: per-criterion results + evidence
+    API-->>UI: stream progress events
+    API->>DB: persist repo + analysis + scoring config link
+    API-->>UI: stream event: completed + final report
+```
 
 ## APIs
 
