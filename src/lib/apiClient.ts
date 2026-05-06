@@ -1,139 +1,55 @@
-import type { CheckReport, CheckResult } from "@/lib/types";
+import type { CheckReport } from "@/lib/types";
+import { ApiClient } from "@/generated/openapi-client";
+import type {
+  CheckRequest,
+  RepoAnalysisInput,
+  RepoAnalysisOutput,
+  RepoHistoryResponse,
+  RepoMetadata,
+  RepoSummary,
+  ScoringConfigResponse,
+} from "@/generated/openapi-client";
 
-export interface RepoSummary {
-  id: string;
-  owner: string;
-  name: string;
-  repoUrl: string;
-  helmChartLocations: string[];
-  dockerLocations: string[];
-  apiSpecificationLocations: string[];
-  documentationLocations: string[];
-  updatedAt: string;
-  analysisCount: number;
-  latestAnalysis: { checkedAt: string; score: number } | null;
-}
+const apiClient = new ApiClient({ BASE: "" });
 
-export interface RepoMetadata {
+export type {
+  CheckRequest,
+  RepoSummary,
+  RepoMetadata,
+  RepoAnalysisInput,
+  RepoAnalysisOutput,
+  RepoHistoryResponse,
+  ScoringConfigResponse,
+};
+
+interface StreamOptions {
   repoUrl: string;
-  description?: string;
-  language?: string;
-  stars?: number;
-  forks?: number;
-  defaultBranch?: string;
-  topics?: string[];
-  license?: string;
-  version?: string;
-  versionEvidenceSource?: string;
-  versionEvidenceDetail?: string;
   helmChartLocations?: string[];
+  documentationLocations?: string[];
   dockerLocations?: string[];
   apiSpecificationLocations?: string[];
-  documentationLocations?: string[];
+  isRegister?: boolean;
 }
 
-export interface RepoAnalysisInput {
-  scoringConfigId?: string | null;
-  checkedAt: string;
-  version?: string | null;
-  score: number;
-  results: CheckResult[];
-}
-
-export interface RepoAnalysisOutput extends RepoAnalysisInput {
-  id: string;
-  repoId: string;
-  createdAt: string;
-}
-
-export interface RepoMeta {
-  description: string | null;
-  language: string | null;
-  stars: number;
-  forks: number;
-  defaultBranch: string;
-  topics: string[];
-  license: string | null;
-  version: string | null;
-  versionEvidence: {
-    source: "release" | "tag" | "manifest" | "readme" | "none";
-    detail: string;
-  };
-}
-
-export interface RepoHistoryResponse {
-  repository: {
-    id: string;
-    repoUrl: string;
-    owner: string;
-    name: string;
-    metadata: RepoMeta;
-    createdAt: string;
-    updatedAt: string;
-  };
-  analyses: RepoAnalysisOutput[];
-}
-
-export interface ScoringConfigResponse {
-  ok?: boolean;
-  scoringConfigId: string | null;
-  complexityThreshold: number;
-  complexityMaxCcnThreshold: number;
-  spectralRulesetSource: string;
-  criterionWeights: Record<string, number>;
-  criterionRequirementLevels: Record<string, "mandatory" | "recommended">;
-  defaultCriterionWeights?: Record<string, number>;
-  defaultCriterionRequirementLevels?: Record<
-    string,
-    "mandatory" | "recommended" | "informative"
-  >;
-  defaultComplexityThreshold?: number;
-  defaultComplexityMaxCcnThreshold?: number;
-  defaultSpectralRulesetSource?: string;
-}
-
-interface ErrorResponse {
-  error: string;
-}
-
-async function parseResponse<T>(response: Response): Promise<T> {
-  const data = await response.json().catch(() => null);
-  if (!response.ok) {
-    const errorMessage = data?.error ?? `Request failed with status ${response.status}`;
-    throw new Error(errorMessage);
-  }
-  return data as T;
-}
-
-async function apiFetch<T>(input: string, init: RequestInit = {}) {
-  const response = await fetch(input, init);
-  return parseResponse<T>(response);
+interface StreamProgressEvent {
+  step: string;
+  pct: number;
+  done?: true;
+  result?: CheckReport;
+  error?: string;
 }
 
 export async function getRepositories(limit = 12) {
-  const query = new URLSearchParams({ limit: String(limit) });
-  const data = await apiFetch<{ repositories: RepoSummary[] }>(
-    `/api/repositories?${query.toString()}`,
-    { cache: "no-store" }
-  );
-  return data.repositories;
+  const response = await apiClient.default.getApiRepositories(limit);
+  return response.repositories ?? [];
 }
 
 export async function getRepoHistory(owner: string, repo: string, limit = 50) {
-  const query = new URLSearchParams({
-    owner,
-    repo,
-    limit: String(limit),
-  });
-  return apiFetch<RepoHistoryResponse>(`/api/repo-history?${query.toString()}`, {
-    cache: "no-store",
-  });
+  return apiClient.default.getApiRepoHistory(owner, repo, limit);
 }
 
 export async function getAdminScoring() {
-  return apiFetch<ScoringConfigResponse>("/api/admin/scoring", {
-    cache: "no-store",
-  });
+  return apiClient.default.getApiAdminScoring();
 }
 
 export async function postAdminScoring(payload: {
@@ -144,41 +60,23 @@ export async function postAdminScoring(payload: {
   complexityMaxCcnThreshold?: number;
   spectralRulesetSource?: string;
 }) {
-  return apiFetch<ScoringConfigResponse>("/api/admin/scoring", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  return apiClient.default.postApiAdminScoring(payload);
 }
 
 export async function postRepository(metadata: RepoMetadata) {
-  return apiFetch<RepoSummary>("/api/repositories", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(metadata),
-  });
+  return apiClient.default.postApiRepositories(metadata);
 }
 
-export async function postRepositoryAnalysis(
-  repoId: string,
-  input: RepoAnalysisInput
-) {
-  return apiFetch<RepoAnalysisOutput>(`/api/repositories/${encodeURIComponent(repoId)}/analyses`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
+export async function postRepositoryAnalysis(repoId: string, input: RepoAnalysisInput) {
+  return apiClient.default.postApiRepositoriesAnalyses(repoId, input);
+}
+
+export async function postCheck(request: CheckRequest) {
+  return apiClient.default.postApiCheck(request);
 }
 
 export async function streamCheck(
-  options: {
-    repoUrl: string;
-    helmChartLocations?: string[];
-    documentationLocations?: string[];
-    dockerLocations?: string[];
-    apiSpecificationLocations?: string[];
-    isRegister?: boolean;
-  },
+  options: StreamOptions,
   onProgress?: (step: string, pct: number) => void
 ) {
   const response = await fetch("/api/check/stream", {
@@ -207,13 +105,7 @@ export async function streamCheck(
       const dataLine = event.split("\n").find((l) => l.startsWith("data: "));
       if (!dataLine) continue;
 
-      const payload = JSON.parse(dataLine.slice(6)) as {
-        step: string;
-        pct: number;
-        done?: true;
-        result?: CheckReport;
-        error?: string;
-      };
+      const payload = JSON.parse(dataLine.slice(6)) as StreamProgressEvent;
 
       if (payload.error) {
         throw new Error(payload.error);

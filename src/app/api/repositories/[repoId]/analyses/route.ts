@@ -3,9 +3,10 @@ import { prisma } from "@/lib/db";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { repoId: string } }
+  context: { params: Promise<{ repoId: string }> }
 ) {
   try {
+    const params = await context.params;
     const repoId = params.repoId;
     if (!repoId) {
       return NextResponse.json(

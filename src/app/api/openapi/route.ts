@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const openApiSpec = {
+export const openApiSpec = {
   openapi: "3.1.0",
   info: {
     title: "CommonGroundChecker API",

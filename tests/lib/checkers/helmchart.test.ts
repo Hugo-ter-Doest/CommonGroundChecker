@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, type Mock } from "vitest";
 
 vi.mock("@/lib/github", () => ({
   getRepoTree: vi.fn(),
@@ -53,7 +53,7 @@ describe("checkHelmChart", () => {
   });
 
   it("passes when a Helm chart is detected from an explicit GitHub URL hint", async () => {
-    (getRepoTree as unknown as vi.Mock).mockResolvedValueOnce(["charts/my-component/Chart.yaml"]);
+    (getRepoTree as unknown as Mock).mockResolvedValueOnce(["charts/my-component/Chart.yaml"]);
 
     const result = await checkHelmChart(
       "org",

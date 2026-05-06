@@ -119,7 +119,9 @@ describe("API route tests", () => {
         }),
       } as unknown as NextRequest;
 
-      const response = await postRepoAnalysis(request, { params: { repoId: "missing-repo" } });
+      const response = await postRepoAnalysis(request, {
+        params: Promise.resolve({ repoId: "missing-repo" }),
+      });
       expect(prisma.repo.findUnique).toHaveBeenCalledWith({ where: { id: "missing-repo" } });
       expect(response.status).toBe(404);
       const body = await response.json();
@@ -137,7 +139,9 @@ describe("API route tests", () => {
         }),
       } as unknown as NextRequest;
 
-      const response = await postRepoAnalysis(request, { params: { repoId: "repo-id" } });
+      const response = await postRepoAnalysis(request, {
+        params: Promise.resolve({ repoId: "repo-id" }),
+      });
       expect(response.status).toBe(400);
       const body = await response.json();
       expect(body.error).toContain("Missing or invalid checkedAt field.");
@@ -165,7 +169,9 @@ describe("API route tests", () => {
         }),
       } as unknown as NextRequest;
 
-      const response = await postRepoAnalysis(request, { params: { repoId: "repo-id" } });
+      const response = await postRepoAnalysis(request, {
+        params: Promise.resolve({ repoId: "repo-id" }),
+      });
       expect(prisma.repoAnalysis.create).toHaveBeenCalledWith({
         data: {
           repoId: "repo-id",
