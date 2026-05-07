@@ -64,23 +64,19 @@ Criteria are grouped into four categories. Each criterion has a requirement leve
 # 1. Install dependencies
 npm install
 
-# 2. Set up the database (using Postgres)
-docker-compose up -d db
-
-# 3. Set the access token for Github (optional)
+# 2. Configure the remote API
 cp .env.local.example .env
-# Edit .env and configure GITHUB_TOKEN
+# Edit .env and set URL to the remote API server, e.g. http://localhost:3000
+# Edit GITHUB_TOKEN if available
 
-# 4. Push the Prisma schema and generate the client
-npm run db:push
-npm run db:generate
-
-# 5. Install Lizard (required for cyclomatic complexity criterion)
+# 3. Install Lizard (required for cyclomatic complexity criterion)
 py -m pip install lizard
 
-# 6. Start the development server
+# 4. Start the development server
 npm run dev
 ```
+
+Ensure the remote Component Checker Register API is running at the configured URL.
 
 Open [http://localhost:3000](http://localhost:3000) and paste a GitHub repository URL.
 
@@ -88,11 +84,10 @@ A **GitHub personal access token** in `.env` is optional but strongly recommende
 
 ## Tech stack
 
-- **Next.js 16 + React 18 + TypeScript** for the app and server API routes.
+- **Next.js 16 + React 18 + TypeScript** for the app and server API route handlers.
 - **Tailwind CSS** for styling.
-- **PostgreSQL** as the database, accessed through **Prisma** with `@prisma/client` and `@prisma/adapter-pg`.
+- **Remote Component Checker Register API** for persistence and scoring configuration.
 - **Node.js** runtime for the application and check orchestration.
-- **Docker Compose** for local Postgres startup (`docker-compose up -d db`).
 - **Vitest** for tests and **ESLint** for linting.
 
 ## Security scanning
@@ -119,9 +114,9 @@ The scan uses `.gitleaks.toml` and runs with `--redact` so findings are masked i
 
 ### Data and persistence
 
-- **PostgreSQL** as the primary data store.
-- **Prisma ORM + Prisma PostgreSQL adapter (`@prisma/adapter-pg`)** for type-safe DB access.
-- Stores:
+- **Remote Component Checker Register API** is responsible for persistence and scoring configuration.
+- The local app forwards storage and configuration requests through proxied `/api` endpoints.
+- Stored by the remote API:
   - repository metadata and discovered locations
   - per-run analysis results and evidence
   - versioned scoring configurations linked to each run
@@ -162,7 +157,7 @@ The application is built as a single Next.js service with clear layers:
 	- External tool invocations (Lizard/Spectral)
 
 5. **Persistence layer**
-	- Prisma client singleton (`src/lib/db.ts`) + PostgreSQL schema (`prisma/schema.prisma`).
+	- Handled by the remote Component Checker Register API; this app proxies storage and scoring config requests through local `/api` routes.
 
 ### Architecture diagram
 
@@ -175,13 +170,13 @@ flowchart TB
         BACKEND_API["API client connects to API"]
         BACKEND_CHECKER["Checker"]
     end
-    subgraph API["Component Checker Register API"]
+    subgraph API["Remote Component Checker Register API"]
         API_REPOS["/api/repositories"]
         API_HISTORY["/api/repo-history"]
         API_SCORING["/api/admin/scoring"]
     end
     subgraph REGISTER["Component Register"]
-        DB[(PostgreSQL database)]
+        DB[(Remote PostgreSQL database)]
     end
 
     FRONTEND_UI --> BACKEND_API
@@ -205,7 +200,7 @@ sequenceDiagram
     participant Orch as Checker orchestrator
     participant GH as GitHub REST API
     participant Tools as Lizard/Spectral
-    participant DB as PostgreSQL (Prisma)
+    participant DB as Remote persistence API
 
     User->>UI: Submit repo URL + options
     UI->>API: POST /api/check/stream
@@ -225,17 +220,19 @@ sequenceDiagram
 
 ### Internal API endpoints
 
+These local Next.js endpoints either run the checker or proxy storage and configuration requests to the remote Component Checker Register API.
+
 | Method | Endpoint | Purpose |
 |---|---|---|
 | `GET` | `/api/openapi` | Retrieve the machine-readable OpenAPI specification |
-| `POST` | `/api/repositories` | Create or update repository metadata |
-| `POST` | `/api/repositories/{repoId}/analyses` | Persist a new analysis result for an existing repository |
-| `POST` | `/api/check` | Run full analysis and persist result |
+| `POST` | `/api/repositories` | Create or update repository metadata via the remote API |
+| `POST` | `/api/repositories/{repoId}/analyses` | Persist a new analysis result for an existing repository via the remote API |
+| `POST` | `/api/check` | Run full analysis and persist result through the remote API |
 | `POST` | `/api/check/stream` | Stream progress/events during analysis |
-| `GET` | `/api/admin/scoring` | Retrieve current scoring configuration |
-| `POST` | `/api/admin/scoring` | Save new scoring configuration snapshot |
-| `GET` | `/api/repositories` | List known repositories with latest summary |
-| `GET` | `/api/repo-history` | Return analysis runs/history for repositories |
+| `GET` | `/api/admin/scoring` | Retrieve current scoring configuration from the remote API |
+| `POST` | `/api/admin/scoring` | Save new scoring configuration snapshot to the remote API |
+| `GET` | `/api/repositories` | List known repositories with latest summary via the remote API |
+| `GET` | `/api/repo-history` | Return analysis runs/history for repositories via the remote API |
 
 ### ADR Spectral ruleset source (Admin)
 
@@ -251,7 +248,7 @@ On the **Admin** page, the field **"Spectral ruleset source"** controls which ru
 ### External APIs/services
 
 - **GitHub REST API v3** (authenticated with optional `GITHUB_TOKEN`).
-- **PostgreSQL** over `DATABASE_URL`.
+- **Remote Component Checker Register API** for persistence and scoring configuration.
 
 ### Request flow (high level)
 
@@ -259,12 +256,12 @@ On the **Admin** page, the field **"Spectral ruleset source"** controls which ru
 2. `/api/check` (or `/api/check/stream`) parses owner/repo and loads remote repo context from GitHub.
 3. Checker orchestrator runs criteria (parallel where possible).
 4. Weighted score is computed using the selected/persisted scoring config.
-5. Result + evidence is stored in PostgreSQL and returned to UI.
+5. Result + evidence is stored through the remote API and returned to UI.
 6. History/admin pages query internal APIs to show prior runs and config snapshots.
 
 ## Scoring
 
-Each check has a configurable **weight** (0–1) set via the Admin page. Weights are stored in the database as versioned snapshots; each analysis run is linked to the exact scoring config used.
+Each check has a configurable **weight** (0–1) set via the Admin page. Weights are stored by the remote API as versioned snapshots; each analysis run is linked to the exact scoring config used.
 
 For the Lizard complexity criterion, the Admin page also stores a configurable
 **average cyclomatic complexity threshold** (AvgCCN). The check passes when a
