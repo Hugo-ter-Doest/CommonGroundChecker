@@ -175,7 +175,7 @@ flowchart TB
         BACKEND_API["API client connects to API"]
         BACKEND_CHECKER["Checker"]
     end
-    subgraph API["Component Checker API"]
+    subgraph API["Component Checker Register API"]
         API_REPOS["/api/repositories"]
         API_HISTORY["/api/repo-history"]
         API_SCORING["/api/admin/scoring"]
