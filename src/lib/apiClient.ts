@@ -12,7 +12,10 @@ import type {
   ScoringConfigResponse,
 } from "@/generated/openapi-client";
 
-const apiBaseUrl = process.env.URL?.replace(/\/$/, "") ?? "";
+const apiBaseUrl =
+  typeof window === "undefined"
+    ? process.env.URL?.replace(/\/$/, "") ?? ""
+    : "";
 const apiClient = new ApiClient({ BASE: apiBaseUrl });
 
 function logApiRequest(method: string, path: string, body?: unknown) {
