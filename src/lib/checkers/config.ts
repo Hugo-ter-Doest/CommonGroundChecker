@@ -1,4 +1,6 @@
 import type { CheckStatus, RequirementLevel } from "../types";
+import { getAdminScoring } from "@/lib/apiClient";
+import type { ScoringConfigResponse } from "@/generated/openapi-client";
 
 export interface CriterionConfig {
   weight: number;
@@ -189,14 +191,33 @@ function parseOverridesFromDbPayload(payload: unknown): ScoringConfigOverrides {
   };
 }
 
+function parseScoringConfigResponse(response: ScoringConfigResponse) {
+  return buildScoringConfig({
+    criterionWeights: response.criterionWeights,
+    criterionRequirementLevels: response.criterionRequirementLevels,
+    complexityThreshold: response.complexityThreshold,
+    complexityMaxCcnThreshold: response.complexityMaxCcnThreshold,
+    spectralRulesetSource: response.spectralRulesetSource,
+  });
+}
+
 export async function getScoringConfig(): Promise<ScoringConfig> {
   const active = await getActiveScoringConfig();
   return active.config;
 }
 
 export async function getActiveScoringConfig(): Promise<ActiveScoringConfig> {
-  return {
-    id: null,
-    config: buildScoringConfig(),
-  };
+  try {
+    const response = await getAdminScoring();
+    return {
+      id: response.scoringConfigId ?? null,
+      config: parseScoringConfigResponse(response),
+    };
+  } catch (error) {
+    console.error("Failed to load scoring config from API, using defaults.", error);
+    return {
+      id: null,
+      config: buildScoringConfig(),
+    };
+  }
 }
