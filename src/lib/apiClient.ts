@@ -12,7 +12,8 @@ import type {
   ScoringConfigResponse,
 } from "@/generated/openapi-client";
 
-const apiClient = new ApiClient({ BASE: "" });
+const apiBaseUrl = process.env.URL?.replace(/\/$/, "") ?? "";
+const apiClient = new ApiClient({ BASE: apiBaseUrl });
 
 export type {
   CheckRequest,
