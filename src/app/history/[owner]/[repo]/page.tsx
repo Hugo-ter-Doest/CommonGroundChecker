@@ -1,7 +1,8 @@
 import Link from "next/link";
 import RepoMeta from "@/components/RepoMeta";
-import { prisma } from "@/lib/db";
+import { getRepoHistory } from "@/lib/apiClient";
 import type { CheckReport } from "@/lib/types";
+import type { RepoMeta as RepoMetaType } from "@/generated/openapi-client";
 
 interface HistoryPageProps {
   params: Promise<{
@@ -10,18 +11,8 @@ interface HistoryPageProps {
   }>;
 }
 
-function normalizeRepoMeta(raw: {
-  description: string | null;
-  language: string | null;
-  stars: number;
-  forks: number;
-  defaultBranch: string | null;
-  topics: string[];
-  license: string | null;
-  version: string | null;
-  versionEvidenceSource: string | null;
-  versionEvidenceDetail: string | null;
-}): CheckReport["repoMeta"] {
+function normalizeRepoMeta(raw: RepoMetaType): CheckReport["repoMeta"] {
+  const source = raw.versionEvidence?.source;
   return {
     description: raw.description,
     language: raw.language,
@@ -33,16 +24,16 @@ function normalizeRepoMeta(raw: {
     version: raw.version,
     versionEvidence: {
       source:
-        raw.versionEvidenceSource === "release" ||
-        raw.versionEvidenceSource === "tag" ||
-        raw.versionEvidenceSource === "manifest" ||
-        raw.versionEvidenceSource === "readme" ||
-        raw.versionEvidenceSource === "none"
-          ? raw.versionEvidenceSource
+        source === "release" ||
+        source === "tag" ||
+        source === "manifest" ||
+        source === "readme" ||
+        source === "none"
+          ? source
           : "none",
       detail:
-        typeof raw.versionEvidenceDetail === "string"
-          ? raw.versionEvidenceDetail
+        typeof raw.versionEvidence?.detail === "string"
+          ? raw.versionEvidence.detail
           : "No saved version evidence for this historical record",
     },
   };
@@ -91,14 +82,14 @@ export default async function RepoHistoryPage({ params }: HistoryPageProps) {
   const owner = decodeURIComponent(rawOwner);
   const repo = decodeURIComponent(rawRepo);
 
-  const repository = await prisma.repo.findFirst({
-    where: { owner, name: repo },
-    include: {
-      analyses: {
-        orderBy: { checkedAt: "desc" },
-      },
-    },
-  });
+  let repositoryResponse;
+  try {
+    repositoryResponse = await getRepoHistory(owner, repo, 50);
+  } catch (error) {
+    repositoryResponse = null;
+  }
+
+  const repository = repositoryResponse?.repository;
 
   if (!repository) {
     return (
@@ -114,7 +105,8 @@ export default async function RepoHistoryPage({ params }: HistoryPageProps) {
     );
   }
 
-  const repoMeta = normalizeRepoMeta(repository);
+  const repoMeta = normalizeRepoMeta(repository.metadata);
+  const analyses = repositoryResponse?.analyses ?? [];
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10 space-y-6">
@@ -151,15 +143,15 @@ export default async function RepoHistoryPage({ params }: HistoryPageProps) {
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <h3 className="text-lg font-semibold text-gray-800">Historical analyses</h3>
           <span className="text-sm text-gray-500">
-            {repository.analyses.length} run{repository.analyses.length === 1 ? "" : "s"}
+            {analyses.length} run{analyses.length === 1 ? "" : "s"}
           </span>
         </div>
 
-        {repository.analyses.length === 0 ? (
+        {analyses.length === 0 ? (
           <p className="text-sm text-gray-500">No analyses stored yet.</p>
         ) : (
           <div className="space-y-3">
-            {repository.analyses.map((analysis) => {
+            {analyses.map((analysis) => {
               const stats = summarizeStatuses(analysis.results);
               return (
                 <div

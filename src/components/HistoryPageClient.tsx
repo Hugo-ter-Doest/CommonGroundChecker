@@ -59,6 +59,7 @@ export default function HistoryPageClient({
   repositories,
   error,
 }: HistoryPageClientProps) {
+  const apiBaseUrl = process.env.URL?.replace(/\/$/, "") ?? "";
   const sortedRepositories = useMemo(
     () => sortRepositories(repositories, sort, direction),
     [repositories, sort, direction]
@@ -92,7 +93,7 @@ export default function HistoryPageClient({
         </div>
         <div className="pt-2">
           <a
-            href="/api/repositories/export"
+            href={apiBaseUrl ? `${apiBaseUrl}/api/repositories/export` : "/api/repositories/export"}
             className="inline-flex text-xs font-semibold px-2 py-0.5 rounded-full border border-cg-lightblue text-cg-blue bg-cg-lightblue/10 hover:border-cg-blue hover:bg-cg-lightblue/20"
           >
             Download CSV

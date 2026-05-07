@@ -1,5 +1,4 @@
 import type { CheckStatus, RequirementLevel } from "../types";
-import { prisma } from "../db";
 
 export interface CriterionConfig {
   weight: number;
@@ -190,135 +189,14 @@ function parseOverridesFromDbPayload(payload: unknown): ScoringConfigOverrides {
   };
 }
 
-async function readLatestDbOverrides(): Promise<{
-  id: string;
-  overrides: ScoringConfigOverrides;
-} | null> {
-  const row = await prisma.scoringConfig.findFirst({
-    orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      criterionWeights: true,
-      criterionRequirementLevels: true,
-      complexityThreshold: true,
-      complexityMaxCcnThreshold: true,
-      spectralRulesetSource: true,
-    },
-  });
-
-  if (!row) return null;
-
-  return {
-    id: row.id,
-    overrides: parseOverridesFromDbPayload({
-      criterionWeights: row.criterionWeights,
-      criterionRequirementLevels: row.criterionRequirementLevels,
-      complexityThreshold: row.complexityThreshold,
-      complexityMaxCcnThreshold: row.complexityMaxCcnThreshold,
-      spectralRulesetSource: row.spectralRulesetSource,
-    }),
-  };
-}
-
-async function createDbOverridesRecord(
-  overrides: ScoringConfigOverrides
-): Promise<string> {
-  const created = await prisma.scoringConfig.create({
-    data: {
-      criterionWeights: overrides.criterionWeights ?? {},
-      criterionRequirementLevels: overrides.criterionRequirementLevels ?? {},
-      complexityThreshold: clampComplexityThreshold(
-        overrides.complexityThreshold ?? DEFAULT_COMPLEXITY_THRESHOLD
-      ),
-      complexityMaxCcnThreshold: clampComplexityMaxCcnThreshold(
-        overrides.complexityMaxCcnThreshold ??
-          DEFAULT_COMPLEXITY_MAX_CCN_THRESHOLD
-      ),
-      spectralRulesetSource: sanitizeSpectralRulesetSource(
-        overrides.spectralRulesetSource
-      ),
-    },
-  });
-
-  return created.id;
-}
-
 export async function getScoringConfig(): Promise<ScoringConfig> {
   const active = await getActiveScoringConfig();
   return active.config;
 }
 
 export async function getActiveScoringConfig(): Promise<ActiveScoringConfig> {
-  try {
-    const latest = await readLatestDbOverrides();
-
-    if (!latest) {
-      return {
-        id: null,
-        config: buildScoringConfig(),
-      };
-    }
-
-    return {
-      id: latest.id,
-      config: buildScoringConfig(latest.overrides),
-    };
-  } catch {
-    return {
-      id: null,
-      config: buildScoringConfig(),
-    };
-  }
-}
-
-export async function saveCriterionWeights(
-  criterionWeights: Record<string, number>,
-  complexityThreshold?: number,
-  complexityMaxCcnThreshold?: number,
-  criterionRequirementLevels?: Record<string, string>,
-  spectralRulesetSource?: string
-): Promise<ActiveScoringConfig> {
-  const overrides: ScoringConfigOverrides = {
-    criterionWeights: {},
-    criterionRequirementLevels: {},
-    complexityThreshold:
-      typeof complexityThreshold === "number"
-        ? clampComplexityThreshold(complexityThreshold)
-        : DEFAULT_COMPLEXITY_THRESHOLD,
-    complexityMaxCcnThreshold:
-      typeof complexityMaxCcnThreshold === "number"
-        ? clampComplexityMaxCcnThreshold(complexityMaxCcnThreshold)
-        : DEFAULT_COMPLEXITY_MAX_CCN_THRESHOLD,
-    spectralRulesetSource: sanitizeSpectralRulesetSource(spectralRulesetSource),
-  };
-
-  for (const [checkId, config] of Object.entries(
-    DEFAULT_CRITERION_CONFIG_BY_CHECK_ID
-  )) {
-    const incoming = criterionWeights[checkId];
-    const clamped =
-      config.requirementLevel === "informative"
-        ? 0
-        : typeof incoming === "number"
-          ? clampWeight(incoming)
-          : clampWeight(config.weight);
-    overrides.criterionWeights![checkId] = clamped;
-
-    const incomingLevel = criterionRequirementLevels?.[checkId];
-    const effectiveLevel: RequirementLevel =
-      config.requirementLevel === "informative"
-        ? "informative"
-        : incomingLevel === "mandatory" || incomingLevel === "recommended"
-          ? incomingLevel
-          : config.requirementLevel;
-
-    overrides.criterionRequirementLevels![checkId] = effectiveLevel;
-  }
-
-  const id = await createDbOverridesRecord(overrides);
-
   return {
-    id,
-    config: buildScoringConfig(overrides),
+    id: null,
+    config: buildScoringConfig(),
   };
 }

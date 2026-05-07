@@ -1,7 +1,8 @@
 import Link from "next/link";
 import ResultCard from "@/components/ResultCard";
-import { prisma } from "@/lib/db";
+import { getRepoHistory } from "@/lib/apiClient";
 import type { CheckReport, CheckResult } from "@/lib/types";
+import type { RepoMeta } from "@/generated/openapi-client";
 import { CATEGORY_ORDER, RESULT_CATEGORY_BY_ID, RESULT_ORDER_BY_ID } from "@/lib/criteria";
 
 interface AnalysisDetailPageProps {
@@ -60,18 +61,9 @@ function normalizeResults(raw: unknown): CheckResult[] {
     });
 }
 
-function normalizeRepoMeta(raw: {
-  description: string | null;
-  language: string | null;
-  stars: number;
-  forks: number;
-  defaultBranch: string | null;
-  topics: string[];
-  license: string | null;
-  version: string | null;
-  versionEvidenceSource: string | null;
-  versionEvidenceDetail: string | null;
-}): CheckReport["repoMeta"] {
+function normalizeRepoMeta(raw: RepoMeta): CheckReport["repoMeta"] {
+  const source = raw.versionEvidence?.source;
+
   return {
     description: raw.description,
     language: raw.language,
@@ -83,16 +75,16 @@ function normalizeRepoMeta(raw: {
     version: raw.version,
     versionEvidence: {
       source:
-        raw.versionEvidenceSource === "release" ||
-        raw.versionEvidenceSource === "tag" ||
-        raw.versionEvidenceSource === "manifest" ||
-        raw.versionEvidenceSource === "readme" ||
-        raw.versionEvidenceSource === "none"
-          ? raw.versionEvidenceSource
+        source === "release" ||
+        source === "tag" ||
+        source === "manifest" ||
+        source === "readme" ||
+        source === "none"
+          ? source
           : "none",
       detail:
-        typeof raw.versionEvidenceDetail === "string"
-          ? raw.versionEvidenceDetail
+        typeof raw.versionEvidence?.detail === "string"
+          ? raw.versionEvidence.detail
           : "No saved version evidence for this historical record",
     },
   };
@@ -104,20 +96,17 @@ export default async function AnalysisDetailPage({ params }: AnalysisDetailPageP
   const repo = decodeURIComponent(rawRepo);
   const analysisId = decodeURIComponent(rawAnalysisId);
 
-  const analysis = await prisma.repoAnalysis.findFirst({
-    where: {
-      id: analysisId,
-      repository: {
-        owner,
-        name: repo,
-      },
-    },
-    include: {
-      repository: true,
-    },
-  });
+  let historyResponse;
+  try {
+    historyResponse = await getRepoHistory(owner, repo, 50);
+  } catch (error) {
+    historyResponse = null;
+  }
 
-  if (!analysis) {
+  const repository = historyResponse?.repository;
+  const analysis = historyResponse?.analyses?.find((analysisItem) => analysisItem.id === analysisId);
+
+  if (!repository || !analysis) {
     return (
       <div className="max-w-4xl mx-auto px-6 py-10 space-y-4">
         <h2 className="text-2xl font-bold text-cg-blue">Analysis Details</h2>
@@ -135,7 +124,7 @@ export default async function AnalysisDetailPage({ params }: AnalysisDetailPageP
   }
 
   const results = normalizeResults(analysis.results);
-  const repoMeta = normalizeRepoMeta(analysis.repository);
+  const repoMeta = normalizeRepoMeta(repository.metadata);
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10 space-y-6">
