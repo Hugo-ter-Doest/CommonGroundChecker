@@ -173,9 +173,9 @@ flowchart TB
     end
     subgraph BACKEND["Component Checker backend"]
         BACKEND_API["API client connects to API"]
+        BACKEND_CHECKER["Checker"]
     end
     subgraph API["Component Checker API"]
-        API_CHECK["/api/check"]
         API_REPOS["/api/repositories"]
         API_HISTORY["/api/repo-history"]
         API_SCORING["/api/admin/scoring"]
@@ -185,11 +185,11 @@ flowchart TB
     end
 
     FRONTEND_UI --> BACKEND_API
-    BACKEND_API --> API_CHECK
+    BACKEND_API --> BACKEND_CHECKER
+    BACKEND_CHECKER --> API_REPOS
     BACKEND_API --> API_REPOS
     BACKEND_API --> API_HISTORY
     BACKEND_API --> API_SCORING
-    API_CHECK --> DB
     API_REPOS --> DB
     API_HISTORY --> DB
     API_SCORING --> DB
