@@ -1,42 +1,50 @@
 import AdminWeightsForm from "@/components/AdminWeightsForm";
+import { getAdminScoring } from "@/lib/apiClient";
 import {
   DEFAULT_COMPLEXITY_MAX_CCN_THRESHOLD,
   DEFAULT_COMPLEXITY_THRESHOLD,
   DEFAULT_CRITERION_CONFIG_BY_CHECK_ID,
   DEFAULT_SPECTRAL_RULESET_SOURCE,
-  getScoringConfig,
 } from "@/lib/checkers/config";
 
+function buildDefaultConfig() {
+  return {
+    defaultCriterionWeights: Object.fromEntries(
+      Object.entries(DEFAULT_CRITERION_CONFIG_BY_CHECK_ID).map(([checkId, config]) => [
+        checkId,
+        config.weight,
+      ])
+    ),
+    defaultCriterionRequirementLevels: Object.fromEntries(
+      Object.entries(DEFAULT_CRITERION_CONFIG_BY_CHECK_ID).map(([checkId, config]) => [
+        checkId,
+        config.requirementLevel,
+      ])
+    ),
+    defaultComplexityThreshold: DEFAULT_COMPLEXITY_THRESHOLD,
+    defaultComplexityMaxCcnThreshold: DEFAULT_COMPLEXITY_MAX_CCN_THRESHOLD,
+    defaultSpectralRulesetSource: DEFAULT_SPECTRAL_RULESET_SOURCE,
+  };
+}
+
 export default async function AdminPage() {
-  const scoringConfig = await getScoringConfig();
+  let successData = null;
+  let error: string | undefined;
 
-  const initialWeights = Object.fromEntries(
-    Object.entries(scoringConfig.criterionConfigByCheckId).map(([checkId, config]) => [
-      checkId,
-      config.weight,
-    ])
-  );
+  try {
+    successData = await getAdminScoring();
+  } catch (err) {
+    error = err instanceof Error ? err.message : "Unable to connect to admin scoring API.";
+  }
 
-  const initialRequirementLevels = Object.fromEntries(
-    Object.entries(scoringConfig.criterionConfigByCheckId).map(([checkId, config]) => [
-      checkId,
-      config.requirementLevel,
-    ])
-  );
+  const defaults = buildDefaultConfig();
 
-  const defaultWeights = Object.fromEntries(
-    Object.entries(DEFAULT_CRITERION_CONFIG_BY_CHECK_ID).map(([checkId, config]) => [
-      checkId,
-      config.weight,
-    ])
-  );
+  const initialWeights = successData?.criterionWeights ?? defaults.defaultCriterionWeights;
+  const initialRequirementLevels =
+    successData?.criterionRequirementLevels ?? defaults.defaultCriterionRequirementLevels;
 
-  const defaultRequirementLevels = Object.fromEntries(
-    Object.entries(DEFAULT_CRITERION_CONFIG_BY_CHECK_ID).map(([checkId, config]) => [
-      checkId,
-      config.requirementLevel,
-    ])
-  );
+  const defaultWeights = defaults.defaultCriterionWeights;
+  const defaultRequirementLevels = defaults.defaultCriterionRequirementLevels;
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10 space-y-6">
@@ -62,21 +70,31 @@ export default async function AdminPage() {
         </p>
       </section>
 
+      {error ? (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          Failed to load admin settings: {error}
+        </div>
+      ) : null}
+
       <AdminWeightsForm
         initialWeights={initialWeights}
         defaultWeights={defaultWeights}
         initialRequirementLevels={initialRequirementLevels}
         defaultRequirementLevels={defaultRequirementLevels}
-        initialComplexityThreshold={scoringConfig.complexityThreshold}
-        defaultComplexityThreshold={DEFAULT_COMPLEXITY_THRESHOLD}
+        initialComplexityThreshold={
+          successData?.complexityThreshold ?? defaults.defaultComplexityThreshold
+        }
+        defaultComplexityThreshold={defaults.defaultComplexityThreshold}
         initialComplexityMaxCcnThreshold={
-          scoringConfig.complexityMaxCcnThreshold
+          successData?.complexityMaxCcnThreshold ?? defaults.defaultComplexityMaxCcnThreshold
         }
         defaultComplexityMaxCcnThreshold={
-          DEFAULT_COMPLEXITY_MAX_CCN_THRESHOLD
+          defaults.defaultComplexityMaxCcnThreshold
         }
-        initialSpectralRulesetSource={scoringConfig.spectralRulesetSource}
-        defaultSpectralRulesetSource={DEFAULT_SPECTRAL_RULESET_SOURCE}
+        initialSpectralRulesetSource={
+          successData?.spectralRulesetSource ?? defaults.defaultSpectralRulesetSource
+        }
+        defaultSpectralRulesetSource={defaults.defaultSpectralRulesetSource}
       />
     </div>
   );

@@ -237,13 +237,27 @@ export default function AdminWeightsForm({
       return (requirementLevels[id] ?? "") !== (initialRequirementLevels[id] ?? "");
     });
 
-    return (
+    const changed = (
       weightChanged ||
       reqLevelChanged ||
       complexityThreshold !== initialComplexityThreshold ||
       complexityMaxCcnThreshold !== initialComplexityMaxCcnThreshold ||
       spectralRulesetSource.trim() !== initialSpectralRulesetSource.trim()
     );
+
+    console.log("Admin hasChanges computed", {
+      weightChanged,
+      reqLevelChanged,
+      complexityThreshold,
+      initialComplexityThreshold,
+      complexityMaxCcnThreshold,
+      initialComplexityMaxCcnThreshold,
+      spectralRulesetSource,
+      initialSpectralRulesetSource,
+      changed,
+    });
+
+    return changed;
   }, [
     weights,
     initialWeights,
@@ -258,6 +272,13 @@ export default function AdminWeightsForm({
   ]);
 
   async function save() {
+    console.log("Admin save clicked", { hasChanges, weights, requirementLevels, complexityThreshold, complexityMaxCcnThreshold, spectralRulesetSource });
+
+    if (!hasChanges) {
+      console.log("Admin save skipped because no changes detected");
+      return;
+    }
+
     setSaving(true);
     setError(null);
     setMessage(null);
@@ -486,7 +507,11 @@ export default function AdminWeightsForm({
       <div className="flex items-center gap-3 flex-wrap">
         <button
           type="button"
-          onClick={save}
+          onClick={(event) => {
+            event.preventDefault();
+            console.log("Admin save button clicked", { hasChanges });
+            save();
+          }}
           disabled={saving || !hasChanges}
           className="px-4 py-2 rounded-lg bg-cg-blue text-white font-semibold hover:bg-cg-lightblue disabled:opacity-50 disabled:cursor-not-allowed"
         >

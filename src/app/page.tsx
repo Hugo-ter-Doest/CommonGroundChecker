@@ -405,6 +405,7 @@ export default function HomePage() {
   });
 
   useEffect(() => {
+    console.log("HomePage mounted");
     let cancelled = false;
 
     async function loadRequirementLevels() {
@@ -437,6 +438,14 @@ export default function HomePage() {
     apiSpecificationLocations: string[],
     isRegister: boolean
   ) {
+    console.log("HomePage handleCheck", {
+      url,
+      helmChartLocations,
+      documentationLocations,
+      dockerLocations,
+      apiSpecificationLocations,
+      isRegister,
+    });
     setLoading(true);
     setError(null);
     setReport(null);

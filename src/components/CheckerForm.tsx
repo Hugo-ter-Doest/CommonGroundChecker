@@ -132,6 +132,7 @@ const EXAMPLE_REPOS = [
 ];
 
 export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
+  console.log("CheckerForm rendered", { loading });
   const [value, setValue] = useState("");
   const [recentRepositories, setRecentRepositories] = useState<RecentRepository[]>([]);
   const [helmSomewhereElse, setHelmSomewhereElse] = useState(false);
@@ -238,6 +239,18 @@ export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    console.log("CheckerForm submit", {
+      value,
+      helmSomewhereElse,
+      helmChartUrl,
+      documentationSomewhereElse,
+      documentationUrl,
+      dockerSomewhereElse,
+      dockerUrl,
+      isRegister,
+      apiSpecificationSomewhereElse,
+      apiSpecificationLocationsInput,
+    });
     if (!value.trim()) return;
     if (helmSomewhereElse && !helmChartUrl.trim()) return;
     if (documentationSomewhereElse && !documentationUrl.trim()) return;
