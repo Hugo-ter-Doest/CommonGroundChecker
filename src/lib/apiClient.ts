@@ -12,16 +12,17 @@ import type {
   ScoringConfigResponse,
 } from "@/generated/openapi-client";
 
-const apiBaseUrl =
-  typeof window === "undefined"
-    ? process.env.URL?.replace(/\/$/, "") ?? ""
-    : "";
-const apiClient = new ApiClient({ BASE: apiBaseUrl });
+const remoteApiBaseUrl = process.env.URL?.replace(/\/$/, "") ?? "";
+const localApiClient = new ApiClient({ BASE: "" });
+const remoteApiClient = new ApiClient({ BASE: remoteApiBaseUrl });
 
-function logApiRequest(method: string, path: string, body?: unknown) {
-  const baseUrl = apiClient.request.config.BASE ?? "";
+function logApiRequest(clientName: "local" | "remote", method: string, path: string, body?: unknown) {
+  const baseUrl =
+    clientName === "remote"
+      ? remoteApiClient.request.config.BASE ?? ""
+      : localApiClient.request.config.BASE ?? "";
   const url = baseUrl ? `${baseUrl}${path}` : path;
-  console.log("API request", { method, url, body });
+  console.log("API request", { client: clientName, method, url, body });
 }
 
 export type {
@@ -51,20 +52,36 @@ interface StreamProgressEvent {
   error?: string;
 }
 
+const isServer = typeof window === "undefined";
+
+function clientForRemoteCalls() {
+  return isServer ? remoteApiClient : localApiClient;
+}
+
 export async function getRepositories(limit = 12) {
-  logApiRequest("GET", `/api/repositories?limit=${limit}`);
-  const response = await apiClient.default.getApiRepositories(limit);
+  const client = clientForRemoteCalls();
+  const clientName = isServer ? "remote" : "local";
+  logApiRequest(clientName, "GET", `/api/repositories?limit=${limit}`);
+  const response = await client.default.getApiRepositories(limit);
   return response.repositories ?? [];
 }
 
 export async function getRepoHistory(owner: string, repo: string, limit = 50) {
-  logApiRequest("GET", `/api/repo-history?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}&limit=${limit}`);
-  return apiClient.default.getApiRepoHistory(owner, repo, limit);
+  const client = clientForRemoteCalls();
+  const clientName = isServer ? "remote" : "local";
+  logApiRequest(
+    clientName,
+    "GET",
+    `/api/repo-history?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}&limit=${limit}`
+  );
+  return client.default.getApiRepoHistory(owner, repo, limit);
 }
 
 export async function getAdminScoring() {
-  logApiRequest("GET", "/api/admin/scoring");
-  return apiClient.default.getApiAdminScoring();
+  const client = clientForRemoteCalls();
+  const clientName = isServer ? "remote" : "local";
+  logApiRequest(clientName, "GET", "/api/admin/scoring");
+  return client.default.getApiAdminScoring();
 }
 
 export async function postAdminScoring(payload: {
@@ -75,23 +92,25 @@ export async function postAdminScoring(payload: {
   complexityMaxCcnThreshold?: number;
   spectralRulesetSource?: string;
 }) {
-  logApiRequest("POST", "/api/admin/scoring", payload);
-  return apiClient.default.postApiAdminScoring(payload);
+  const client = clientForRemoteCalls();
+  const clientName = isServer ? "remote" : "local";
+  logApiRequest(clientName, "POST", "/api/admin/scoring", payload);
+  return client.default.postApiAdminScoring(payload);
 }
 
 export async function postRepository(metadata: RepoMetadata) {
-  logApiRequest("POST", "/api/repositories", metadata);
-  return apiClient.default.postApiRepositories(metadata);
+  logApiRequest("remote", "POST", "/api/repositories", metadata);
+  return remoteApiClient.default.postApiRepositories(metadata);
 }
 
 export async function postRepositoryAnalysis(repoId: string, input: RepoAnalysisInput) {
-  logApiRequest("POST", `/api/repositories/${encodeURIComponent(repoId)}/analyses`, input);
-  return apiClient.default.postApiRepositoriesAnalyses(repoId, input);
+  logApiRequest("remote", "POST", `/api/repositories/${encodeURIComponent(repoId)}/analyses`, input);
+  return remoteApiClient.default.postApiRepositoriesAnalyses(repoId, input);
 }
 
 export async function postCheck(request: CheckRequest) {
-  logApiRequest("POST", "/api/check", request);
-  return apiClient.default.postApiCheck(request);
+  logApiRequest("local", "POST", "/api/check", request);
+  return localApiClient.default.postApiCheck(request);
 }
 
 export async function streamCheck(
@@ -105,9 +124,9 @@ export async function streamCheck(
     mediaType: "application/json",
   };
 
-  const baseUrl = apiClient.request.config.BASE?.toString().replace(/\/$/, "") ?? "";
+  const baseUrl = localApiClient.request.config.BASE?.toString().replace(/\/$/, "") ?? "";
   const url = baseUrl ? `${baseUrl}/api/check/stream` : "/api/check/stream";
-  const headers = await getHeaders(apiClient.request.config, requestOptions);
+  const headers = await getHeaders(localApiClient.request.config, requestOptions);
 
   console.log("streamCheck request", {
     method: requestOptions.method,
