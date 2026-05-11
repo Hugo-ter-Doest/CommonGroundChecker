@@ -65,19 +65,27 @@ Criteria are grouped into five categories. Each criterion has a requirement leve
 
 ## Getting started
 
+1. Install dependencies
+
 ```bash
-# 1. Install dependencies
 npm install
+```
 
-# 2. Configure the remote API
+2. Configure the remote API
+```
 cp .env.local.example .env
-# Edit .env and set URL to the remote API server, e.g. http://localhost:3000
-# Edit GITHUB_TOKEN if available
+```
+Edit .env and set `URL` to the remote API server, e.g. `http://localhost:3000`
 
-# 3. Install Lizard (required for cyclomatic complexity criterion)
+Edit `GITHUB_TOKEN` if available
+
+3. Install Lizard (required for cyclomatic complexity criterion)
+```
 py -m pip install lizard
+```
 
-# 4. Start the development server
+4. Start the development server
+```
 npm run dev
 ```
 
