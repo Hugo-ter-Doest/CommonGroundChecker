@@ -214,12 +214,23 @@ export default function AdminWeightsForm({
 }: AdminWeightsFormProps) {
   const [weights, setWeights] = useState<Record<string, number>>(initialWeights);
   const [requirementLevels, setRequirementLevels] = useState<Record<string, string>>(initialRequirementLevels);
+  const [savedWeights, setSavedWeights] = useState<Record<string, number>>(initialWeights);
+  const [savedRequirementLevels, setSavedRequirementLevels] = useState<Record<string, string>>(initialRequirementLevels);
   const [complexityThreshold, setComplexityThreshold] = useState<number>(
+    initialComplexityThreshold
+  );
+  const [savedComplexityThreshold, setSavedComplexityThreshold] = useState<number>(
     initialComplexityThreshold
   );
   const [complexityMaxCcnThreshold, setComplexityMaxCcnThreshold] =
     useState<number>(initialComplexityMaxCcnThreshold);
+  const [savedComplexityMaxCcnThreshold, setSavedComplexityMaxCcnThreshold] = useState<number>(
+    initialComplexityMaxCcnThreshold
+  );
   const [spectralRulesetSource, setSpectralRulesetSource] = useState<string>(
+    initialSpectralRulesetSource
+  );
+  const [savedSpectralRulesetSource, setSavedSpectralRulesetSource] = useState<string>(
     initialSpectralRulesetSource
   );
   const [saving, setSaving] = useState(false);
@@ -229,46 +240,32 @@ export default function AdminWeightsForm({
   const hasChanges = useMemo(() => {
     const weightChanged = ALL_CRITERION_FIELDS.some(({ id }) => {
       const current = Number(weights[id] ?? 0);
-      const initial = Number(initialWeights[id] ?? 0);
-      return current !== initial;
+      const saved = Number(savedWeights[id] ?? 0);
+      return current !== saved;
     });
 
     const reqLevelChanged = ALL_CRITERION_FIELDS.some(({ id }) => {
-      return (requirementLevels[id] ?? "") !== (initialRequirementLevels[id] ?? "");
+      return (requirementLevels[id] ?? "") !== (savedRequirementLevels[id] ?? "");
     });
 
-    const changed = (
+    return (
       weightChanged ||
       reqLevelChanged ||
-      complexityThreshold !== initialComplexityThreshold ||
-      complexityMaxCcnThreshold !== initialComplexityMaxCcnThreshold ||
-      spectralRulesetSource.trim() !== initialSpectralRulesetSource.trim()
+      complexityThreshold !== savedComplexityThreshold ||
+      complexityMaxCcnThreshold !== savedComplexityMaxCcnThreshold ||
+      spectralRulesetSource.trim() !== savedSpectralRulesetSource.trim()
     );
-
-    console.log("Admin hasChanges computed", {
-      weightChanged,
-      reqLevelChanged,
-      complexityThreshold,
-      initialComplexityThreshold,
-      complexityMaxCcnThreshold,
-      initialComplexityMaxCcnThreshold,
-      spectralRulesetSource,
-      initialSpectralRulesetSource,
-      changed,
-    });
-
-    return changed;
   }, [
     weights,
-    initialWeights,
+    savedWeights,
     requirementLevels,
-    initialRequirementLevels,
+    savedRequirementLevels,
     complexityThreshold,
-    initialComplexityThreshold,
+    savedComplexityThreshold,
     complexityMaxCcnThreshold,
-    initialComplexityMaxCcnThreshold,
+    savedComplexityMaxCcnThreshold,
     spectralRulesetSource,
-    initialSpectralRulesetSource,
+    savedSpectralRulesetSource,
   ]);
 
   async function save() {
@@ -307,8 +304,25 @@ export default function AdminWeightsForm({
       if (typeof data?.complexityMaxCcnThreshold === "number") {
         setComplexityMaxCcnThreshold(data.complexityMaxCcnThreshold);
       }
+      if (data?.criterionWeights && typeof data.criterionWeights === "object") {
+        setWeights(data.criterionWeights as Record<string, number>);
+        setSavedWeights(data.criterionWeights as Record<string, number>);
+      }
+      if (data?.criterionRequirementLevels && typeof data.criterionRequirementLevels === "object") {
+        setRequirementLevels(data.criterionRequirementLevels as Record<string, string>);
+        setSavedRequirementLevels(data.criterionRequirementLevels as Record<string, string>);
+      }
+      if (typeof data?.complexityThreshold === "number") {
+        setComplexityThreshold(data.complexityThreshold);
+        setSavedComplexityThreshold(data.complexityThreshold);
+      }
+      if (typeof data?.complexityMaxCcnThreshold === "number") {
+        setComplexityMaxCcnThreshold(data.complexityMaxCcnThreshold);
+        setSavedComplexityMaxCcnThreshold(data.complexityMaxCcnThreshold);
+      }
       if (typeof data?.spectralRulesetSource === "string") {
         setSpectralRulesetSource(data.spectralRulesetSource);
+        setSavedSpectralRulesetSource(data.spectralRulesetSource);
       }
     } catch (err: unknown) {
       setError(
