@@ -20,6 +20,14 @@ export const EXAMPLE_REPOS: ExampleRepository[] = [
     repoUrl: "https://github.com/open-formulieren/open-forms",
     label: "OpenFormulieren",
   },
+  {
+    repoUrl: "https://github.com/generiekzaakafhandelcomponent/gzac-frontend-template",
+    label: "GZAC Frontend Template",
+  },
+  {
+    repoUrl: "https://github.com/generiekzaakafhandelcomponent/gzac-backend-template",
+    label: "GZAC Backend Template",
+  }
 ];
 
 export const STARTER_REPOS: ExampleRepository[] = EXAMPLE_REPOS;
