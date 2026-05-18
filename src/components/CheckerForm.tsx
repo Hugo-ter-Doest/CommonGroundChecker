@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getRepositories, getRepoHistory, RepoSummary } from "@/lib/apiClient";
+import { EXAMPLE_REPOS, STARTER_REPOS, type ExampleRepository } from "@/lib/exampleRepos";
 
 interface CheckerFormProps {
   onSubmit: (
@@ -124,22 +125,6 @@ async function fetchLatestLocationsFromHistory(
     };
   }
 }
-
-const EXAMPLE_REPOS = [
-  "https://github.com/open-zaak/open-zaak",
-  "https://github.com/maykinmedia/objects-api",
-  "https://github.com/open-formulieren/open-forms",
-];
-
-const STARTER_REPOS = EXAMPLE_REPOS.map((repoUrl) => ({
-  repoUrl,
-  label: repoUrl.replace("https://github.com/", ""),
-}));
-
-type StarterRepository = {
-  repoUrl: string;
-  label: string;
-};
 
 export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
   console.log("CheckerForm rendered", { loading });
@@ -493,24 +478,23 @@ export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
         )}
       </div>
 
-      <div className="flex flex-wrap gap-2 items-center">
-        <span className="text-xs text-gray-400">Try an example:</span>
-        {EXAMPLE_REPOS.map((url) => {
-          const name = url.replace("https://github.com/", "");
-          return (
+      <div className="space-y-2">
+        <p className="text-xs text-gray-400">Try an example:</p>
+        <div className="flex flex-wrap gap-2 items-center">
+          {EXAMPLE_REPOS.map((repo) => (
             <button
-              key={url}
+              key={repo.repoUrl}
               type="button"
               onClick={() => {
-                void handleExampleSelect(url);
+                void handleExampleSelect(repo.repoUrl);
               }}
               disabled={loading}
               className="text-xs text-cg-lightblue hover:underline disabled:opacity-50"
             >
-              {name}
+              {repo.label}
             </button>
-          );
-        })}
+          ))}
+        </div>
       </div>
 
       </form>
