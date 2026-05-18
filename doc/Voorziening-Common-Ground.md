@@ -56,13 +56,13 @@ Het doel is niet om handmatige beoordeling te vervangen, maar om deze te verster
 # Bronnen
 
 1. Common Ground (NL): https://commonground.nl/
-2. Common Ground 5-laags model: https://commonground.nl/news/view/a777d99c-53be-4988-a3f4-8522ac3603ad/common-ground-in-beeld-wat-is-het-vijflagenmodel
+2. Common Ground 5-laags model: https://www.gemmaonline.nl/wiki/Common_Ground_vijflaagsmodel_opbouw_en_gebruik
 3. Haven: https://haven.commonground.nl/
 4. Haven+: https://gitlab.com/commonground/haven/havenplus
 5. OSI-approved licenses: https://opensource.org/licenses
-5. NIS2 (EU): https://commission.europa.eu/law/law-topic/data-protection/eu-data-protection-rules_en
+5. NIS2 (EU): https://cybersecurity-centre.europa.eu/document/download/c3ba7706-2ded-4959-b98e-77c1a63204e0_en?filename=Understanding%20the%20new%20NIS2%20Directive%20cybersecurity%20requirements%20and%20their%20practical%20applications%20for%20the%20EU%20space%20sector.pdf
 6. BIO (Baseline Informatiebeveiliging Overheid): https://www.logius.nl/diensten/informatiebeveiliging/baseline-informatiebeveiliging-overheid
-7. OWASP Secure Coding Practices: https://owasp.org/www-project-secure-coding-practices/
+7. OWASP Secure Coding Practices: https://owasp.org/www-project-secure-coding-practices-quick-reference-guide/stable-en/02-checklist/05-checklist
 8. OpenAPI Specification: https://spec.openapis.org/oas/latest.html
 9. Docker Docs: https://docs.docker.com/
 10. Helm Docs: https://helm.sh/docs/
