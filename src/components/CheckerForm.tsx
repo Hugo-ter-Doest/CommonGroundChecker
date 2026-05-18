@@ -131,6 +131,16 @@ const EXAMPLE_REPOS = [
   "https://github.com/open-formulieren/open-forms",
 ];
 
+const STARTER_REPOS = EXAMPLE_REPOS.map((repoUrl) => ({
+  repoUrl,
+  label: repoUrl.replace("https://github.com/", ""),
+}));
+
+type StarterRepository = {
+  repoUrl: string;
+  label: string;
+};
+
 export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
   console.log("CheckerForm rendered", { loading });
   const [value, setValue] = useState("");
@@ -283,44 +293,45 @@ export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-          <input
-            type="url"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            placeholder="https://github.com/organisation/repository"
-            className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-cg-lightblue focus:border-transparent disabled:opacity-60"
-            disabled={loading}
-            required
-          />
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <input
+              type="url"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder="https://github.com/organisation/repository"
+              className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-cg-lightblue focus:border-transparent disabled:opacity-60"
+              disabled={loading}
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={
+              loading ||
+              !value.trim() ||
+              (helmSomewhereElse && !helmChartUrl.trim()) ||
+              (documentationSomewhereElse && !documentationUrl.trim()) ||
+              (dockerSomewhereElse && !dockerUrl.trim()) ||
+              (isRegister && apiSpecificationSomewhereElse && !apiSpecificationLocationsInput.trim())
+            }
+            className="px-6 py-3 bg-cg-blue text-white font-semibold rounded-lg hover:bg-cg-lightblue transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shrink-0"
+          >
+            {loading ? (
+              <>
+                <span className="spinner" />
+                Checking…
+              </>
+            ) : (
+              "Analyze component"
+            )}
+          </button>
         </div>
-        <button
-          type="submit"
-          disabled={
-            loading ||
-            !value.trim() ||
-            (helmSomewhereElse && !helmChartUrl.trim()) ||
-            (documentationSomewhereElse && !documentationUrl.trim()) ||
-            (dockerSomewhereElse && !dockerUrl.trim()) ||
-            (isRegister && apiSpecificationSomewhereElse && !apiSpecificationLocationsInput.trim())
-          }
-          className="px-6 py-3 bg-cg-blue text-white font-semibold rounded-lg hover:bg-cg-lightblue transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shrink-0"
-        >
-          {loading ? (
-            <>
-              <span className="spinner" />
-              Checking…
-            </>
-          ) : (
-            "Analyze component"
-          )}
-        </button>
-      </div>
 
-      <div className="space-y-3">
+        <div className="space-y-3">
         <label className="flex items-center gap-2 text-sm text-gray-700">
           <input
             type="checkbox"
@@ -502,49 +513,79 @@ export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
         })}
       </div>
 
-      {recentRepositories.length > 0 && (
-        <div className="space-y-2 rounded-xl border border-gray-200 bg-gray-50/60 p-4">
+      </form>
+
+      {(recentRepositories.length > 0 || STARTER_REPOS.length > 0) && (
+        <aside className="space-y-2 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <p className="text-sm font-semibold text-gray-800">Recently analyzed repositories</p>
+              <p className="text-sm font-semibold text-gray-800">
+                {recentRepositories.length > 0
+                  ? "Recently analyzed"
+                  : "Starter repositories"}
+              </p>
               <p className="text-xs text-gray-500">
-                Pick a repository from history to prefill the checker.
+                {recentRepositories.length > 0
+                  ? "Pick a repository from history to prefill the checker."
+                  : "Try one of these example repositories to get started quickly."}
               </p>
             </div>
-            <Link
-              href="/history"
-              className="text-xs font-medium text-cg-lightblue hover:underline"
-            >
-              View full history
-            </Link>
+            {recentRepositories.length > 0 ? (
+              <Link
+                href="/history"
+                className="text-xs font-medium text-cg-lightblue hover:underline"
+              >
+                View history
+              </Link>
+            ) : null}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {recentRepositories.map((repository) => (
-              <button
-                key={repository.id}
-                type="button"
-                onClick={() => {
-                  void applyRepositoryPrefill(repository);
-                }}
-                disabled={loading}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-left transition-colors hover:border-cg-lightblue hover:bg-cg-lightblue/5 disabled:opacity-50"
-              >
-                <p className="text-sm font-semibold text-gray-800">
-                  {repository.owner}/{repository.name}
-                </p>
-                <p className="truncate text-xs text-gray-500">{repository.repoUrl}</p>
-                <div className="mt-1 flex flex-wrap gap-2 text-[11px] text-gray-500">
-                  <span>{repository.analysisCount} analys{repository.analysisCount === 1 ? "is" : "es"}</span>
-                  {repository.latestAnalysis && (
-                    <span>Latest score: {repository.latestAnalysis.score}</span>
-                  )}
-                </div>
-              </button>
-            ))}
+          <div className="space-y-2">
+            {recentRepositories.length > 0
+              ? recentRepositories.map((repository) => (
+                  <button
+                    key={repository.id}
+                    type="button"
+                    onClick={() => {
+                      void applyRepositoryPrefill(repository);
+                    }}
+                    disabled={loading}
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 text-left transition-colors hover:border-cg-lightblue hover:bg-cg-lightblue/5 disabled:opacity-50"
+                  >
+                    <p className="text-sm font-semibold text-gray-800 truncate">
+                      {repository.owner}/{repository.name}
+                    </p>
+                    <p className="truncate text-xs text-gray-500">{repository.repoUrl}</p>
+                    <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-gray-500">
+                      <span>{repository.analysisCount} analys{repository.analysisCount === 1 ? "is" : "es"}</span>
+                      {repository.latestAnalysis && (
+                        <span>Latest score: {repository.latestAnalysis.score}</span>
+                      )}
+                    </div>
+                  </button>
+                ))
+              : STARTER_REPOS.map((repo) => (
+                  <button
+                    key={repo.repoUrl}
+                    type="button"
+                    onClick={() => {
+                      void handleExampleSelect(repo.repoUrl);
+                    }}
+                    disabled={loading}
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 text-left transition-colors hover:border-cg-lightblue hover:bg-cg-lightblue/5 disabled:opacity-50"
+                  >
+                    <p className="text-sm font-semibold text-gray-800 truncate">
+                      {repo.label}
+                    </p>
+                    <p className="truncate text-xs text-gray-500">{repo.repoUrl}</p>
+                    <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-gray-500">
+                      <span>Example repository</span>
+                    </div>
+                  </button>
+                ))}
           </div>
-        </div>
+        </aside>
       )}
-    </form>
+    </div>
   );
 }
