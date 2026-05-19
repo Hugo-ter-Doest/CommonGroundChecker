@@ -143,6 +143,18 @@ export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
   const [apiSpecificationLocationsInput, setApiSpecificationLocationsInput] =
     useState("");
 
+  function resetOptionalInputs() {
+    setHelmSomewhereElse(false);
+    setHelmChartUrl("");
+    setDocumentationSomewhereElse(false);
+    setDocumentationUrl("");
+    setDockerSomewhereElse(false);
+    setDockerUrl("");
+    setIsRegister(false);
+    setApiSpecificationSomewhereElse(false);
+    setApiSpecificationLocationsInput("");
+  }
+
   async function applyRepositoryPrefill(repository: RecentRepository) {
     let helmChartLocations = normalizeLocations(repository.helmChartLocations);
     let documentationLocations = normalizeLocations(repository.documentationLocations);
@@ -208,6 +220,7 @@ export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
       return;
     }
 
+    resetOptionalInputs();
     setValue(url);
   }
 

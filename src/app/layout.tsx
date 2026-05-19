@@ -20,11 +20,11 @@ export default function RootLayout({
         <header className="bg-cg-blue text-white shadow-md">
           <div className="max-w-5xl mx-auto px-6 py-4 flex items-center gap-4">
             <Image
-              src="/icons/Common_gound_logo_rgb.svg"
+              src="/icons/common-ground-full-logo.svg"
               alt="Common Ground logo"
-              width={70}
-              height={70}
-              className="w-14 h-14"
+              width={180}
+              height={52}
+              className="h-12 w-auto"
               priority
             />
             <div>
