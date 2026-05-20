@@ -495,7 +495,7 @@ export default function HomePage() {
             Common Ground Component Checker
           </h2>
           <p className="text-gray-600 max-w-2xl">
-            Enter the URL of a public GitHub repository to automatically verify
+            Enter the URL of a public GitHub or GitLab repository to automatically verify
             whether the component meets Common Ground standards — used by Dutch
             municipalities for open, reusable software.
           </p>

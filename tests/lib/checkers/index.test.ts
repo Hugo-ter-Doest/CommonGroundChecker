@@ -32,7 +32,9 @@ const mocks = vi.hoisted(() => ({
   getRepoTree: vi.fn(),
   getRepoVersion: vi.fn(),
   getFileContent: vi.fn(),
-  parseGitHubUrl: vi.fn(),
+  getCloneUrl: vi.fn(),
+  resolveRepositoryContext: vi.fn(),
+  getSupportedProviders: vi.fn(),
   checkOpenApi: vi.fn(),
   checkLicense: vi.fn(),
   checkPublicCode: vi.fn(),
@@ -96,12 +98,9 @@ vi.mock("node:child_process", () => ({
   spawn: childProcessMocks.spawn,
 }));
 
-vi.mock("@/lib/github", () => ({
-  getRepoMeta: mocks.getRepoMeta,
-  getRepoTree: mocks.getRepoTree,
-  getRepoVersion: mocks.getRepoVersion,
-  getFileContent: mocks.getFileContent,
-  parseGitHubUrl: mocks.parseGitHubUrl,
+vi.mock("@/lib/providers", () => ({
+  resolveRepositoryContext: mocks.resolveRepositoryContext,
+  getSupportedProviders: mocks.getSupportedProviders,
 }));
 
 vi.mock("@/lib/checkers/openapi", () => ({ checkOpenApi: mocks.checkOpenApi }));
@@ -191,7 +190,20 @@ describe("runChecks", () => {
       return child;
     });
 
-    mocks.parseGitHubUrl.mockReturnValue({ owner: "org", repo: "repo" });
+    const provider = {
+      getRepoMeta: mocks.getRepoMeta,
+      getRepoTree: mocks.getRepoTree,
+      getRepoVersion: mocks.getRepoVersion,
+      getFileContent: mocks.getFileContent,
+      getCloneUrl: () => "https://github.com/org/repo.git",
+    };
+    mocks.resolveRepositoryContext.mockReturnValue({
+      owner: "org",
+      repo: "repo",
+      projectPath: "org/repo",
+      repoUrl: "https://github.com/org/repo",
+      provider,
+    });
     mocks.getRepoMeta.mockResolvedValue({
       description: "Test repo",
       language: "TypeScript",
@@ -440,9 +452,9 @@ describe("runChecks", () => {
     expect(sourceCodeResult?.evidence).toContain("Analyzer: lizard");
   });
 
-  it("throws on invalid GitHub URL", async () => {
-    mocks.parseGitHubUrl.mockReturnValue(undefined);
-    await expect(runChecks("invalid-url")).rejects.toThrow("Invalid GitHub repository URL.");
+  it("throws on invalid repository URL", async () => {
+    mocks.resolveRepositoryContext.mockReturnValue(null);
+    await expect(runChecks("invalid-url")).rejects.toThrow("Invalid repository URL.");
   });
 
   it("calls progress callback at key steps", async () => {

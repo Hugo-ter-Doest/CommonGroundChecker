@@ -27,6 +27,10 @@ export const EXAMPLE_REPOS: ExampleRepository[] = [
   {
     repoUrl: "https://github.com/generiekzaakafhandelcomponent/gzac-backend-template",
     label: "GZAC Backend Template",
+  },
+  {
+    repoUrl: "https://gitlab.com/rinis-oss/fsc/open-fsc",
+    label: "Open FSC",
   }
 ];
 

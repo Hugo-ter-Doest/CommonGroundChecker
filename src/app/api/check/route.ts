@@ -1,5 +1,5 @@
 ﻿import { runChecks } from "@/lib/checkers";
-import { parseGitHubUrl } from "@/lib/github";
+import { getSupportedProviders, resolveRepositoryContext } from "@/lib/providers";
 import type { CheckResult as ApiCheckResult } from "@/generated/openapi-client/models/CheckResult";
 import {
   postRepository,
@@ -65,11 +65,11 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!parseGitHubUrl(repoUrl)) {
+    const repositoryContext = resolveRepositoryContext(repoUrl);
+    if (!repositoryContext) {
       return new Response(
         JSON.stringify({
-          error:
-            "Invalid GitHub URL. Please provide a URL like https://github.com/owner/repo",
+          error: `Invalid repository URL. Supported providers: ${getSupportedProviders().join(", ")}.`,
         }),
         {
           status: 400,
@@ -136,7 +136,7 @@ export async function POST(request: Request) {
     );
     const status = isRateLimited ? 429 : isNotFound ? 404 : 500;
     const errorMessage = isRateLimited
-      ? "GitHub API rate limit reached. Add GITHUB_TOKEN in .env for higher limits, then restart the app."
+      ? "API rate limit reached. Add GITHUB_TOKEN or GITLAB_TOKEN in .env for higher limits, then restart the app."
       : isNotFound
       ? "Repository not found. Make sure it is public and the URL is correct."
       : message;

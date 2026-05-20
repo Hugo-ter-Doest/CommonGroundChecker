@@ -89,7 +89,7 @@ export async function runChecks(
   onProgress?: ProgressCallback,
 ): Promise<CheckReport> {
   const context = resolveRepositoryContext(repoUrl);
-  if (!context) throw new Error("Invalid GitHub repository URL.");
+  if (!context) throw new Error("Invalid repository URL.");
 
   const { provider, owner, repo } = context;
 

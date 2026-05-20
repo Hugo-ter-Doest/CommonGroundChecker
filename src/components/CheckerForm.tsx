@@ -300,7 +300,7 @@ export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
               type="url"
               value={value}
               onChange={(e) => setValue(e.target.value)}
-              placeholder="https://github.com/organisation/repository"
+              placeholder="https://github.com/organisation/repository or https://gitlab.com/organisation/repository"
               className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-cg-lightblue focus:border-transparent disabled:opacity-60"
               disabled={loading}
               required
