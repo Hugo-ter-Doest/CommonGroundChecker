@@ -2,6 +2,13 @@ import type { CheckResult } from "../types";
 import type { RepoContext } from "../providers/types";
 import { buildLegacyRepoContext } from "./compat";
 
+type RepoOwnerMeta = {
+  owner?: {
+    name?: string;
+    login?: string;
+  };
+};
+
 const COPYRIGHT_CAPTURE_PATTERNS: RegExp[] = [
   /^\s*(?:[#*>-]\s*)?(?:copyright|©)\s*(?:\(c\)|©)?\s*(?:\d{4}(?:\s*[-–]\s*\d{4})?\s*)?(?:by\s+)?(.+)$/i,
   /^\s*(?:[#*>-]\s*)?all rights reserved\.?\s*(?:by\s+)?(.+)$/i,
@@ -235,21 +242,19 @@ function extractOwnersFromPyproject(content: string): string[] {
 
 export async function checkCopyrightOwner(
   context: RepoContext,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  repoMeta: any,
+  repoMeta: RepoOwnerMeta,
   tree: string[]
 ): Promise<CheckResult>;
 export async function checkCopyrightOwner(
   owner: string,
   repo: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  repoMeta: any,
+  repoMeta: RepoOwnerMeta,
   tree: string[]
 ): Promise<CheckResult>;
 export async function checkCopyrightOwner(
   contextOrOwner: RepoContext | string,
-  arg2: any,
-  arg3?: any,
+  arg2: RepoOwnerMeta | string,
+  arg3?: RepoOwnerMeta | string[],
   arg4?: string[]
 ): Promise<CheckResult> {
   const context =
@@ -258,8 +263,8 @@ export async function checkCopyrightOwner(
       : contextOrOwner;
   const repoMetaValue =
     typeof contextOrOwner === "string"
-      ? arg3
-      : arg2;
+      ? (arg3 as RepoOwnerMeta)
+      : (arg2 as RepoOwnerMeta);
   const tree =
     typeof contextOrOwner === "string"
       ? (arg4 as string[])

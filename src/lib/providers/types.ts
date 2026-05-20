@@ -26,11 +26,29 @@ export interface RepoContext extends RepoIdentifier {
   defaultBranch?: string;
 }
 
+export interface RepositoryMeta {
+  description?: string | null;
+  language?: string | null;
+  stargazers_count?: number;
+  forks_count?: number;
+  default_branch?: string;
+  topics?: string[];
+  license?: {
+    spdx_id?: string | null;
+    name?: string | null;
+  } | null;
+  owner?: {
+    name?: string;
+    login?: string;
+  };
+  [key: string]: unknown;
+}
+
 export interface RepositoryProvider {
   id: string;
   hostname: string;
   parseRepoUrl(url: string): RepoIdentifier | null;
-  getRepoMeta(context: RepoContext): Promise<any>;
+  getRepoMeta(context: RepoContext): Promise<RepositoryMeta>;
   getRepoTree(context: RepoContext, branch: string): Promise<string[]>;
   getFileContent(context: RepoContext, path: string): Promise<string | null>;
   getRepoVersion(context: RepoContext): Promise<RepoVersionResult>;
