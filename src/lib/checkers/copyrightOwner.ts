@@ -1,5 +1,6 @@
-import { getFileContent } from "../github";
 import type { CheckResult } from "../types";
+import type { RepoContext } from "../providers/types";
+import { buildLegacyRepoContext } from "./compat";
 
 const COPYRIGHT_CAPTURE_PATTERNS: RegExp[] = [
   /^\s*(?:[#*>-]\s*)?(?:copyright|©)\s*(?:\(c\)|©)?\s*(?:\d{4}(?:\s*[-–]\s*\d{4})?\s*)?(?:by\s+)?(.+)$/i,
@@ -233,12 +234,36 @@ function extractOwnersFromPyproject(content: string): string[] {
 }
 
 export async function checkCopyrightOwner(
+  context: RepoContext,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  repoMeta: any,
+  tree: string[]
+): Promise<CheckResult>;
+export async function checkCopyrightOwner(
   owner: string,
   repo: string,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   repoMeta: any,
   tree: string[]
+): Promise<CheckResult>;
+export async function checkCopyrightOwner(
+  contextOrOwner: RepoContext | string,
+  arg2: any,
+  arg3?: any,
+  arg4?: string[]
 ): Promise<CheckResult> {
+  const context =
+    typeof contextOrOwner === "string"
+      ? buildLegacyRepoContext(contextOrOwner, arg2 as string)
+      : contextOrOwner;
+  const repoMetaValue =
+    typeof contextOrOwner === "string"
+      ? arg3
+      : arg2;
+  const tree =
+    typeof contextOrOwner === "string"
+      ? (arg4 as string[])
+      : (arg3 as string[]);
   const treeByLower = new Map(tree.map((path) => [path.toLowerCase(), path]));
 
   const matchedFiles = CANDIDATE_FILES
@@ -250,7 +275,7 @@ export async function checkCopyrightOwner(
   let foundOwnerFromManifest = false;
 
   for (const file of matchedFiles) {
-    const content = await getFileContent(owner, repo, file);
+    const content = await context.provider.getFileContent(context, file);
     if (!content) continue;
 
     const ownersFromText = extractOwnersFromText(content);
@@ -312,10 +337,10 @@ export async function checkCopyrightOwner(
   }
 
   const fallbackOwner =
-    typeof repoMeta?.owner?.name === "string" && repoMeta.owner.name.trim()
-      ? repoMeta.owner.name.trim()
-      : typeof repoMeta?.owner?.login === "string" && repoMeta.owner.login.trim()
-        ? repoMeta.owner.login.trim()
+    typeof repoMetaValue?.owner?.name === "string" && repoMetaValue.owner.name.trim()
+      ? repoMetaValue.owner.name.trim()
+      : typeof repoMetaValue?.owner?.login === "string" && repoMetaValue.owner.login.trim()
+        ? repoMetaValue.owner.login.trim()
         : null;
 
   if (fallbackOwner) {

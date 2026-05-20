@@ -1,5 +1,6 @@
-import { getFileContent } from "../github";
 import type { CheckResult } from "../types";
+import type { RepoContext } from "../providers/types";
+import { buildLegacyRepoContext } from "./compat";
 
 const COVERAGE_FILE_CANDIDATES = [
   "coverage/coverage-summary.json",
@@ -205,11 +206,11 @@ function parseCoveragePercentage(filePath: string, content: string): number | nu
   return null;
 }
 
-async function parseCoverageFromReadme(owner: string, repo: string, tree: string[]): Promise<number | null> {
+async function parseCoverageFromReadme(context: RepoContext, tree: string[]): Promise<number | null> {
   const readmePath = tree.find((path) => README_FILENAMES.includes(path.toLowerCase()));
   if (!readmePath) return null;
 
-  const content = await getFileContent(owner, repo, readmePath);
+  const content = await context.provider.getFileContent(context, readmePath);
   if (!content) return null;
 
   const bannerValue = parseCoverageBanner(content);
@@ -229,16 +230,34 @@ async function parseCoverageFromReadme(owner: string, repo: string, tree: string
 }
 
 export async function checkCoverage(
+  context: RepoContext,
+  tree: string[]
+): Promise<CheckResult>;
+export async function checkCoverage(
   owner: string,
   repo: string,
   tree: string[]
+): Promise<CheckResult>;
+export async function checkCoverage(
+  contextOrOwner: RepoContext | string,
+  treeOrRepo: string[] | string,
+  treeMaybe?: string[]
 ): Promise<CheckResult> {
+  const context =
+    typeof contextOrOwner === "string"
+      ? buildLegacyRepoContext(contextOrOwner, treeOrRepo as string)
+      : contextOrOwner;
+  const tree =
+    typeof contextOrOwner === "string"
+      ? treeMaybe ?? []
+      : (treeOrRepo as string[]);
+
   const candidates = tree.filter((path) =>
     COVERAGE_FILE_CANDIDATES.includes(path.toLowerCase())
   );
 
   if (candidates.length === 0) {
-    const readmePercentage = await parseCoverageFromReadme(owner, repo, tree);
+    const readmePercentage = await parseCoverageFromReadme(context, tree);
     if (readmePercentage !== null) {
       const rounded = Math.round(readmePercentage * 100) / 100;
       return {
@@ -271,7 +290,7 @@ export async function checkCoverage(
   }
 
   for (const candidate of candidates) {
-    const content = await getFileContent(owner, repo, candidate);
+    const content = await context.provider.getFileContent(context, candidate);
     if (!content) continue;
 
     const percentage = parseCoveragePercentage(candidate, content);
@@ -307,7 +326,7 @@ export async function checkCoverage(
     };
   }
 
-  const readmePercentage = await parseCoverageFromReadme(owner, repo, tree);
+  const readmePercentage = await parseCoverageFromReadme(context, tree);
   if (readmePercentage !== null) {
     const rounded = Math.round(readmePercentage * 100) / 100;
     return {

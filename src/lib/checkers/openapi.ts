@@ -1,5 +1,5 @@
-import { getFileContent } from "../github";
 import type { CheckResult } from "../types";
+import type { RepoContext } from "../providers/types";
 
 const OPENAPI_PATTERNS = [
   "openapi.yaml",
@@ -21,8 +21,7 @@ const OPENAPI_PATTERNS = [
 ];
 
 export async function checkOpenApi(
-  owner: string,
-  repo: string,
+  context: RepoContext,
   tree: string[],
   apiSpecificationLocations: string[] = []
 ): Promise<CheckResult> {
@@ -110,7 +109,7 @@ export async function checkOpenApi(
   // Optionally peek into the found file to confirm it has at least an 'info' section
   const actualPath =
     tree.find((p) => p.toLowerCase() === allFound[0]) ?? allFound[0];
-  const content = await getFileContent(owner, repo, actualPath);
+  const content = await context.provider.getFileContent(context, actualPath);
   const hasInfo = content
     ? content.includes("info:") || content.includes('"info"')
     : true;

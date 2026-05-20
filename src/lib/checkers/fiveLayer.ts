@@ -1,6 +1,7 @@
-import { getFileContent } from "../github";
 import { load as loadYaml } from "js-yaml";
 import type { CheckResult } from "../types";
+import type { RepoContext } from "../providers/types";
+import { buildLegacyRepoContext } from "./compat";
 
 type LayerKey = "interaction" | "process" | "integration" | "service" | "data";
 type SignalStrength = "strong" | "weak";
@@ -198,7 +199,7 @@ function detectLayerSignalsFromText(
   return detections;
 }
 
-async function extractPublicCodeText(owner: string, repo: string, tree: string[]): Promise<string> {
+async function extractPublicCodeText(context: RepoContext, tree: string[]): Promise<string> {
   const publiccodePath = tree.find((path) =>
     PUBLICCODE_FILENAMES.includes(path.toLowerCase())
   );
@@ -207,7 +208,7 @@ async function extractPublicCodeText(owner: string, repo: string, tree: string[]
     return "";
   }
 
-  const raw = await getFileContent(owner, repo, publiccodePath);
+  const raw = await context.provider.getFileContent(context, publiccodePath);
   if (!raw) {
     return "";
   }
@@ -237,20 +238,45 @@ function getLayerConfidence(layers: LayerKey[], evidence: string[]): "high" | "m
 }
 
 export async function checkFiveLayer(
+  context: RepoContext,
+  tree: string[],
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  repoMeta: any
+): Promise<CheckResult>;
+export async function checkFiveLayer(
   owner: string,
   repo: string,
   tree: string[],
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   repoMeta: any
+): Promise<CheckResult>;
+export async function checkFiveLayer(
+  contextOrOwner: RepoContext | string,
+  treeOrRepo: string[] | string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  repoMeta: any,
+  maybeTree?: string[]
 ): Promise<CheckResult> {
-  const topics: string[] = repoMeta?.topics ?? [];
-  const repoDescription: string = repoMeta?.description ?? "";
+  const context =
+    typeof contextOrOwner === "string"
+      ? buildLegacyRepoContext(contextOrOwner, treeOrRepo as string)
+      : contextOrOwner;
+  const tree =
+    typeof contextOrOwner === "string"
+      ? (repoMeta as string[])
+      : (treeOrRepo as string[]);
+  const repoMetaValue =
+    typeof contextOrOwner === "string"
+      ? maybeTree
+      : repoMeta;
+  const topics: string[] = repoMetaValue?.topics ?? [];
+  const repoDescription: string = repoMetaValue?.description ?? "";
 
   const readmePath = tree.find((path) =>
     README_FILENAMES.includes(path.toLowerCase())
   );
-  const readme = readmePath ? await getFileContent(owner, repo, readmePath) : "";
-  const publiccodeText = await extractPublicCodeText(owner, repo, tree);
+  const readme = readmePath ? await context.provider.getFileContent(context, readmePath) : "";
+  const publiccodeText = await extractPublicCodeText(context, tree);
 
   const allDetections: LayerDetection[] = [];
 

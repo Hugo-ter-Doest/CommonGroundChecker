@@ -120,7 +120,8 @@ function extractMetrics(output: string): {
 export async function checkCodeMetrics(
   owner: string,
   repo: string,
-  localRepoPath?: string
+  localRepoPath?: string,
+  cloneUrl?: string
 ): Promise<CheckResult> {
   const lizard = await detectLizardCommand();
 
@@ -145,13 +146,13 @@ export async function checkCodeMetrics(
     tempRoot = await mkdtemp(path.join(os.tmpdir(), "cgchecker-metrics-"));
     repoDir = path.join(tempRoot, "repo");
   }
-  const cloneUrl = `https://github.com/${owner}/${repo}.git`;
+  const effectiveCloneUrl = cloneUrl ?? `https://github.com/${owner}/${repo}.git`;
 
   try {
     if (!localRepoPath) {
       const clone = await runCommand(
         "git",
-        ["clone", "--depth", "1", cloneUrl, repoDir],
+        ["clone", "--depth", "1", effectiveCloneUrl, repoDir],
         { GIT_LFS_SKIP_SMUDGE: "1" }
       );
 

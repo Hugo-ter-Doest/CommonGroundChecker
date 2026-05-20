@@ -1,13 +1,12 @@
 import yaml from "js-yaml";
-import { getFileContent } from "../github";
 import type { CheckResult } from "../types";
+import type { RepoContext } from "../providers/types";
 
 const REQUIRED_FIELDS = ["publiccodeYmlVersion", "name", "url", "legal"];
 const RECOMMENDED_FIELDS = ["description", "maintenance", "categories", "nl"];
 
 export async function checkPublicCode(
-  owner: string,
-  repo: string,
+  context: RepoContext,
   tree: string[]
 ): Promise<CheckResult> {
   const isPubliccodeFile = (path: string) => {
@@ -37,7 +36,7 @@ export async function checkPublicCode(
     };
   }
 
-  const content = await getFileContent(owner, repo, file);
+  const content = await context.provider.getFileContent(context, file);
   if (!content) {
     return {
       id: "publiccode",

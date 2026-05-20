@@ -1,5 +1,5 @@
-import { getFileContent } from "../github";
 import type { CheckResult } from "../types";
+import type { RepoContext } from "../providers/types";
 
 // OSI-approved licenses commonly seen in open-source Dutch gov projects
 const OSI_LICENSES: Record<string, string> = {
@@ -114,8 +114,7 @@ function detectLicenseFromText(content: string): string | null {
 }
 
 export async function checkLicense(
-  owner: string,
-  repo: string,
+  context: RepoContext,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   repoMeta: any,
   tree: string[]
@@ -144,7 +143,7 @@ export async function checkLicense(
   }
 
   const licenseContent = licenseFile
-    ? await getFileContent(owner, repo, licenseFile)
+    ? await context.provider.getFileContent(context, licenseFile)
     : null;
   const detectedFromText = licenseContent
     ? detectLicenseFromText(licenseContent)

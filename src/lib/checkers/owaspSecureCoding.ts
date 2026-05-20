@@ -1,7 +1,8 @@
-import { getFileContent } from "../github";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { CheckResult } from "../types";
+import type { RepoContext } from "../providers/types";
+import { buildLegacyRepoContext } from "./compat";
 
 const SOURCE_FILE_PATTERN = /\.(ts|tsx|js|jsx|mjs|cjs|py|java|go|cs|php|rb|vue)$/i;
 const EXCLUDED_PATH_PATTERN = /(^|\/)(node_modules|dist|build|coverage|vendor|\.next|generated)(\/|$)/i;
@@ -26,11 +27,34 @@ function getScannableFiles(tree: string[], scanAllFiles: boolean): string[] {
 }
 
 export async function checkOwaspSecureCoding(
+  context: RepoContext,
+  tree: string[],
+  localRepoPath?: string
+): Promise<CheckResult>;
+export async function checkOwaspSecureCoding(
   owner: string,
   repo: string,
   tree: string[],
   localRepoPath?: string
+): Promise<CheckResult>;
+export async function checkOwaspSecureCoding(
+  contextOrOwner: RepoContext | string,
+  arg2: string[] | string,
+  arg3?: string[] | string,
+  arg4?: string
 ): Promise<CheckResult> {
+  const context =
+    typeof contextOrOwner === "string"
+      ? buildLegacyRepoContext(contextOrOwner, arg2 as string)
+      : contextOrOwner;
+  const tree =
+    typeof contextOrOwner === "string"
+      ? (arg3 as string[])
+      : (arg2 as string[]);
+  const localRepoPath =
+    typeof contextOrOwner === "string"
+      ? (arg4 as string | undefined)
+      : (arg3 as string | undefined);
   const filesToScan = getScannableFiles(tree, Boolean(localRepoPath));
 
   if (filesToScan.length === 0) {
@@ -52,7 +76,7 @@ export async function checkOwaspSecureCoding(
     filesToScan.map(async (relativePath) => {
       const content = localRepoPath
         ? await readFile(path.join(localRepoPath, relativePath), "utf-8").catch(() => "")
-        : await getFileContent(owner, repo, relativePath);
+        : await context.provider.getFileContent(context, relativePath);
       return { path: relativePath, content };
     })
   );

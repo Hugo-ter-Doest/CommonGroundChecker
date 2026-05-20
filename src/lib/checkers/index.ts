@@ -1,4 +1,4 @@
-import { getRepoMeta, getRepoTree, getRepoVersion, parseGitHubUrl } from "../github";
+import { resolveRepositoryContext } from "../providers";
 import type { CheckReport, CheckResult } from "../types";
 import { checkOpenApi } from "./openapi";
 import { checkLicense } from "./license";
@@ -88,20 +88,21 @@ export async function runChecks(
   options?: RunChecksOptions,
   onProgress?: ProgressCallback,
 ): Promise<CheckReport> {
-  const parsed = parseGitHubUrl(repoUrl);
-  if (!parsed) throw new Error("Invalid GitHub repository URL.");
+  const context = resolveRepositoryContext(repoUrl);
+  if (!context) throw new Error("Invalid GitHub repository URL.");
 
-  const { owner, repo } = parsed;
+  const { provider, owner, repo } = context;
 
   // Fetch repo metadata first (needed to know default branch)
-  onProgress?.("Fetching repository metadata\u2026", 15);
-  const meta = await getRepoMeta(owner, repo);
+  onProgress?.("Fetching repository metadata...", 15);
+  const meta = await provider.getRepoMeta(context);
+  context.defaultBranch = String(meta.default_branch ?? "main");
 
   // Fetch file tree and version in parallel using the real default branch
-  onProgress?.("Loading repository file tree\u2026", 30);
+  onProgress?.("Loading repository file tree...", 30);
   const [tree, versionInfo] = await Promise.all([
-    getRepoTree(owner, repo, meta.default_branch ?? "main"),
-    getRepoVersion(owner, repo),
+    provider.getRepoTree(context, context.defaultBranch),
+    provider.getRepoVersion(context),
   ]);
 
   const version = versionInfo.version;
@@ -115,7 +116,7 @@ export async function runChecks(
   try {
     tempRoot = await mkdtemp(path.join(os.tmpdir(), "cgchecker-repo-"));
     localRepoPath = path.join(tempRoot, "repo");
-    const cloneUrl = `https://github.com/${owner}/${repo}.git`;
+    const cloneUrl = provider.getCloneUrl(context);
     const clone = await runCommand(
       "git",
       ["clone", "--depth", "1", cloneUrl, localRepoPath],
@@ -127,7 +128,7 @@ export async function runChecks(
     }
 
     const openApiCheckPromise: Promise<CheckResult> = isRegister
-    ? checkOpenApi(owner, repo, tree, options?.apiSpecificationLocations ?? [])
+    ? checkOpenApi(context, tree, options?.apiSpecificationLocations ?? [])
     : Promise.resolve({
         id: "openapi",
         title: "API-first / OpenAPI Specification",
@@ -143,32 +144,33 @@ export async function runChecks(
   // Kick off network-dependent and slow checks immediately so they run concurrently
   const networkChecksPromise = Promise.all([
     openApiCheckPromise,
-    checkLicense(owner, repo, meta, tree),
-    checkCopyrightOwner(owner, repo, meta, tree),
-    checkPublicCode(owner, repo, tree),
-    checkFiveLayer(owner, repo, tree, meta),
-    checkHelmChart(owner, repo, tree, options?.helmChartLocations ?? []),
+    checkLicense(context, meta, tree),
+    checkCopyrightOwner(context, meta, tree),
+    checkPublicCode(context, tree),
+    checkFiveLayer(context, tree, meta),
+    checkHelmChart(context, tree, options?.helmChartLocations ?? []),
   ]);
   const complexityPromise = checkComplexity(
     owner,
     repo,
     scoringConfig.complexityThreshold,
     scoringConfig.complexityMaxCcnThreshold,
-    localRepoPath
+    localRepoPath,
+    cloneUrl
   );
-  const codeMetricsPromise = checkCodeMetrics(owner, repo, localRepoPath);
-  const owaspSecureCodingPromise = checkOwaspSecureCoding(owner, repo, tree, localRepoPath);
+  const codeMetricsPromise = checkCodeMetrics(owner, repo, localRepoPath, cloneUrl);
+  const owaspSecureCodingPromise = checkOwaspSecureCoding(context, tree, localRepoPath);
   const adrValidatorPromise = checkAdrValidator(
     owner,
     repo,
-    meta.default_branch ?? "main",
+    context.defaultBranch,
     tree,
     options?.apiSpecificationLocations ?? [],
     scoringConfig.spectralRulesetSource
   );
 
   // Instant checks — synchronous pure functions on the tree array
-  onProgress?.("Running code structure checks\u2026", 45);
+  onProgress?.("Running code structure checks...", 45);
   let sourcecode = checkSourceCode(tree);
   const docker = checkDocker(tree);
   const dockerimage = checkDockerImage(options?.dockerLocations ?? []);
@@ -177,14 +179,14 @@ export async function runChecks(
   const documentation = checkDocumentation(tree, options?.documentationLocations ?? []);
   const changelog = checkChangelog(tree);
   const tests = checkTests(tree);
-  const coverage = await checkCoverage(owner, repo, tree);
+  const coverage = await checkCoverage(context, tree);
   const contributing = checkContributing(tree);
   const codeofconduct = checkCodeOfConduct(tree);
   const security = checkSecurity(tree);
   const semver = checkSemver(version);
 
   // Instant checks done; emit next step while slower checks complete in parallel
-  onProgress?.("Analysing API specs, licence & deployment files\u2026", 60);
+  onProgress?.("Analysing API specs, licence & deployment files...", 60);
   const [[openapi, license, copyrightowner, publiccode, fivelayer, helmchart], complexity, codemetrics, owaspsecurecoding, adrvalidator] = await Promise.all([
     networkChecksPromise,
     complexityPromise,
@@ -221,7 +223,7 @@ export async function runChecks(
   }
   const eupllicense = checkEuplLicense(meta, license.message);
 
-  onProgress?.("Calculating compliance score\u2026", 90);
+  onProgress?.("Calculating compliance score...", 90);
 
   const results = [
     sourcecode,

@@ -13,7 +13,8 @@ export async function POST(
   context: { params: Promise<{ repoId: string }> }
 ) {
   const { params } = await context;
-  const url = createRemoteUrl(`/api/repositories/${encodeURIComponent(params.repoId)}/analyses`);
+  const { repoId } = await params;
+  const url = createRemoteUrl(`/api/repositories/${encodeURIComponent(repoId)}/analyses`);
   const response = await fetch(url, {
     method: "POST",
     headers: {

@@ -1,12 +1,36 @@
-import { getRepoTree, parseGitHubTreeUrl } from "../github";
 import type { CheckResult } from "../types";
+import type { RepoContext, ParsedRepoTreeUrl } from "../providers/types";
+import { buildLegacyRepoContext } from "./compat";
 
+export async function checkHelmChart(
+  context: RepoContext,
+  tree: string[],
+  helmChartLocations: string[]
+): Promise<CheckResult>;
 export async function checkHelmChart(
   owner: string,
   repo: string,
   tree: string[],
-  helmChartLocations: string[] = []
+  helmChartLocations: string[]
+): Promise<CheckResult>;
+export async function checkHelmChart(
+  contextOrOwner: RepoContext | string,
+  arg2: string[] | string,
+  arg3: string[] | string,
+  arg4: string[] = []
 ): Promise<CheckResult> {
+  const context =
+    typeof contextOrOwner === "string"
+      ? buildLegacyRepoContext(contextOrOwner, arg2 as string)
+      : contextOrOwner;
+  const tree =
+    typeof contextOrOwner === "string"
+      ? (arg3 as string[])
+      : (arg2 as string[]);
+  const helmChartLocations =
+    typeof contextOrOwner === "string"
+      ? arg4
+      : (arg3 as string[]);
   //const lowerTree = tree.map((p) => p.toLowerCase());
   const normalizedHints = helmChartLocations.map((p) => p.toLowerCase());
   const localPathHints = normalizedHints.filter(
@@ -14,34 +38,33 @@ export async function checkHelmChart(
   );
 
   const externalHints = helmChartLocations
-    .map((hint) => parseGitHubTreeUrl(hint))
+    .map((hint) => ({ hint, parsed: context.provider.parseRepoTreeUrl?.(hint) }))
     .filter(
       (
-        hint
-      ): hint is {
-        owner: string;
-        repo: string;
-        branch: string;
-        path: string;
-      } => !!hint
+        item
+      ): item is {
+        hint: string;
+        parsed: ParsedRepoTreeUrl;
+      } => !!item.parsed
     );
 
   const externalChartEvidence: string[] = [];
   let externalHelmDetected = false;
 
-  for (const hint of externalHints) {
+  for (const item of externalHints) {
     try {
-      const externalTree = await getRepoTree(hint.owner, hint.repo, hint.branch);
+      const externalTree = await context.provider.getRepoTree(
+        context,
+        item.parsed.branch
+      );
       const externalLower = externalTree.map((p) => p.toLowerCase());
-      const expectedChart = hint.path.toLowerCase().endsWith("chart.yaml")
-        ? hint.path.toLowerCase().replace(/^\/+|\/+$/g, "")
-        : `${hint.path.replace(/^\/+|\/+$/g, "")}/chart.yaml`;
+      const expectedChart = item.parsed.path.toLowerCase().endsWith("chart.yaml")
+        ? item.parsed.path.toLowerCase().replace(/^\/+|\/+$/g, "")
+        : `${item.parsed.path.replace(/^\/+|\/+$/g, "")}/chart.yaml`;
 
       if (externalLower.includes(expectedChart)) {
         externalHelmDetected = true;
-        externalChartEvidence.push(
-          `External Helm chart detected: https://github.com/${hint.owner}/${hint.repo}/tree/${hint.branch}/${hint.path}`
-        );
+        externalChartEvidence.push(`External Helm chart detected: ${item.hint}`);
       }
     } catch {
       // Ignore external lookup issues and proceed with local detection.
