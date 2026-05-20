@@ -7,7 +7,6 @@ FROM node:20-bookworm-slim AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm run db:generate
 RUN npm run build
 
 FROM node:20-bookworm-slim AS runner
