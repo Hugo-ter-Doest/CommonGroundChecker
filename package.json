@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "next dev",
     "generate:openapi": "openapi-typescript-codegen --input public/openapi.json --output src/generated/openapi-client --client fetch",
-    "build": "npm run generate:openapi && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint . --ignore-pattern src/generated/** --ignore-pattern .next/** --ignore-pattern coverage/** --ignore-pattern badges/**",
     "test": "vitest run",

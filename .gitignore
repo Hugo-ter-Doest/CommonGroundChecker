@@ -11,9 +11,6 @@ node_modules/
 .env.local
 .env*.local
 
-# Generated Prisma client
-src/generated/
-
 # Misc
 .DS_Store
 *.log
