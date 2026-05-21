@@ -2,7 +2,6 @@
   "name": "common-ground-checker",
   "version": "1.0.0",
   "description": "Online compliance checker for Common Ground (Dutch municipalities architecture)",
-  "private": true,
   "license": "EUPL-1.2",
   "engines": {
     "node": ">=22.0.0"
