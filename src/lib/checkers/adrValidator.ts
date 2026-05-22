@@ -121,8 +121,24 @@ function buildRawGitHubUrl(
   return `https://raw.githubusercontent.com/${owner}/${repo}/${encodeURIComponent(branch)}/${encodedPath}`;
 }
 
+function buildRawGitLabUrl(
+  projectPath: string,
+  branch: string,
+  filePath: string
+): string {
+  const encodedProjectPath = projectPath
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+  const encodedPath = filePath
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+  return `https://gitlab.com/${encodedProjectPath}/-/raw/${encodeURIComponent(branch)}/${encodedPath}`;
+}
+
+// Convert https://github.com/owner/repo/blob/branch/path/to/file -> raw URL
 function convertGitHubWebUrlToRaw(url: string): string | null {
-  // Convert https://github.com/owner/repo/blob/branch/path/to/file -> raw URL
   const match = url.match(
     /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/(.*?)$/i
   );
@@ -131,6 +147,36 @@ function convertGitHubWebUrlToRaw(url: string): string | null {
     return buildRawGitHubUrl(owner, repo, branch, filePath);
   }
   return null;
+}
+
+// Convert https://gitlab.com/group/project/-/blob/branch/path/to/file -> raw URL
+function convertGitLabWebUrlToRaw(url: string): string | null {
+  const match = url.match(
+    /^https:\/\/gitlab\.com\/(.+?)\/-\/blob\/([^/]+)\/(.*?)$/i
+  );
+  if (match) {
+    const [, projectPath, branch, filePath] = match;
+    return buildRawGitLabUrl(projectPath, branch, filePath);
+  }
+  return null;
+}
+
+function convertRepositoryWebUrlToRaw(url: string): string | null {
+  return convertGitHubWebUrlToRaw(url) ?? convertGitLabWebUrlToRaw(url);
+}
+
+function buildRawRepoUrl(
+  providerId: string,
+  projectPath: string,
+  owner: string,
+  repo: string,
+  branch: string,
+  filePath: string
+): string {
+  if (providerId === "gitlab") {
+    return buildRawGitLabUrl(projectPath, branch, filePath);
+  }
+  return buildRawGitHubUrl(owner, repo, branch, filePath);
 }
 
 async function isReachableSpecUrl(url: string): Promise<boolean> {
@@ -151,6 +197,8 @@ interface ResolvedTarget {
 }
 
 async function resolveSpecTargetUrls(
+  providerId: string,
+  projectPath: string,
   owner: string,
   repo: string,
   branch: string,
@@ -182,9 +230,9 @@ async function resolveSpecTargetUrls(
     if (/^https?:\/\//i.test(location)) {
       let normalized = location.replace(/\/+$/g, "");
 
-      const rawGitHubUrl = convertGitHubWebUrlToRaw(normalized);
-      if (rawGitHubUrl) {
-        normalized = rawGitHubUrl;
+      const rawRepoUrl = convertRepositoryWebUrlToRaw(normalized);
+      if (rawRepoUrl) {
+        normalized = rawRepoUrl;
       }
 
       if (/(openapi|swagger)\.(json|ya?ml)$/i.test(normalized)) {
@@ -207,7 +255,7 @@ async function resolveSpecTargetUrls(
       );
       if (index !== -1) {
         addTarget({
-          url: buildRawGitHubUrl(owner, repo, branch, tree[index]),
+          url: buildRawRepoUrl(providerId, projectPath, owner, repo, branch, tree[index]),
           source: "provided-repo-path",
         });
       }
@@ -241,7 +289,7 @@ async function resolveSpecTargetUrls(
     const index = lowerTree.findIndex((path) => path === candidate);
     if (index !== -1) {
       addTarget({
-        url: buildRawGitHubUrl(owner, repo, branch, tree[index]),
+        url: buildRawRepoUrl(providerId, projectPath, owner, repo, branch, tree[index]),
         source: "auto-discovered",
       });
     }
@@ -258,7 +306,7 @@ async function resolveSpecTargetUrls(
       path.endsWith("/swagger.json")
     ) {
       addTarget({
-        url: buildRawGitHubUrl(owner, repo, branch, tree[i]),
+        url: buildRawRepoUrl(providerId, projectPath, owner, repo, branch, tree[i]),
         source: "auto-discovered",
       });
     }
@@ -270,12 +318,16 @@ async function resolveSpecTargetUrls(
 export async function checkAdrValidator(
   owner: string,
   repo: string,
+  projectPath: string,
+  providerId: string,
   branch: string,
   tree: string[],
   apiSpecificationLocations: string[] = [],
   spectralRulesetSource?: string
 ): Promise<CheckResult> {
   const resolvedTargets = await resolveSpecTargetUrls(
+    providerId,
+    projectPath,
     owner,
     repo,
     branch,

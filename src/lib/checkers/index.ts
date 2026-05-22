@@ -163,6 +163,8 @@ export async function runChecks(
   const adrValidatorPromise = checkAdrValidator(
     owner,
     repo,
+    context.projectPath,
+    context.provider.id,
     context.defaultBranch,
     tree,
     options?.apiSpecificationLocations ?? [],
