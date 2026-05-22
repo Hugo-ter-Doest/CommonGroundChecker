@@ -12,7 +12,7 @@ jobs:
       contents: read
       id-token: write
     env:
-      IMAGE_NAME: common-ground-checker
+      IMAGE_NAME: common-ground-component-checker
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
