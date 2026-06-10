@@ -1,5 +1,6 @@
 import { resolveRepositoryContext } from "../providers";
 import type { CheckReport, CheckResult } from "../types";
+import type { RepoContext } from "../providers/types";
 import { checkOpenApi } from "./openapi";
 import { checkLicense } from "./license";
 import { checkPublicCode } from "./publiccode";
@@ -177,7 +178,7 @@ export async function runChecks(
   const docker = checkDocker(tree);
   const dockerimage = checkDockerImage(options?.dockerLocations ?? []);
   const cicd = checkCiConfig(tree);
-  const sbom = checkSbom(tree);
+  const sbom = await checkSbom(context, tree);
   const documentation = checkDocumentation(tree, options?.documentationLocations ?? []);
   const changelog = checkChangelog(tree);
   const tests = checkTests(tree);
