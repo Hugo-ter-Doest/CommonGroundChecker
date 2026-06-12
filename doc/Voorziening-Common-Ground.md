@@ -75,9 +75,9 @@ Tenslotte, als de beoordeling van componenten grotendeels automatisch is, kan he
 
 | Criterium | Automatisch te checken | Beschrijving | Verwijzing naar achtergrondinformatie |
 |-----------|-----------------------|--------------|--------------------------------------|
-| **Open source-licentie** | - | De repository bevat een LICENSE-bestand met een door OSI goedgekeurde licentie | [opensource.org/licenses](https://opensource.org/licenses) |
+| **Open source-licentie** | ja | De repository bevat een LICENSE-bestand met een door OSI goedgekeurde licentie | [opensource.org/licenses](https://opensource.org/licenses) |
 | **EUPL-licentie** | ja | De repository valt onder de EUPL | [EUPL](https://interoperable-europe.ec.europa.eu/collection/eupl/eupl-text-eupl-12) |
-| **Intellectueel Eigendom (IP)** | - | De eigenaar of auteursrechthebbende is afgeleid uit juridische bestanden en metadata | [opensource.guide/legal](https://opensource.guide/legal/) |
+| **Intellectueel Eigendom (IP)** | ja | De eigenaar of auteursrechthebbende is afgeleid uit juridische bestanden en metadata | [opensource.guide/legal](https://opensource.guide/legal/) |
 | **publiccode.yml** | ja | De repository bevat een publiccode.yml in de root met relevante overheidsmetadata | [Standard for Public Code](https://standard.publiccode.net) |
 | **Contributing-handleiding** | ja | Er is een CONTRIBUTING-bestand aanwezig dat beschrijft hoe bijdragen kunnen worden gedaan | [GitHub docs](https://docs.github.com/en/communities/setting-up-your-project-for-healthy-contributions/setting-guidelines-for-repository-contributors) |
 | **Gedragscode** | ja | De repository bevat een CODE_OF_CONDUCT-bestand om gedragsregels vast te leggen | [opensource.guide](https://opensource.guide/code-of-conduct/) |
