@@ -44,16 +44,16 @@ Daarnaast moet er duidelijkheid zijn over kwetsbaarheidsmanagement: hoe worden b
 ## DevOps
 Binnen Common Ground wordt ervan uitgegaan dat componenten als Docker containers beschikbaar zijn en kunnen worden uitgerold op een Haven-compliant infrastructuur. Hiervoor moeten, naast de container images zelf, ook Helm-charts beschikbaar zijn voor de uitrol.
 
-Een DevOps-geschikte component heeft een deploymentmodel dat past bij Haven/Haven+, en is zodanig ingericht dat installatie, update en rollback beheersbaar blijven. Daarbij gaat het ook om beheerbaarheid: duidelijke deploymentdocumentatie, configuratie-informatie, monitoring- en loggingmogelijkheden en een duidelijke release- en rollbackstrategie.
+Een DevOps-geschikte component heeft een deploymentmodel conform Haven/Haven+. Daarbij gaat het ook om beheerbaarheid: duidelijke deploymentdocumentatie, configuratie-informatie, monitoring- en loggingmogelijkheden en een duidelijke release- en rollbackstrategie.
 
 Als een component geschikt is voor DevOps, kan het sneller, veiliger en met minder handmatige inzet in de gezamenlijke voorziening worden opgenomen. Dit voorkomt dat alleen functionele geschiktheid leidt tot opname, zonder voldoende aandacht voor beheersbaarheid, continuïteit en operationele stabiliteit.
-
-Een component moet dus niet alleen de vraag van gemeenten bedienen, maar moet ook aantoonbaar betrouwbaar, veilig, interoperabel en beheerbaar zijn in een gedeelde gemeentelijke voorziening. Deze criteria moeten voorkomen dat alleen op basis van populariteit of functionaliteit wordt gekozen zonder voldoende oog voor duurzame exploitatie.
 
 # Automatische beoordeling van componenten
 Automatische beoordeling van componenten is efficiënt omdat het herhaalde controles over veel repositories kan schalen en eventuele subjectiviteit uit de de beoordeling haalt. Door structurele kenmerken zoals bestandsnamen, licenties, documentatie, API-specificaties en container-artefacten automatisch te herkennen, ontstaat een objectief startpunt voor de beoordeling. Dit versnelt de doorlooptijd en maakt het eenvoudiger om componenten te vergelijken en selecteren.
 
 In deze aanpak worden automatisch af te leiden kenmerken en metrieken gecombineerd met de opbouw van de repository: de repositorystructuur wordt geanalyseerd, specifieke bestanden en metadata worden herkend, en waar nodig worden externe tools ingezet voor diepere analyses. Voor softwarekwaliteit kan dit bijvoorbeeld betekenen dat de complexiteit van de code wordt geanalyseerd of dat de aanwezigheid van een changelog wordt gecontroleerd. Voor security betekent het dat OWASP-gerelateerde patronen, credentials in code en bekende configuratierisico’s automatisch worden doorzocht. Voor DevOps betekent het dat deploymentinformatie en container/Helm-artefacten worden gevalideerd.
+
+Tenslotte, als de beoordeling van componenten grotendeels automatisch is, kan het ook onderdeel worden gemaakt van de CI/CD pipelines van de leveranciers. Op deze manier voldoen componenten al vanaf de ontwikkeling aan de opnamecriteria.
 
 
 # Bronnen
@@ -69,3 +69,52 @@ In deze aanpak worden automatisch af te leiden kenmerken en metrieken gecombinee
 8. OpenAPI Specification: https://spec.openapis.org/oas/latest.html
 9. Docker Docs: https://docs.docker.com/
 10. Helm Docs: https://helm.sh/docs/
+
+# Bijlage met opnamecriteria
+## Governance
+
+| Criterium | Automatisch te checken | Beschrijving | Verwijzing naar achtergrondinformatie |
+|-----------|-----------------------|--------------|--------------------------------------|
+| **Open source-licentie** | - | De repository bevat een LICENSE-bestand met een door OSI goedgekeurde licentie | [opensource.org/licenses](https://opensource.org/licenses) |
+| **EUPL-licentie** | ja | De repository valt onder de EUPL | [EUPL](https://interoperable-europe.ec.europa.eu/collection/eupl/eupl-text-eupl-12) |
+| **Intellectueel Eigendom (IP)** | - | De eigenaar of auteursrechthebbende is afgeleid uit juridische bestanden en metadata | [opensource.guide/legal](https://opensource.guide/legal/) |
+| **publiccode.yml** | ja | De repository bevat een publiccode.yml in de root met relevante overheidsmetadata | [Standard for Public Code](https://standard.publiccode.net) |
+| **Contributing-handleiding** | ja | Er is een CONTRIBUTING-bestand aanwezig dat beschrijft hoe bijdragen kunnen worden gedaan | [GitHub docs](https://docs.github.com/en/communities/setting-up-your-project-for-healthy-contributions/setting-guidelines-for-repository-contributors) |
+| **Gedragscode** | ja | De repository bevat een CODE_OF_CONDUCT-bestand om gedragsregels vast te leggen | [opensource.guide](https://opensource.guide/code-of-conduct/) |
+
+## Architectuur
+
+| Criterium | Automatisch te checken | Beschrijving | Verwijzing naar achtergrondinformatie |
+|-----------|-----------------------|--------------|--------------------------------------|
+| **Vijflagenmodel** | nee | De component is in te delen in één van de vijf lagen van vijflagenmodel van Common Ground dan wel bestaat de component zelf uit onderdelen die te verdelen zijn over de vijf lagen. | [5-lagen model](https://commonground.nl/cms/view/54476261/5-lagen-model) |
+| **OpenAPI-specificatie** | ja | API's die extern worden ontsloten door de component zijn gespecificeerd met Open API Specification (OAS) | [Open API Specification](https://spec.openapis.org/oas/latest.html) |
+| **NL API Design Rules (ADR) validatie** | ja | De API-specificatie(s) voldoen aan de NL API Design Rules | [NL API Design Rules](https://developer.overheid.nl/kennisbank/api-ontwikkeling/standaarden/api-design-rules/) |
+
+## Beveiliging
+
+| Criterium | Automatisch te checken | Beschrijving | Verwijzing naar achtergrondinformatie |
+|-----------|-----------------------|--------------|--------------------------------------|
+| **Securitybeleid** | ja | De repository bevat een SECURITY-bestand met verantwoordingsinformatie en een meldprocedure voor kwetsbaarheden | [GitHub docs](https://docs.github.com/en/code-security/getting-started/adding-a-security-policy-to-your-repository) |
+| **OWASP Secure Coding** | ja | De code en configuratie voldoen aan OWASP secure coding-principes en worden gecontroleerd op veelvoorkomende onveilige patronen | [OWASP Secure Coding Practices](https://owasp.org/www-project-secure-coding-practices/) |
+
+## Deployment & Operations
+
+| Criterium | Automatisch te checken | Beschrijving | Verwijzing naar achtergrondinformatie |
+|-----------|-----------------------|--------------|--------------------------------------|
+| **Docker-ondersteuning** | ja | De repository bevat een Dockerfile en eventueel docker-compose voor containerisatie | [Docker](https://docs.docker.com) |
+| **Beschikbaarheid Docker-image** | ja | Er is een gepubliceerde image met een bruikbaar Docker-image beschikbaar, bijv. op Docker Hub | [Docker](https://docs.docker.com) |
+| **CI/CD-configuratie** | ja | De repository bevat een workflow of pipelineconfiguratie voor geautomatiseerde controles, builds en deploys | [CI/CD](https://www.redhat.com/en/topics/devops/what-is-ci-cd) |
+| **Helm-chart** | - | De repository bevat een Helm Chart of Kubernetes-manifesten voor deployment | [Helm](https://helm.sh/docs) |
+
+## Softwarekwaliteit
+
+| Criterium | Automatisch te checken | Beschrijving | Verwijzing naar achtergrondinformatie |
+|-----------|-----------------------|--------------|--------------------------------------|
+| **Aanwezigheid van broncode** | ja | De repository bevat echte broncodebestanden en niet alleen documentatie- of configuratiebestanden | - |
+| **SBOM** | ja | De repository publiceert een Software Bill of Materials in SPDX- of CycloneDX-formaat | [CISA SBOM](https://www.cisa.gov/sbom) |
+| **Documentatie** | ja | De repository bevat een README, een docs-map of een link naar externe documentatie | [irealisatie.nl](https://www.irealisatie.nl/kennis/common-ground) |
+| **Changelog** | ja | De repository bevat een changelog of release notes met de wijzigingsgeschiedenis | [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) |
+| **Testsuite** | ja | De repository bevat geautomatiseerde tests of testconfiguratie | [CI/CD](https://www.redhat.com/en/topics/devops/what-is-ci-cd) |
+| **Code coverage > 80%** | ja | Er is een coverage-rapport of badge met ten minste 80% lijncoverage beschikbaar | [CI/CD](https://www.redhat.com/en/topics/devops/what-is-ci-cd) |
+| **Cyclomatische complexiteit** | ja | De gemiddelde en maximum cyclomatische complexiteit wordt gemeten en vergeleken met configureerbare drempels | [Cyclomatic complexity](https://en.wikipedia.org/wiki/Cyclomatic_complexity) |
+| **Semantic versioning** | ja | Releases of tags volgen het MAJOR.MINOR.PATCH-patroon | [semver.org](https://semver.org/) |
