@@ -53,7 +53,7 @@ Automatische beoordeling van componenten is efficiënt omdat het herhaalde contr
 
 In deze aanpak worden automatisch af te leiden kenmerken en metrieken gecombineerd met de opbouw van de repository: de repositorystructuur wordt geanalyseerd, specifieke bestanden en metadata worden herkend, en waar nodig worden externe tools ingezet voor diepere analyses. Voor softwarekwaliteit kan dit bijvoorbeeld betekenen dat de complexiteit van de code wordt geanalyseerd of dat de aanwezigheid van een changelog wordt gecontroleerd. Voor security betekent het dat OWASP-gerelateerde patronen, credentials in code en bekende configuratierisico’s automatisch worden doorzocht. Voor DevOps betekent het dat deploymentinformatie en container/Helm-artefacten worden gevalideerd.
 
-Tenslotte, als de beoordeling van componenten grotendeels automatisch is, kan het ook onderdeel worden gemaakt van de CI/CD pipelines van de leveranciers. Op deze manier voldoen componenten al vanaf de ontwikkeling aan de opnamecriteria.
+Tenslotte, als de beoordeling van componenten grotendeels automatisch is, kan het ook onderdeel worden gemaakt van de CI/CD pipelines van leveranciers. Op deze manier voldoen componenten al vanaf de ontwikkeling aan de opnamecriteria.
 
 
 # Bronnen
@@ -104,7 +104,7 @@ Tenslotte, als de beoordeling van componenten grotendeels automatisch is, kan he
 | **Docker-ondersteuning** | ja | De repository bevat een Dockerfile en eventueel docker-compose voor containerisatie | [Docker](https://docs.docker.com) |
 | **Beschikbaarheid Docker-image** | ja | Er is een gepubliceerde image met een bruikbaar Docker-image beschikbaar, bijv. op Docker Hub | [Docker](https://docs.docker.com) |
 | **CI/CD-configuratie** | ja | De repository bevat een workflow of pipelineconfiguratie voor geautomatiseerde controles, builds en deploys | [CI/CD](https://www.redhat.com/en/topics/devops/what-is-ci-cd) |
-| **Helm-chart** | - | De repository bevat een Helm Chart of Kubernetes-manifesten voor deployment | [Helm](https://helm.sh/docs) |
+| **Helm-chart** | ja | De repository bevat een Helm Chart of Kubernetes-manifesten voor deployment | [Helm](https://helm.sh/docs) |
 
 ## Softwarekwaliteit
 
