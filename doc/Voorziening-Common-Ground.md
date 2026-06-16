@@ -141,20 +141,20 @@ De score voor opname in de Basisset wordt berekend op basis van de verzamelde cr
 3. Categorieberekening
    - Voor een categorie met n criteria wordt de categorie-score als volgt berekend:
 
-     `C categorie = (Σ(score_i × gewicht_i)) / Σ gewicht_i`
+     `Score_categorie = (Σ(Score_i × Gewicht_i)) / Σ Gewicht_i`
 
      waarbij:
-     - `score_i` de score van criterium i is,
-     - `gewicht_i` het gewicht van criterium i binnen de categorie is.
+     - `Score_i` de score van criterium i is,
+     - `Gewicht_i` het gewicht van criterium i binnen de categorie is.
 
 4. Totale score
    - De totaalscore is de gewogen som van de categorie-scores:
 
-     `S totaal = Σ(C categorie_j × W categorie_j)`
+     `Score_totaal = Σ(Score_categorie_j × Gewicht_categorie_j)`
 
      waarbij:
-     - `C categorie_j` de score van categorie j is,
-     - `W categorie_j` het gewicht van categorie j is.
+     - `Score_categorie_j` de score van categorie j is,
+     - `Gewicht_categorie_j` het gewicht van categorie j is.
 
    - Met de categoriegewichten uit stap 1 is de maximale score 1,0.
 
@@ -168,7 +168,7 @@ De score voor opname in de Basisset wordt berekend op basis van de verzamelde cr
 
 ## Schaal en drempels
 
-- > 90% = Zeer geschikt voor opname
+- \> 90% = Zeer geschikt voor opname
 - 75% – 90% = Geschikt, maar met aandachtspunten
 - 60% – 75% = Voorwaardelijk geschikt; verbeteringen nodig
 - < 60% = Niet geschikt voor opname
