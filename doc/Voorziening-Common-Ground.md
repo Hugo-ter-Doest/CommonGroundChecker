@@ -118,3 +118,84 @@ Tenslotte, als de beoordeling van componenten grotendeels automatisch is, kan he
 | **Code coverage > 80%** | ja | Er is een coverage-rapport of badge met ten minste 80% lijncoverage beschikbaar | [CI/CD](https://www.redhat.com/en/topics/devops/what-is-ci-cd) |
 | **Cyclomatische complexiteit** | ja | De gemiddelde en maximum cyclomatische complexiteit wordt gemeten en vergeleken met configureerbare drempels | [Cyclomatic complexity](https://en.wikipedia.org/wiki/Cyclomatic_complexity) |
 | **Semantic versioning** | ja | Releases of tags volgen het MAJOR.MINOR.PATCH-patroon | [semver.org](https://semver.org/) |
+
+# Bijlage Berekeningswijze score
+
+De score voor opname in de Basisset wordt berekend op basis van de verzamelde criteria in de vier hoofdgebieden: Governance, Architectuur, Beveiliging, Deployment & Operations en Softwarekwaliteit.
+
+## Scoremodel
+
+1. Gewicht per categorie
+   - Governance: 20%
+   - Architectuur: 20%
+   - Beveiliging: 25%
+   - Deployment & Operations: 20%
+   - Softwarekwaliteit: 15%
+
+2. Criteriumscore
+   - Elk criterium wordt beoordeeld met een waarde tussen 0 en 1:
+     - 0 = niet voldaan aan het criterium
+     - 0,5 = gedeeltelijk voldaan aan het criterium
+     - 1 = voldoet aan het criterium
+
+3. Categorieberekening
+   - Voor een categorie met n criteria wordt de categorie-score als volgt berekend:
+
+     `C categorie = (Σ(score_i × gewicht_i)) / Σ gewicht_i`
+
+     waarbij:
+     - `score_i` de score van criterium i is,
+     - `gewicht_i` het gewicht van criterium i binnen de categorie is.
+
+4. Totale score
+   - De totaalscore is de gewogen som van de categorie-scores:
+
+     `S totaal = Σ(C categorie_j × W categorie_j)`
+
+     waarbij:
+     - `C categorie_j` de score van categorie j is,
+     - `W categorie_j` het gewicht van categorie j is.
+
+   - Met de categoriegewichten uit stap 1 is de maximale score 1,0.
+
+   - Voorbeeldberekening:
+     - Governance: 0,8 × 0,20 = 0,16
+     - Architectuur: 0,7 × 0,20 = 0,14
+     - Beveiliging: 0,9 × 0,25 = 0,225
+     - Deployment & Operations: 0,75 × 0,20 = 0,15
+     - Softwarekwaliteit: 0,85 × 0,15 = 0,1275
+     - Totale score = 0,8075 (80,75%)
+
+## Schaal en drempels
+
+- > 90% = Zeer geschikt voor opname
+- 75% – 90% = Geschikt, maar met aandachtspunten
+- 60% – 75% = Voorwaardelijk geschikt; verbeteringen nodig
+- < 60% = Niet geschikt voor opname
+
+## Automatische beoordeling versus handmatige controle
+
+- Automatisch te controleren criteria kunnen direct in de score meewegen.
+- Niet-automatisch te controleren criteria krijgen een voorlopig label en worden later door een handmatige toetsing aangevuld.
+- Voor criteria die niet volledig automatisch te checken zijn, wordt een tweede beoordeling uitgevoerd op basis van handmatige review en eventueel extra documentatie.
+
+## Rapportage en toelichting
+
+- Elk criteriumresultaat moet worden vastgelegd met één van de volgende statussen:
+  - Voldoet
+  - Gedeeltelijk voldoet
+  - Voldoet niet
+- Bij een gedeeltelijke score moet een korte toelichting worden toegevoegd, zodat een concrete verbetering zichtbaar is.
+- De eindscore wordt gepresenteerd met een overzicht van sterkten en zwakten per categorie.
+
+## Toepassing in CI/CD
+
+- De scoreberekening kan als basis worden opgenomen in geautomatiseerde evaluaties binnen een CI/CD-pipeline.
+- Bij veranderingen in de repository wordt de score opnieuw berekend om regressies te signaleren en verbeteringen te valideren.
+- Dit maakt het mogelijk om een continue feedbackloop te creëren tussen ontwikkelaars, beheer en de governance-organisatie.
+
+## Versiebeheer van opnamecriteria
+
+- De wegingen en criteria blijven flexibel en worden periodiek herzien door de Common Ground community en deelnemende gemeenten.
+- Wijzigingen in het scoremodel worden gedocumenteerd met datum, motivaties en impactanalyses.
+- Op deze manier blijft de selectie van de Basisset adaptief en in lijn met nieuwe inzichten en operationele ervaring.
