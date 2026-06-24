@@ -121,7 +121,7 @@ Tenslotte, als de beoordeling van componenten grotendeels automatisch is, kan he
 
 # Bijlage Berekeningswijze score
 
-De score voor opname in de Basisset wordt berekend op basis van de verzamelde criteria in de vier hoofdgebieden: Governance, Architectuur, Beveiliging, Deployment & Operations en Softwarekwaliteit.
+De score voor opname in de Basisset wordt berekend op basis van de verzamelde criteria in de vijf categorieën: Governance, Architectuur, Beveiliging, Deployment & Operations en Softwarekwaliteit.
 
 ## Scoremodel
 
@@ -141,14 +141,11 @@ De score voor opname in de Basisset wordt berekend op basis van de verzamelde cr
 3. Categorieberekening
    - Voor een categorie met n criteria wordt de categorie-score als volgt berekend:
 
-     `Score_categorie_i = Σ_j(Score_ij × Gewicht_ij) / Max_score_categorie_i`
+     `Score_categorie_i = Σ_j(Score_ij × Gewicht_ij)`
 
      waarbij:
      - `Score_ij` de score van criterium j uit categorie i is (waarde tussen 0 en 1),
      - `Gewicht_ij` het gewicht van criterium i binnen de categorie j is (waarde tussen 0 en 1).
-     - `Max_score_categorie_i = Σ_j Gewicht_ij ` de maximum score voor categorie i
-
-`Score_categorie_i` is dus een waarde tussen 0 en 1.
 
 4. Totale score
    - De totaalscore is de gewogen som van de categorie-scores:
@@ -158,8 +155,9 @@ De score voor opname in de Basisset wordt berekend op basis van de verzamelde cr
      waarbij:
      - `Score_categorie_i` de score van categorie i is (waarde tussen 0 en 1),
      - `Gewicht_categorie_i` het gewicht van categorie i is (waarde tussen 0 en 1).
+     - `Max_score_categorie_i = Σ_j Gewicht_ij ` de maximum score voor categorie i
 
-`Score_totaal` is dus ook een waarde tussen 0 en 1.
+`Score_totaal` is dus een waarde tussen 0 en 1.
 
    - Voorbeeldberekening:
      - Governance: 0,8 × 0,20 = 0,16
