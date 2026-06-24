@@ -141,22 +141,25 @@ De score voor opname in de Basisset wordt berekend op basis van de verzamelde cr
 3. Categorieberekening
    - Voor een categorie met n criteria wordt de categorie-score als volgt berekend:
 
-     `Score_categorie = (Σ(Score_i × Gewicht_i)) / Σ Gewicht_i`
+     `Score_categorie_i = Σ_j(Score_ij × Gewicht_ij) / Max_score_categorie_i`
 
      waarbij:
-     - `Score_i` de score van criterium i is,
-     - `Gewicht_i` het gewicht van criterium i binnen de categorie is.
+     - `Score_ij` de score van criterium j uit categorie i is (waarde tussen 0 en 1),
+     - `Gewicht_ij` het gewicht van criterium i binnen de categorie j is (waarde tussen 0 en 1).
+     - `Max_score_categorie_i = Σ_j Gewicht_ij ` de maximum score voor categorie i
+
+`Score_categorie_i` is dus een waarde tussen 0 en 1.
 
 4. Totale score
    - De totaalscore is de gewogen som van de categorie-scores:
 
-     `Score_totaal = Σ(Score_categorie_j × Gewicht_categorie_j)`
+     `Score_totaal = Σ_i(Score_categorie_i × Gewicht_categorie_i) / Σ_i(Max_score_categorie_i)`
 
      waarbij:
-     - `Score_categorie_j` de score van categorie j is,
-     - `Gewicht_categorie_j` het gewicht van categorie j is.
+     - `Score_categorie_i` de score van categorie i is (waarde tussen 0 en 1),
+     - `Gewicht_categorie_i` het gewicht van categorie i is (waarde tussen 0 en 1).
 
-   - Met de categoriegewichten uit stap 1 is de maximale score 1,0.
+`Score_totaal` is dus ook een waarde tussen 0 en 1.
 
    - Voorbeeldberekening:
      - Governance: 0,8 × 0,20 = 0,16
