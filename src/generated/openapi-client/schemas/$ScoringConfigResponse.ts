@@ -38,6 +38,13 @@ export const $ScoringConfigResponse = {
             },
             isRequired: true,
         },
+        categoryWeights: {
+            type: 'dictionary',
+            contains: {
+                type: 'number',
+            },
+            isRequired: true,
+        },
         defaultCriterionWeights: {
             type: 'dictionary',
             contains: {
@@ -49,6 +56,13 @@ export const $ScoringConfigResponse = {
             type: 'dictionary',
             contains: {
                 type: 'Enum',
+            },
+            isRequired: true,
+        },
+        defaultCategoryWeights: {
+            type: 'dictionary',
+            contains: {
+                type: 'number',
             },
             isRequired: true,
         },

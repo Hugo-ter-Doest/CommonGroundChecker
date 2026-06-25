@@ -6,6 +6,7 @@ import {
   DEFAULT_CRITERION_CONFIG_BY_CHECK_ID,
   DEFAULT_SPECTRAL_RULESET_SOURCE,
 } from "@/lib/checkers/config";
+import { CATEGORY_WEIGHTS } from "@/lib/criteria";
 
 function buildDefaultConfig() {
   return {
@@ -19,6 +20,12 @@ function buildDefaultConfig() {
       Object.entries(DEFAULT_CRITERION_CONFIG_BY_CHECK_ID).map(([checkId, config]) => [
         checkId,
         config.requirementLevel,
+      ])
+    ),
+    defaultCategoryWeights: Object.fromEntries(
+      Object.entries(CATEGORY_WEIGHTS).map(([category, weight]) => [
+        category,
+        weight,
       ])
     ),
     defaultComplexityThreshold: DEFAULT_COMPLEXITY_THRESHOLD,
@@ -42,9 +49,17 @@ export default async function AdminPage() {
   const initialWeights = successData?.criterionWeights ?? defaults.defaultCriterionWeights;
   const initialRequirementLevels =
     successData?.criterionRequirementLevels ?? defaults.defaultCriterionRequirementLevels;
+  const initialCategoryWeights =
+    successData?.categoryWeights ?? defaults.defaultCategoryWeights;
+
+  console.log("Admin initial category weights:", {
+    source: successData?.categoryWeights ? "successData.categoryWeights" : "defaults.defaultCategoryWeights",
+    categoryWeights: initialCategoryWeights,
+  });
 
   const defaultWeights = defaults.defaultCriterionWeights;
   const defaultRequirementLevels = defaults.defaultCriterionRequirementLevels;
+  const defaultCategoryWeights = defaults.defaultCategoryWeights;
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10 space-y-6">
@@ -59,11 +74,11 @@ export default async function AdminPage() {
       <section className="rounded-2xl border border-gray-200 bg-gray-50 p-5 space-y-3 text-sm text-gray-700">
         <h3 className="text-base font-semibold text-gray-900">How the overall score is calculated</h3>
         <p>
-          The overall score is a weighted average of <strong>mandatory</strong> checker results only. Each mandatory criterion has a weight,
-          and each result status is converted to a numeric score: <strong>pass = 1</strong>, <strong>warn = 0.5</strong>, and <strong>fail = 0</strong>.
+          The overall score is calculated in two stages. First, each category is scored by taking the weighted average of its <strong>mandatory</strong> criteria. Each result status is converted to a numeric score: <strong>pass = 1</strong>, <strong>warn = 0.5</strong>, and <strong>fail = 0</strong>.
         </p>
         <p>
-          For each mandatory criterion, the status score is multiplied by its configured weight. The checker then divides the total weighted score by the sum of mandatory weights and converts that to a percentage.
+          Second, the category scores are aggregated using fixed category weights:
+          Governance 20%, Architecture 20%, Security 25%, Deployment &amp; Operations 20%, and Software Quality 15%.
         </p>
         <p>
           <strong>Recommended</strong> and <strong>informative</strong> criteria are shown in reports, but they do <strong>not</strong> contribute to the numeric score.
@@ -81,6 +96,8 @@ export default async function AdminPage() {
         defaultWeights={defaultWeights}
         initialRequirementLevels={initialRequirementLevels}
         defaultRequirementLevels={defaultRequirementLevels}
+        initialCategoryWeights={initialCategoryWeights}
+        defaultCategoryWeights={defaultCategoryWeights}
         initialComplexityThreshold={
           successData?.complexityThreshold ?? defaults.defaultComplexityThreshold
         }

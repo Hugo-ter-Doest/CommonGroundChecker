@@ -276,6 +276,69 @@ describe("runChecks", () => {
     expect(openApiResult?.message).toContain("not marked as a register");
   });
 
+  it("applies fixed category weights when aggregating mandatory criteria", async () => {
+    const configById = criterionConfig(0, "recommended");
+    configById.sourcecode = { weight: 1, requirementLevel: "mandatory" };
+    configById.openapi = { weight: 1, requirementLevel: "mandatory" };
+
+    mocks.checkOpenApi.mockResolvedValue(resultFor("openapi", "warn"));
+    mocks.checkSourceCode.mockReturnValue(resultFor("sourcecode", "pass"));
+
+    mocks.getActiveScoringConfig.mockResolvedValue({
+      id: "cfg-category-weights",
+      config: {
+        criterionConfigByCheckId: configById,
+        statusScoreByStatus: { pass: 1, warn: 0.5, info: 0.5, fail: 0 },
+        complexityThreshold: 12,
+        complexityMaxCcnThreshold: 20,
+        spectralRulesetSource: "https://static.developer.overheid.nl/adr/ruleset.yaml",
+      },
+    });
+
+    const report = await runChecks("https://github.com/org/repo", {
+      isRegister: true,
+    });
+
+    // Software Quality category score = 1.0, Architecture category score = 0.5
+    // Fixed category weights are 0.15 and 0.20 respectively.
+    // Total weighted category score = 1*0.15 + 0.5*0.20 = 0.25
+    // Normalized by active category weights = 0.25 / 0.35 = 0.714 => 71%
+    expect(report.score).toBe(71);
+  });
+
+  it("uses persisted category weights from scoring config", async () => {
+    const configById = criterionConfig(0, "recommended");
+    configById.sourcecode = { weight: 1, requirementLevel: "mandatory" };
+    configById.openapi = { weight: 1, requirementLevel: "mandatory" };
+
+    mocks.checkOpenApi.mockResolvedValue(resultFor("openapi", "warn"));
+    mocks.checkSourceCode.mockReturnValue(resultFor("sourcecode", "pass"));
+
+    mocks.getActiveScoringConfig.mockResolvedValue({
+      id: "cfg-persisted-category-weights",
+      config: {
+        criterionConfigByCheckId: configById,
+        categoryWeights: {
+          Governance: 0,
+          Architecture: 1,
+          Security: 0,
+          "Deployment & Operations": 0,
+          "Software Quality": 0,
+        },
+        statusScoreByStatus: { pass: 1, warn: 0.5, info: 0.5, fail: 0 },
+        complexityThreshold: 12,
+        complexityMaxCcnThreshold: 20,
+        spectralRulesetSource: "https://static.developer.overheid.nl/adr/ruleset.yaml",
+      },
+    });
+
+    const report = await runChecks("https://github.com/org/repo", {
+      isRegister: true,
+    });
+
+    expect(report.score).toBe(50);
+  });
+
   it("includes coverage in final report results", async () => {
     mocks.getActiveScoringConfig.mockResolvedValue({
       id: "cfg-coverage",

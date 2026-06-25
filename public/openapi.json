@@ -324,6 +324,12 @@
                       ]
                     }
                   },
+                  "categoryWeights": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "number"
+                    }
+                  },
                   "complexityThreshold": {
                     "type": "number"
                   },
@@ -726,6 +732,12 @@
               "type": "number"
             }
           },
+          "categoryWeights": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
           "defaultCriterionRequirementLevels": {
             "type": "object",
             "additionalProperties": {
@@ -754,8 +766,10 @@
           "spectralRulesetSource",
           "criterionWeights",
           "criterionRequirementLevels",
+          "categoryWeights",
           "defaultCriterionWeights",
           "defaultCriterionRequirementLevels",
+          "defaultCategoryWeights",
           "defaultComplexityThreshold",
           "defaultComplexityMaxCcnThreshold",
           "defaultSpectralRulesetSource"

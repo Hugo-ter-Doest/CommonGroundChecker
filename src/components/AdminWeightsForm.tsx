@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { postAdminScoring } from "@/lib/apiClient";
+import { CATEGORY_WEIGHTS } from "@/lib/criteria";
 
 interface CriterionField {
   id: string;
@@ -192,6 +193,8 @@ interface AdminWeightsFormProps {
   defaultWeights: Record<string, number>;
   initialRequirementLevels: Record<string, string>;
   defaultRequirementLevels: Record<string, string>;
+  initialCategoryWeights: Record<string, number>;
+  defaultCategoryWeights: Record<string, number>;
   initialComplexityThreshold: number;
   defaultComplexityThreshold: number;
   initialComplexityMaxCcnThreshold: number;
@@ -205,6 +208,8 @@ export default function AdminWeightsForm({
   defaultWeights,
   initialRequirementLevels,
   defaultRequirementLevels,
+  initialCategoryWeights,
+  defaultCategoryWeights,
   initialComplexityThreshold,
   defaultComplexityThreshold,
   initialComplexityMaxCcnThreshold,
@@ -233,6 +238,8 @@ export default function AdminWeightsForm({
   const [savedSpectralRulesetSource, setSavedSpectralRulesetSource] = useState<string>(
     initialSpectralRulesetSource
   );
+  const [categoryWeights, setCategoryWeights] = useState<Record<string, number>>(initialCategoryWeights);
+  const [savedCategoryWeights, setSavedCategoryWeights] = useState<Record<string, number>>(initialCategoryWeights);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -248,9 +255,16 @@ export default function AdminWeightsForm({
       return (requirementLevels[id] ?? "") !== (savedRequirementLevels[id] ?? "");
     });
 
+    const categoryWeightChanged = Object.keys(defaultCategoryWeights).some((category) => {
+      const current = Number(categoryWeights[category] ?? 0);
+      const saved = Number(savedCategoryWeights[category] ?? 0);
+      return current !== saved;
+    });
+
     return (
       weightChanged ||
       reqLevelChanged ||
+      categoryWeightChanged ||
       complexityThreshold !== savedComplexityThreshold ||
       complexityMaxCcnThreshold !== savedComplexityMaxCcnThreshold ||
       spectralRulesetSource.trim() !== savedSpectralRulesetSource.trim()
@@ -260,6 +274,8 @@ export default function AdminWeightsForm({
     savedWeights,
     requirementLevels,
     savedRequirementLevels,
+    categoryWeights,
+    savedCategoryWeights,
     complexityThreshold,
     savedComplexityThreshold,
     complexityMaxCcnThreshold,
@@ -280,50 +296,58 @@ export default function AdminWeightsForm({
     setError(null);
     setMessage(null);
     try {
-      const data = await postAdminScoring({
+      const payload = {
         criterionWeights: weights,
         criterionRequirementLevels: requirementLevels as Record<
           string,
           "mandatory" | "recommended"
         >,
+        categoryWeights,
         complexityThreshold,
         complexityMaxCcnThreshold,
         spectralRulesetSource,
-      });
+      };
 
+      const data = await postAdminScoring(payload);
       setMessage("Configuration saved. New analyses will use this configuration.");
-      if (data?.criterionWeights && typeof data.criterionWeights === "object") {
-        setWeights(data.criterionWeights as Record<string, number>);
-      }
-      if (data?.criterionRequirementLevels && typeof data.criterionRequirementLevels === "object") {
-        setRequirementLevels(data.criterionRequirementLevels as Record<string, string>);
-      }
-      if (typeof data?.complexityThreshold === "number") {
-        setComplexityThreshold(data.complexityThreshold);
-      }
-      if (typeof data?.complexityMaxCcnThreshold === "number") {
-        setComplexityMaxCcnThreshold(data.complexityMaxCcnThreshold);
-      }
-      if (data?.criterionWeights && typeof data.criterionWeights === "object") {
-        setWeights(data.criterionWeights as Record<string, number>);
-        setSavedWeights(data.criterionWeights as Record<string, number>);
-      }
-      if (data?.criterionRequirementLevels && typeof data.criterionRequirementLevels === "object") {
-        setRequirementLevels(data.criterionRequirementLevels as Record<string, string>);
-        setSavedRequirementLevels(data.criterionRequirementLevels as Record<string, string>);
-      }
-      if (typeof data?.complexityThreshold === "number") {
-        setComplexityThreshold(data.complexityThreshold);
-        setSavedComplexityThreshold(data.complexityThreshold);
-      }
-      if (typeof data?.complexityMaxCcnThreshold === "number") {
-        setComplexityMaxCcnThreshold(data.complexityMaxCcnThreshold);
-        setSavedComplexityMaxCcnThreshold(data.complexityMaxCcnThreshold);
-      }
-      if (typeof data?.spectralRulesetSource === "string") {
-        setSpectralRulesetSource(data.spectralRulesetSource);
-        setSavedSpectralRulesetSource(data.spectralRulesetSource);
-      }
+
+      const nextCriterionWeights =
+        data?.criterionWeights && typeof data.criterionWeights === "object"
+          ? (data.criterionWeights as Record<string, number>)
+          : weights;
+      const nextRequirementLevels =
+        data?.criterionRequirementLevels && typeof data.criterionRequirementLevels === "object"
+          ? (data.criterionRequirementLevels as Record<string, string>)
+          : requirementLevels;
+      const nextCategoryWeights =
+        data?.categoryWeights && typeof data.categoryWeights === "object"
+          ? (data.categoryWeights as Record<string, number>)
+          : categoryWeights;
+      const nextComplexityThreshold =
+        typeof data?.complexityThreshold === "number"
+          ? data.complexityThreshold
+          : complexityThreshold;
+      const nextComplexityMaxCcnThreshold =
+        typeof data?.complexityMaxCcnThreshold === "number"
+          ? data.complexityMaxCcnThreshold
+          : complexityMaxCcnThreshold;
+      const nextSpectralRulesetSource =
+        typeof data?.spectralRulesetSource === "string"
+          ? data.spectralRulesetSource
+          : spectralRulesetSource;
+
+      setWeights(nextCriterionWeights);
+      setSavedWeights(nextCriterionWeights);
+      setRequirementLevels(nextRequirementLevels);
+      setSavedRequirementLevels(nextRequirementLevels);
+      setCategoryWeights(nextCategoryWeights);
+      setSavedCategoryWeights(nextCategoryWeights);
+      setComplexityThreshold(nextComplexityThreshold);
+      setSavedComplexityThreshold(nextComplexityThreshold);
+      setComplexityMaxCcnThreshold(nextComplexityMaxCcnThreshold);
+      setSavedComplexityMaxCcnThreshold(nextComplexityMaxCcnThreshold);
+      setSpectralRulesetSource(nextSpectralRulesetSource);
+      setSavedSpectralRulesetSource(nextSpectralRulesetSource);
     } catch (err: unknown) {
       setError(
         err instanceof Error
@@ -338,6 +362,7 @@ export default function AdminWeightsForm({
   function resetToDefaults() {
     setWeights(defaultWeights);
     setRequirementLevels(defaultRequirementLevels);
+    setCategoryWeights(defaultCategoryWeights);
     setComplexityThreshold(defaultComplexityThreshold);
     setComplexityMaxCcnThreshold(defaultComplexityMaxCcnThreshold);
     setSpectralRulesetSource(defaultSpectralRulesetSource);
@@ -350,6 +375,37 @@ export default function AdminWeightsForm({
 
 
       <div className="space-y-4">
+        <div className="space-y-3 border border-gray-200 rounded-xl p-4 bg-gray-50/40">
+          <h4 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
+            Category weights
+          </h4>
+          <p className="text-xs text-gray-500">
+            Configure the weight of each category in the overall score aggregation.
+            These weights are used after per-category mandatory criteria have been scored.
+          </p>
+          {Object.entries(categoryWeights).map(([category, value]) => (
+            <div key={category} className="space-y-1">
+              <div className="flex items-center justify-between gap-3">
+                <label className="text-sm font-medium text-gray-700">{category}</label>
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full border border-gray-300 text-gray-700 bg-white min-w-[52px] text-center">
+                  {value.toFixed(2)}
+                </span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={value}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  setCategoryWeights((prev) => ({ ...prev, [category]: next }));
+                }}
+                className="w-full accent-cg-lightblue"
+              />
+            </div>
+          ))}
+        </div>
         {CRITERION_CATEGORIES.map((group) => (
           <div
             key={group.category}

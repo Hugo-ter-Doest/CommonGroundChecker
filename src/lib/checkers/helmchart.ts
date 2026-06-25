@@ -11,6 +11,11 @@ export async function checkHelmChart(
   owner: string,
   repo: string,
   tree: string[],
+): Promise<CheckResult>;
+export async function checkHelmChart(
+  owner: string,
+  repo: string,
+  tree: string[],
   helmChartLocations: string[]
 ): Promise<CheckResult>;
 export async function checkHelmChart(

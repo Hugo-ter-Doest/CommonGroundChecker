@@ -171,6 +171,7 @@ export class DefaultService {
             reset?: boolean;
             criterionWeights?: Record<string, number>;
             criterionRequirementLevels?: Record<string, 'mandatory' | 'recommended'>;
+            categoryWeights?: Record<string, number>;
             complexityThreshold?: number;
             complexityMaxCcnThreshold?: number;
             spectralRulesetSource?: string;

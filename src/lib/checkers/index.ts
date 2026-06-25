@@ -28,6 +28,7 @@ import { checkEuplLicense } from "./eupl";
 import {
   getActiveScoringConfig,
 } from "./config";
+import { CATEGORY_WEIGHTS, RESULT_CATEGORY_BY_ID, type CriteriaCategory } from "../criteria";
 import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -255,35 +256,65 @@ export async function runChecks(
     helmchart,
   ];
 
-  const totalCriterionWeight = results.reduce((sum, result) => {
-    const requirementLevel =
-      scoringConfig.criterionConfigByCheckId[result.id]?.requirementLevel ??
-      "recommended";
-    if (requirementLevel !== "mandatory") {
-      return sum;
-    }
+  const categoryAggregates = results.reduce(
+    (acc, result) => {
+      const requirementLevel =
+        scoringConfig.criterionConfigByCheckId[result.id]?.requirementLevel ??
+        "recommended";
+      if (requirementLevel !== "mandatory") {
+        return acc;
+      }
 
-    const criterionWeight =
-      scoringConfig.criterionConfigByCheckId[result.id]?.weight ?? 1;
-    return sum + Math.max(0, criterionWeight);
-  }, 0);
+      const criterionWeight =
+        scoringConfig.criterionConfigByCheckId[result.id]?.weight ?? 1;
+      const weight = Math.max(0, criterionWeight);
+      if (weight === 0) {
+        return acc;
+      }
 
-  const weightedScoreSum = results.reduce((sum, result) => {
-    const requirementLevel =
-      scoringConfig.criterionConfigByCheckId[result.id]?.requirementLevel ??
-      "recommended";
-    if (requirementLevel !== "mandatory") {
-      return sum;
-    }
+      const category = RESULT_CATEGORY_BY_ID[result.id] as CriteriaCategory | undefined;
+      if (!category) {
+        return acc;
+      }
 
-    const criterionWeight =
-      scoringConfig.criterionConfigByCheckId[result.id]?.weight ?? 1;
-    const statusScore = scoringConfig.statusScoreByStatus[result.status] ?? 0;
-    return sum + statusScore * Math.max(0, criterionWeight);
-  }, 0);
+      const statusScore = scoringConfig.statusScoreByStatus[result.status] ?? 0;
+      const existing = acc[category] ?? { weightedScoreSum: 0, totalWeight: 0 };
+      return {
+        ...acc,
+        [category]: {
+          weightedScoreSum: existing.weightedScoreSum + statusScore * weight,
+          totalWeight: existing.totalWeight + weight,
+        },
+      };
+    },
+    {} as Record<CriteriaCategory, { weightedScoreSum: number; totalWeight: number }>
+  );
 
-  const baseScore = totalCriterionWeight > 0
-    ? Math.round((weightedScoreSum / totalCriterionWeight) * 100)
+  const effectiveCategoryWeights =
+    scoringConfig.categoryWeights ?? CATEGORY_WEIGHTS;
+
+  const categoryScores = Object.entries(categoryAggregates).map(
+    ([category, aggregate]) => ({
+      category: category as CriteriaCategory,
+      score:
+        aggregate.totalWeight > 0
+          ? aggregate.weightedScoreSum / aggregate.totalWeight
+          : 0,
+      categoryWeight: effectiveCategoryWeights[category as CriteriaCategory] ?? 0,
+    })
+  );
+
+  const totalCategoryWeight = categoryScores.reduce(
+    (sum, category) => sum + category.categoryWeight,
+    0
+  );
+  const weightedCategoryScore = categoryScores.reduce(
+    (sum, category) => sum + category.score * category.categoryWeight,
+    0
+  );
+
+  const baseScore = totalCategoryWeight > 0
+    ? Math.round((weightedCategoryScore / totalCategoryWeight) * 100)
     : 0;
   const score = Math.min(100, baseScore);
 

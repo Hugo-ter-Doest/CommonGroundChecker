@@ -1,6 +1,8 @@
 import type { CheckStatus, RequirementLevel } from "../types";
 import { getAdminScoring } from "@/lib/apiClient";
 import type { ScoringConfigResponse } from "@/generated/openapi-client";
+import { CATEGORY_WEIGHTS } from "../criteria";
+import type { CriteriaCategory, CategoryWeights } from "../criteria";
 
 export interface CriterionConfig {
   weight: number;
@@ -10,6 +12,7 @@ export interface CriterionConfig {
 interface ScoringConfigOverrides {
   criterionWeights?: Record<string, number>;
   criterionRequirementLevels?: Record<string, RequirementLevel>;
+  categoryWeights?: Record<string, number>;
   complexityThreshold?: number;
   complexityMaxCcnThreshold?: number;
   spectralRulesetSource?: string;
@@ -17,6 +20,7 @@ interface ScoringConfigOverrides {
 
 export interface ScoringConfig {
   criterionConfigByCheckId: Record<string, CriterionConfig>;
+  categoryWeights: CategoryWeights;
   statusScoreByStatus: Record<CheckStatus, number>;
   complexityThreshold: number;
   complexityMaxCcnThreshold: number;
@@ -121,6 +125,20 @@ function buildScoringConfig(overrides?: ScoringConfigOverrides): ScoringConfig {
 
   return {
     criterionConfigByCheckId,
+    categoryWeights: ((): CategoryWeights => {
+      if (!overrides?.categoryWeights) return CATEGORY_WEIGHTS;
+      return Object.fromEntries(
+        Object.entries(CATEGORY_WEIGHTS).map(([category, defaultValue]) => {
+          const overrideValue = overrides.categoryWeights?.[category];
+          return [
+            category,
+            typeof overrideValue === "number"
+              ? Math.max(0, Math.min(1, Math.round(overrideValue * 100) / 100))
+              : defaultValue,
+          ];
+        })
+      ) as CategoryWeights;
+    })(),
     statusScoreByStatus: { ...DEFAULT_STATUS_SCORE_BY_STATUS },
     complexityThreshold:
       typeof overrides?.complexityThreshold === "number"
@@ -144,6 +162,7 @@ function parseOverridesFromDbPayload(payload: unknown): ScoringConfigOverrides {
   const candidate = payload as Record<string, unknown>;
   const criterionWeightsRaw = candidate.criterionWeights;
   const criterionRequirementLevelsRaw = candidate.criterionRequirementLevels;
+  const categoryWeightsRaw = candidate.categoryWeights;
   const complexityThresholdRaw = candidate.complexityThreshold;
   const complexityMaxCcnThresholdRaw = candidate.complexityMaxCcnThreshold;
   const spectralRulesetSourceRaw = candidate.spectralRulesetSource;
@@ -173,9 +192,21 @@ function parseOverridesFromDbPayload(payload: unknown): ScoringConfigOverrides {
     }
   }
 
+  const categoryWeights: Record<string, number> = {};
+  if (categoryWeightsRaw && typeof categoryWeightsRaw === "object") {
+    for (const [category, value] of Object.entries(
+      categoryWeightsRaw as Record<string, unknown>
+    )) {
+      if (typeof value === "number" && Number.isFinite(value)) {
+        categoryWeights[category] = Math.max(0, Math.min(1, Math.round(value * 100) / 100));
+      }
+    }
+  }
+
   return {
     criterionWeights,
     criterionRequirementLevels: Object.keys(criterionRequirementLevels).length > 0 ? criterionRequirementLevels : undefined,
+    categoryWeights: Object.keys(categoryWeights).length > 0 ? categoryWeights : undefined,
     complexityThreshold:
       typeof complexityThresholdRaw === "number"
         ? clampComplexityThreshold(complexityThresholdRaw)
@@ -195,6 +226,7 @@ function parseScoringConfigResponse(response: ScoringConfigResponse) {
   return buildScoringConfig({
     criterionWeights: response.criterionWeights,
     criterionRequirementLevels: response.criterionRequirementLevels,
+    categoryWeights: response.categoryWeights,
     complexityThreshold: response.complexityThreshold,
     complexityMaxCcnThreshold: response.complexityMaxCcnThreshold,
     spectralRulesetSource: response.spectralRulesetSource,

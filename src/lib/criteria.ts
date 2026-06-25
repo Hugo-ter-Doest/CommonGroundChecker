@@ -13,6 +13,16 @@ export const CATEGORY_ORDER: CriteriaCategory[] = [
   "Deployment & Operations",
 ];
 
+export type CategoryWeights = Record<CriteriaCategory, number>;
+
+export const CATEGORY_WEIGHTS: CategoryWeights = {
+  Governance: 0.2,
+  Architecture: 0.2,
+  Security: 0.25,
+  "Deployment & Operations": 0.2,
+  "Software Quality": 0.15,
+};
+
 export const RESULT_ORDER_BY_ID: string[] = [
   "sourcecode",
   "fivelayer",
