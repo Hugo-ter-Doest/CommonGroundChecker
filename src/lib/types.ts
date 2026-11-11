@@ -27,6 +27,17 @@ export interface CheckResult {
   confidence?: ConfidenceLevel;
 }
 
+/** Repository details read from publiccode.yml */
+export interface PublicCodeDetails {
+  displayName: string | null;
+  shortDescription: string | null;
+  /** Absolute http(s) URL of the logo */
+  logoUrl: string | null;
+  developmentStatus: string | null;
+  maintenanceType: string | null;
+  maintainers: string[];
+}
+
 export interface CheckReport {
   repoUrl: string;
   owner: string;
@@ -45,5 +56,5 @@ export interface CheckReport {
     license: string | null;
     version: string | null;
     versionEvidence: VersionEvidence;
-  };
+  } & PublicCodeDetails;
 }
