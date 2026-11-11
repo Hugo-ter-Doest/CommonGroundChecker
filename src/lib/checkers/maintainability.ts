@@ -6,7 +6,7 @@ import type { CheckResult } from "../types";
 import { formatStars, ratingToStars } from "../stars";
 
 const SCRIPT_PATH = path.join(process.cwd(), "scripts", "maintainability", "check_maintainability.py");
-const TIMEOUT_MS = 180_000;
+const TIMEOUT_MS = (Number(process.env.MAINTAINABILITY_TIMEOUT_SECONDS) || 600) * 1000;
 /** Exit status of the script when no file in a supported language is in scope. */
 const NOTHING_TO_JUDGE = 4;
 const NO_SOURCE_MESSAGE =
