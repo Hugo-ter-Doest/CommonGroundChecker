@@ -133,6 +133,12 @@ const CRITERION_CATEGORIES: CriterionCategory[] = [
           "Clones the analyzed repository and runs Lizard locally. The criterion passes when average cyclomatic complexity (AvgCCN) stays within the configured threshold, and the maximum cyclomatic complexity stays within the configured threshold.",
       },
       {
+        id: "maintainability",
+        label: "Maintainability (ISO 25010)",
+        explanation:
+          "Clones the analyzed repository and rates unit size, unit complexity, unit interfacing, duplication, module coupling and component structure from 1 to 5 stars. The criterion passes at an estimated rating of 4 stars or more and warns at 3 stars.",
+      },
+      {
         id: "codemetrics",
         label: "Code metrics",
         explanation:
@@ -144,6 +150,12 @@ const CRITERION_CATEGORIES: CriterionCategory[] = [
         label: "OWASP Secure Coding",
         explanation:
           "Runs a heuristic static scan for common risky coding patterns aligned with OWASP secure coding concerns, such as dynamic code execution, weak hashes, disabled TLS verification, or possible hardcoded secrets.",
+      },
+      {
+        id: "openssfscorecard",
+        label: "OpenSSF Scorecard",
+        explanation:
+          "Reads the repository's OpenSSF Scorecard (0 to 10) from the public Scorecard API, GitHub repositories only, and rates it with the checker's own bands: 9+ is 5 stars, 7+ is 4, 5+ is 3, 3+ is 2, lower is 1. 4 or 5 stars pass, 3 warns, fewer fail; a repository outside the Scorecard dataset is informative.",
       },
       {
         id: "semver",
