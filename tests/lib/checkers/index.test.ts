@@ -6,6 +6,7 @@ const ids = [
   "openapi",
   "license",
   "eupllicense",
+  "licenceconsistency",
   "copyrightowner",
   "publiccode",
   "docker",
@@ -16,6 +17,7 @@ const ids = [
   "changelog",
   "tests",
   "complexity",
+  "maintainability",
   "codemetrics",
   "owaspsecurecoding",
   "adrvalidator",
@@ -49,6 +51,7 @@ const mocks = vi.hoisted(() => ({
   checkSecurity: vi.fn(),
   checkTests: vi.fn(),
   checkComplexity: vi.fn(),
+  checkMaintainability: vi.fn(),
   checkSourceCode: vi.fn(),
   checkSemver: vi.fn(),
   checkFiveLayer: vi.fn(),
@@ -57,6 +60,7 @@ const mocks = vi.hoisted(() => ({
   checkOwaspSecureCoding: vi.fn(),
   checkEuplLicense: vi.fn(),
   checkAdrValidator: vi.fn(),
+  checkLicenceConsistency: vi.fn(),
   getActiveScoringConfig: vi.fn(),
 }));
 
@@ -117,11 +121,13 @@ vi.mock("@/lib/checkers/codeofconduct", () => ({ checkCodeOfConduct: mocks.check
 vi.mock("@/lib/checkers/security", () => ({ checkSecurity: mocks.checkSecurity }));
 vi.mock("@/lib/checkers/tests", () => ({ checkTests: mocks.checkTests }));
 vi.mock("@/lib/checkers/complexity", () => ({ checkComplexity: mocks.checkComplexity }));
+vi.mock("@/lib/checkers/maintainability", () => ({ checkMaintainability: mocks.checkMaintainability }));
 vi.mock("@/lib/checkers/codeMetrics", () => ({ checkCodeMetrics: mocks.checkCodeMetrics }));
 vi.mock("@/lib/checkers/owaspSecureCoding", () => ({ checkOwaspSecureCoding: mocks.checkOwaspSecureCoding }));
 vi.mock("@/lib/checkers/eupl", () => ({
   checkEuplLicense: mocks.checkEuplLicense,
 }));
+vi.mock("@/lib/checkers/licenceConsistency", () => ({ checkLicenceConsistency: mocks.checkLicenceConsistency }));
 vi.mock("@/lib/checkers/adrValidator", () => ({ checkAdrValidator: mocks.checkAdrValidator }));
 vi.mock("@/lib/checkers/sourcecode", () => ({ checkSourceCode: mocks.checkSourceCode }));
 vi.mock("@/lib/checkers/semver", () => ({ checkSemver: mocks.checkSemver }));
@@ -232,6 +238,7 @@ describe("runChecks", () => {
     mocks.checkDocumentation.mockReturnValue(resultFor("documentation", "pass"));
     mocks.checkTests.mockReturnValue(resultFor("tests", "pass"));
     mocks.checkComplexity.mockResolvedValue(resultFor("complexity", "pass"));
+    mocks.checkMaintainability.mockResolvedValue({ ...resultFor("maintainability", "warn"), starRating: 3 });
     mocks.checkCodeMetrics.mockResolvedValue(resultFor("codemetrics", "info"));
     mocks.checkOwaspSecureCoding.mockResolvedValue(resultFor("owaspsecurecoding", "pass"));
     mocks.checkAdrValidator.mockResolvedValue(resultFor("adrvalidator", "pass"));
@@ -241,6 +248,7 @@ describe("runChecks", () => {
     mocks.checkSemver.mockReturnValue(resultFor("semver", "pass"));
     mocks.checkFiveLayer.mockResolvedValue(resultFor("fivelayer", "pass"));
     mocks.checkHelmChart.mockResolvedValue(resultFor("helmchart", "pass"));
+    mocks.checkLicenceConsistency.mockResolvedValue(resultFor("licenceconsistency", "pass"));
   });
 
   it("applies weighted scoring and non-register OpenAPI bypass", async () => {
@@ -269,7 +277,11 @@ describe("runChecks", () => {
     expect(report.scoringConfigId).toBe("cfg-1");
     expect(report.score).toBe(25);
     expect(mocks.checkOpenApi).not.toHaveBeenCalled();
-    expect(report.results).toHaveLength(23);
+    expect(report.results).toHaveLength(25);
+    expect(report.results.find((result) => result.id === "licenceconsistency")?.starRating).toBe(5);
+    expect(report.results.find((result) => result.id === "maintainability")?.starRating).toBe(3);
+    expect(report.results.find((result) => result.id === "semver")?.starRating).toBe(1);
+    expect(report.results.find((result) => result.id === "tests")?.starRating).toBe(3);
 
     const openApiResult = report.results.find((result) => result.id === "openapi");
     expect(openApiResult?.status).toBe("pass");

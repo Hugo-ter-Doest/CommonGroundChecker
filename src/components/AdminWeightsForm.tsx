@@ -33,6 +33,12 @@ const CRITERION_CATEGORIES: CriterionCategory[] = [
           "Checks explicitly whether the repository uses the European Union Public Licence (EUPL), which is recommended for public-sector software reuse in Europe.",
       },
       {
+        id: "licenceconsistency",
+        label: "Licence consistency",
+        explanation:
+          "Collects the licence declared in the LICENSE file, package.json, composer.json, publiccode.yml, pyproject.toml, Cargo.toml, setup.cfg and the Nextcloud appinfo/info.xml, normalises each to its SPDX identifier and checks that they all name the same licence. Differing only in -only versus -or-later, or finding a single declaration, gives a warning.",
+      },
+      {
         id: "copyrightowner",
         label: "Copyright / IP owner",
         explanation:
@@ -131,6 +137,12 @@ const CRITERION_CATEGORIES: CriterionCategory[] = [
         label: "Cyclomatic complexity",
         explanation:
           "Clones the analyzed repository and runs Lizard locally. The criterion passes when average cyclomatic complexity (AvgCCN) stays within the configured threshold, and the maximum cyclomatic complexity stays within the configured threshold.",
+      },
+      {
+        id: "maintainability",
+        label: "Maintainability (ISO 25010)",
+        explanation:
+          "Clones the analyzed repository and rates unit size, unit complexity, unit interfacing, duplication, module coupling and component structure from 1 to 5 stars. The criterion passes at an estimated rating of 4 stars or more and warns at 3 stars.",
       },
       {
         id: "codemetrics",
