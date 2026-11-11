@@ -261,7 +261,8 @@ export async function runChecks(
       const requirementLevel =
         scoringConfig.criterionConfigByCheckId[result.id]?.requirementLevel ??
         "recommended";
-      if (requirementLevel !== "mandatory") {
+      // "info" means the criterion could not be measured, so it neither adds nor costs points.
+      if (requirementLevel !== "mandatory" || result.status === "info") {
         return acc;
       }
 
@@ -317,6 +318,13 @@ export async function runChecks(
     ? Math.round((weightedCategoryScore / totalCategoryWeight) * 100)
     : 0;
   const score = Math.min(100, baseScore);
+  const notMeasured = results
+    .filter(
+      (result) =>
+        result.status === "info" &&
+        scoringConfig.criterionConfigByCheckId[result.id]?.requirementLevel === "mandatory"
+    )
+    .map((result) => result.title);
 
   const resultsWithRequirementLevels = [
     sourcecode,
@@ -357,6 +365,7 @@ export async function runChecks(
     checkedAt: new Date().toISOString(),
     scoringConfigId: activeScoringConfig.id,
     score,
+    notMeasured,
     results: resultsWithRequirementLevels,
     repoMeta: {
       description: meta.description ?? null,

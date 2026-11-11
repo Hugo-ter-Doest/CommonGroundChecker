@@ -34,6 +34,8 @@ export interface CheckReport {
   checkedAt: string;
   scoringConfigId: string | null;
   score: number; // 0-100
+  /** Titles of mandatory criteria that could not be measured and were left out of the score */
+  notMeasured: string[];
   results: CheckResult[];
   repoMeta: {
     description: string | null;

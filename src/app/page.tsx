@@ -62,7 +62,13 @@ async function exportAnalysisReportAsPdf(report: CheckReport): Promise<void> {
     size: 10,
     gapAfter: 4,
   });
-  addBlock(`Score: ${report.score}/100`, { size: 11, gapAfter: 10 });
+  addBlock(`Score: ${report.score}/100`, { size: 11, gapAfter: report.notMeasured?.length ? 4 : 10 });
+  if (report.notMeasured?.length) {
+    addBlock(`Incomplete: not measured, so left out of the score: ${report.notMeasured.join(", ")}`, {
+      size: 10,
+      gapAfter: 10,
+    });
+  }
 
   const passCount = report.results.filter((r) => r.status === "pass").length;
   const warnCount = report.results.filter((r) => r.status === "warn").length;
@@ -615,6 +621,12 @@ export default function HomePage() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
                 <ScoreBadge score={report.score} />
                 <div className="flex-1 space-y-3">
+                  {report.notMeasured?.length > 0 && (
+                    <p role="status" className="text-sm rounded-lg border border-amber-300 bg-amber-50 text-amber-800 px-3 py-2">
+                      Incomplete score: {report.notMeasured.length} mandatory criteria could not be measured and are
+                      left out: {report.notMeasured.join(", ")}.
+                    </p>
+                  )}
                   <RepoMeta
                     owner={report.owner}
                     repo={report.repo}
