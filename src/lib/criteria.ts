@@ -48,6 +48,7 @@ export const RESULT_ORDER_BY_ID: string[] = [
   "contributing",
   "codeofconduct",
   "security",
+  "openssfscorecard",
   "semver",
 ];
 
@@ -75,6 +76,7 @@ export const RESULT_CATEGORY_BY_ID: Record<string, CriteriaCategory> = {
   contributing: "Governance",
   codeofconduct: "Governance",
   security: "Security",
+  openssfscorecard: "Security",
   semver: "Software Quality",
   fivelayer: "Architecture",
 };

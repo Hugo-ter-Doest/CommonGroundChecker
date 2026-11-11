@@ -37,6 +37,7 @@ Criteria are grouped into five categories. Each criterion has a requirement leve
 |---|-----------|-------|----------|
 | 10 | **Security policy** — SECURITY file with responsible disclosure info | Recommended | [GitHub docs](https://docs.github.com/en/code-security/getting-started/adding-a-security-policy-to-your-repository) |
 | 11 | **OWASP Secure Coding** — heuristic static analysis checks for common insecure patterns | Mandatory | [OWASP Secure Coding Practices](https://owasp.org/www-project-secure-coding-practices/) |
+| 31 | **OpenSSF Scorecard** — the public OpenSSF Scorecard (0 to 10) rated 1 to 5 stars with this checker's own bands; GitHub repositories only | Recommended | [OpenSSF Scorecard](https://scorecard.dev) |
 
 ### Deployment & Operations
 

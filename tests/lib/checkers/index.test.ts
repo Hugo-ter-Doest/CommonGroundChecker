@@ -23,6 +23,7 @@ const ids = [
   "contributing",
   "codeofconduct",
   "security",
+  "openssfscorecard",
   "semver",
   "fivelayer",
   "helmchart",
@@ -58,6 +59,7 @@ const mocks = vi.hoisted(() => ({
   checkCodeMetrics: vi.fn(),
   checkOwaspSecureCoding: vi.fn(),
   checkEuplLicense: vi.fn(),
+  checkOpenSsfScorecard: vi.fn(),
   checkAdrValidator: vi.fn(),
   getActiveScoringConfig: vi.fn(),
 }));
@@ -125,6 +127,7 @@ vi.mock("@/lib/checkers/owaspSecureCoding", () => ({ checkOwaspSecureCoding: moc
 vi.mock("@/lib/checkers/eupl", () => ({
   checkEuplLicense: mocks.checkEuplLicense,
 }));
+vi.mock("@/lib/checkers/openssfScorecard", () => ({ checkOpenSsfScorecard: mocks.checkOpenSsfScorecard }));
 vi.mock("@/lib/checkers/adrValidator", () => ({ checkAdrValidator: mocks.checkAdrValidator }));
 vi.mock("@/lib/checkers/sourcecode", () => ({ checkSourceCode: mocks.checkSourceCode }));
 vi.mock("@/lib/checkers/semver", () => ({ checkSemver: mocks.checkSemver }));
@@ -242,6 +245,7 @@ describe("runChecks", () => {
     mocks.checkContributing.mockReturnValue(resultFor("contributing", "pass"));
     mocks.checkCodeOfConduct.mockReturnValue(resultFor("codeofconduct", "pass"));
     mocks.checkSecurity.mockReturnValue(resultFor("security", "pass"));
+    mocks.checkOpenSsfScorecard.mockResolvedValue(resultFor("openssfscorecard", "pass"));
     mocks.checkSemver.mockReturnValue(resultFor("semver", "pass"));
     mocks.checkFiveLayer.mockResolvedValue(resultFor("fivelayer", "pass"));
     mocks.checkHelmChart.mockResolvedValue(resultFor("helmchart", "pass"));
@@ -273,7 +277,7 @@ describe("runChecks", () => {
     expect(report.scoringConfigId).toBe("cfg-1");
     expect(report.score).toBe(25);
     expect(mocks.checkOpenApi).not.toHaveBeenCalled();
-    expect(report.results).toHaveLength(24);
+    expect(report.results).toHaveLength(25);
     expect(report.results.find((result) => result.id === "maintainability")?.starRating).toBe(3);
     expect(report.results.find((result) => result.id === "semver")?.starRating).toBe(1);
     expect(report.results.find((result) => result.id === "tests")?.starRating).toBe(3);
