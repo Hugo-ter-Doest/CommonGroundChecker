@@ -39,6 +39,12 @@ const CRITERION_CATEGORIES: CriterionCategory[] = [
           "Detects probable copyright holder(s) from COPYRIGHT/NOTICE/LICENSE/README files and package metadata. If no explicit statement is found, it falls back to repository ownership metadata with a warning.",
       },
       {
+        id: "spdxheaders",
+        label: "SPDX licence headers",
+        explanation:
+          "Clones the repository and counts the share of git-tracked source files whose first 30 lines carry an SPDX-License-Identifier header, or that REUSE.toml, .reuse/dep5 or a .license file covers. Stars: 100% five, 95% four, 80% three, 50% two, else one; these bands are the checker's own, the REUSE specification asks for every file. Four or five stars pass, three warn, fewer fail.",
+      },
+      {
         id: "publiccode",
         label: "publiccode.yml",
         explanation:
@@ -131,6 +137,12 @@ const CRITERION_CATEGORIES: CriterionCategory[] = [
         label: "Cyclomatic complexity",
         explanation:
           "Clones the analyzed repository and runs Lizard locally. The criterion passes when average cyclomatic complexity (AvgCCN) stays within the configured threshold, and the maximum cyclomatic complexity stays within the configured threshold.",
+      },
+      {
+        id: "maintainability",
+        label: "Maintainability (ISO 25010)",
+        explanation:
+          "Clones the analyzed repository and rates unit size, unit complexity, unit interfacing, duplication, module coupling and component structure from 1 to 5 stars. The criterion passes at an estimated rating of 4 stars or more and warns at 3 stars.",
       },
       {
         id: "codemetrics",

@@ -3,6 +3,7 @@
 export type CheckStatus = "pass" | "fail" | "warn" | "info";
 export type RequirementLevel = "mandatory" | "recommended" | "informative";
 export type ConfidenceLevel = "high" | "medium" | "low";
+export type StarRating = 1 | 2 | 3 | 4 | 5;
 
 export interface VersionEvidence {
   source: "release" | "tag" | "manifest" | "readme" | "none";
@@ -25,6 +26,8 @@ export interface CheckResult {
   referenceUrl?: string;
   /** Optional confidence level for inferred/heuristic checks */
   confidence?: ConfidenceLevel;
+  /** 1 to 5 stars; from the criterion's own scale, or derived from its status */
+  starRating?: StarRating;
 }
 
 export interface CheckReport {
