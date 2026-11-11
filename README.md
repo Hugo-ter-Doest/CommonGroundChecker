@@ -37,6 +37,7 @@ Criteria are grouped into five categories. Each criterion has a requirement leve
 |---|-----------|-------|----------|
 | 10 | **Security policy** — SECURITY file with responsible disclosure info | Recommended | [GitHub docs](https://docs.github.com/en/code-security/getting-started/adding-a-security-policy-to-your-repository) |
 | 11 | **OWASP Secure Coding** — heuristic static analysis checks for common insecure patterns | Mandatory | [OWASP Secure Coding Practices](https://owasp.org/www-project-secure-coding-practices/) |
+| 26 | **Open Source Health** — production dependencies from the lockfiles rated from 1 to 5 stars on known vulnerabilities ([OSV.dev](https://osv.dev)), freshness, activity, licence risk and dependency management | Recommended | [Open Source Health model](https://github.com/Software-Improvement-Group/sigridci/blob/main/docs/reference/quality-model-documents/open-source-health.md) |
 
 ### Deployment & Operations
 
@@ -64,7 +65,7 @@ Criteria are grouped into five categories. Each criterion has a requirement leve
 
 **Stars:** every criterion also shows 1 to 5 stars. Maintainability has its own scale (4 stars or more passes, 3 stars warns). The other criteria map pass, warn and fail to 5, 3 and 1 stars. The overall score shows as stars in bands of 25 points next to the 0-100 number.
 
-The maintainability analysis runs `scripts/maintainability/check_maintainability.py`, which needs `python3`, lizard 1.24.3 and jscpd 4.0.5. The Docker image installs them. `MAINTAINABILITY_TIMEOUT_SECONDS` (default 600) caps how long one analysis may run. `node scripts/sync-maintainability.mjs [commit]` refreshes the vendored script from its upstream; `scripts/maintainability/UPSTREAM` records the commit.
+The maintainability analysis runs `scripts/maintainability/check_maintainability.py`, which needs `python3`, lizard 1.24.3 and jscpd 4.0.5. The Docker image installs them. `MAINTAINABILITY_TIMEOUT_SECONDS` (default 600) caps how long one analysis may run. `node scripts/sync-vendored.mjs <maintainability|open-source-health> [commit]` refreshes a vendored script from its upstream; `UPSTREAM` in its directory records the commit. The Open Source Health analysis (`scripts/open-source-health/`) needs only `python3` and network access to OSV.dev, Packagist, the npm registry and PyPI; `OPEN_SOURCE_HEALTH_TIMEOUT_SECONDS` (default 300) caps it.
 
 **Note:** Mandatory criteria are included in the overall score. Recommended criteria still contribute when enabled, while informative criteria are only shown as contextual information and are not used in scoring.
 

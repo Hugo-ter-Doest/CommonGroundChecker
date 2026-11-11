@@ -133,6 +133,12 @@ const CRITERION_CATEGORIES: CriterionCategory[] = [
           "Clones the analyzed repository and runs Lizard locally. The criterion passes when average cyclomatic complexity (AvgCCN) stays within the configured threshold, and the maximum cyclomatic complexity stays within the configured threshold.",
       },
       {
+        id: "opensourcehealth",
+        label: "Open Source Health",
+        explanation:
+          "Reads the lockfiles and rates the production dependencies from 1 to 5 stars on known vulnerabilities (OSV.dev), freshness, activity, licence risk and dependency management. The criterion passes at 4 stars or more and warns at 3 stars.",
+      },
+      {
         id: "maintainability",
         label: "Maintainability (ISO 25010)",
         explanation:
