@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import type { RepoSummary } from "@/generated/openapi-client";
+import { formatDateTime } from "@/lib/dates";
 
 type SortKey = "date" | "score";
 type SortDirection = "asc" | "desc";
@@ -130,7 +131,7 @@ export default function HistoryPageClient({
                       <p>{repository.analysisCount} analyses</p>
                       {latest && (
                         <p>
-                          Last: {new Date(latest.checkedAt).toLocaleString("nl-NL")}
+                          Last: {formatDateTime(latest.checkedAt)}
                         </p>
                       )}
                     </div>
