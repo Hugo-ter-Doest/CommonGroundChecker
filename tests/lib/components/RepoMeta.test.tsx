@@ -42,6 +42,10 @@ const baseSummary: RepoSummary = {
   maintenanceType: null,
   maintainers: [],
   updatedAt: "2026-11-11T00:00:00Z",
+  followed: false,
+  checkIntervalHours: 168,
+  lastCheckedAt: "2026-11-11T00:00:00Z",
+  nextCheckAt: "2026-11-18T00:00:00Z",
   analysisCount: 1,
   latestAnalysis: null,
 };
@@ -84,6 +88,13 @@ describe("RepoMeta", () => {
     expect(screen.queryByRole("img")).toBeNull();
     expect(screen.getByText("GitHub description")).toBeTruthy();
     expect(screen.queryByText(/^Status:/)).toBeNull();
+    expect(screen.queryByText("Followed")).toBeNull();
+  });
+
+  it("shows the Followed badge for a followed repository", () => {
+    render(<RepoMeta owner="open-zaak" repo="open-zaak" repoMeta={baseMeta} followed />);
+
+    expect(screen.getByText("Followed")).toBeTruthy();
   });
 });
 
