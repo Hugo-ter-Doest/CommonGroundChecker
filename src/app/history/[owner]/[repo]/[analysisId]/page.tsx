@@ -1,6 +1,6 @@
 import Link from "next/link";
 import ResultCard from "@/components/ResultCard";
-import { formatStars, scoreToStars, statusToStars } from "@/lib/stars";
+import { derivedStarRating, formatStars, scoreToStars } from "@/lib/stars";
 import { getRepoHistory } from "@/lib/apiClient";
 import type { CheckReport, CheckResult, StarRating } from "@/lib/types";
 import type { RepoMeta } from "@/generated/openapi-client";
@@ -239,7 +239,7 @@ export default async function AnalysisDetailPage({ params }: AnalysisDetailPageP
                         message={result.message}
                         evidence={result.evidence}
                         referenceUrl={result.referenceUrl}
-                        starRating={result.starRating ?? statusToStars(result.status)}
+                        starRating={derivedStarRating(result)}
                       />
                     ))}
                   </div>

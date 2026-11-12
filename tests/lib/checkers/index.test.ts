@@ -283,6 +283,26 @@ describe("runChecks", () => {
     expect(openApiResult?.message).toContain("not marked as a register");
   });
 
+  it("gives a result that was not measured no stars unless the check rated it", async () => {
+    mocks.checkSecurity.mockReturnValue(resultFor("security", "info"));
+    mocks.checkMaintainability.mockResolvedValue({ ...resultFor("maintainability", "info"), starRating: 2 });
+    mocks.getActiveScoringConfig.mockResolvedValue({
+      id: "cfg-1",
+      config: {
+        criterionConfigByCheckId: criterionConfig(1),
+        statusScoreByStatus: { pass: 1, warn: 0.5, info: 0.5, fail: 0 },
+        complexityThreshold: 12,
+        complexityMaxCcnThreshold: 20,
+        spectralRulesetSource: "https://static.developer.overheid.nl/adr/ruleset.yaml",
+      },
+    });
+
+    const report = await runChecks("https://github.com/org/repo", { isRegister: false });
+
+    expect(report.results.find((result) => result.id === "security")?.starRating).toBeUndefined();
+    expect(report.results.find((result) => result.id === "maintainability")?.starRating).toBe(2);
+  });
+
   it("applies fixed category weights when aggregating mandatory criteria", async () => {
     const configById = criterionConfig(0, "recommended");
     configById.sourcecode = { weight: 1, requirementLevel: "mandatory" };
