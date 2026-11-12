@@ -11,6 +11,10 @@ export type RepoSummary = {
     dockerLocations: Array<string>;
     apiSpecificationLocations: Array<string>;
     documentationLocations: Array<string>;
+    /**
+     * Version detected on the repository's most recent scan
+     */
+    version: string | null;
     updatedAt: string;
     analysisCount: number;
     latestAnalysis: any | null;

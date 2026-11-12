@@ -46,6 +46,14 @@ function sortRepositories(
   return sorted;
 }
 
+type LatestAnalysis = { checkedAt: string; score: number; version?: string | null } | null;
+
+/** Version shown on a card: the latest analysis's version, else the repository's. */
+function cardVersion(repository: RepoSummary): string | null {
+  const latest = repository.latestAnalysis as LatestAnalysis;
+  return latest?.version || repository.version || null;
+}
+
 const sortOptions: Array<{ label: string; sort: SortKey; direction: SortDirection }> = [
   { label: "Date ↑", sort: "date", direction: "asc" },
   { label: "Date ↓", sort: "date", direction: "desc" },
@@ -111,7 +119,8 @@ export default function HistoryPageClient({
         ) : (
           <div className="space-y-3">
             {sortedRepositories.map((repository) => {
-              const latest = repository.latestAnalysis as { checkedAt: string; score: number } | null;
+              const latest = repository.latestAnalysis as LatestAnalysis;
+              const version = cardVersion(repository);
 
               return (
                 <Link
@@ -135,14 +144,18 @@ export default function HistoryPageClient({
                       )}
                     </div>
                   </div>
-                  {latest && (
-                    <div className="mt-2">
-                      <span className="inline-flex text-xs font-semibold px-2 py-0.5 rounded-full border border-gray-300 text-gray-700 bg-white">
-                        Latest score: {latest.score}
-                      </span>
-                      <span className="inline-flex ml-2 text-xs font-semibold px-2 py-0.5 rounded-full border border-purple-200 text-purple-700 bg-purple-50">
-                        Version: unknown
-                      </span>
+                  {(latest || version) && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {latest && (
+                        <span className="inline-flex text-xs font-semibold px-2 py-0.5 rounded-full border border-gray-300 text-gray-700 bg-white">
+                          Latest score: {latest.score}
+                        </span>
+                      )}
+                      {version && (
+                        <span className="inline-flex text-xs font-semibold px-2 py-0.5 rounded-full border border-purple-200 text-purple-700 bg-purple-50">
+                          Version: {version}
+                        </span>
+                      )}
                     </div>
                   )}
                 </Link>
