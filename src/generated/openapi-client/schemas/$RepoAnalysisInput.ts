@@ -21,6 +21,18 @@ export const $RepoAnalysisInput = {
             type: 'number',
             isRequired: true,
         },
+        rating: {
+            type: 'Rating',
+        },
+        categoryRatings: {
+            type: 'CategoryRatings',
+        },
+        aspectRatings: {
+            type: 'AspectRatings',
+        },
+        endorsement: {
+            type: 'Endorsement',
+        },
         results: {
             type: 'array',
             contains: {

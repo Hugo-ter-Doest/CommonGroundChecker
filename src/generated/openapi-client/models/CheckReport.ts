@@ -2,7 +2,11 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { AspectRatings } from './AspectRatings';
+import type { CategoryRatings } from './CategoryRatings';
 import type { CheckResult } from './CheckResult';
+import type { Endorsement } from './Endorsement';
+import type { Rating } from './Rating';
 import type { RepoMeta } from './RepoMeta';
 export type CheckReport = {
     repoUrl: string;
@@ -11,6 +15,10 @@ export type CheckReport = {
     checkedAt: string;
     scoringConfigId?: string | null;
     score: number;
+    rating?: Rating;
+    categoryRatings?: CategoryRatings;
+    aspectRatings?: AspectRatings;
+    endorsement?: Endorsement;
     results: Array<CheckResult>;
     repoMeta: RepoMeta;
 };
