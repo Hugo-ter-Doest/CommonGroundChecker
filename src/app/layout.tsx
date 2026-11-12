@@ -45,6 +45,9 @@ export default function RootLayout({
               <Link href="/history" className="text-white hover:text-cg-lightblue transition-colors">
                 History
               </Link>
+              <Link href="/docs" className="text-white hover:text-cg-lightblue transition-colors">
+                Rating guide
+              </Link>
               <Link href="/admin" className="text-white hover:text-cg-lightblue transition-colors">
                 Admin
               </Link>
