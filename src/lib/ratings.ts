@@ -8,15 +8,16 @@ export const MAX_RATING = 5.5;
 /** The overall rating a component needs to pass. */
 export const PASSING_RATING = 2.5;
 
+/** Ratings of a criterion that has no scale of its own: the ends and the middle of the scale. */
 const RATING_BY_STATUS: Partial<Record<CheckStatus, number>> = {
-  pass: 5,
+  pass: MAX_RATING,
   warn: 3,
-  fail: 1,
+  fail: MIN_RATING,
 };
 
 /** Document-count ratings: the lowest share of passing inputs for each rating, highest first. */
 const DOCUMENT_COUNT_BANDS: Array<[share: number, rating: number]> = [
-  [1, 5],
+  [1, MAX_RATING],
   [0.8, 4],
   [0.6, 3],
   [0.4, 2],
@@ -66,7 +67,7 @@ export function formatRating(rating: number): string {
 
 /**
  * A criterion's rating: its continuous rating, else its stars, else its status
- * (pass 5, warn 3, fail 1). Null for a result that was not measured.
+ * (pass 5.5, warn 3, fail 0.5). Null for a result that was not measured.
  */
 export function criterionRating(result: RatingInput): number | null {
   if (result.status === "info") return null;
@@ -75,7 +76,7 @@ export function criterionRating(result: RatingInput): number | null {
   return RATING_BY_STATUS[result.status] ?? null;
 }
 
-/** The rating of a share of passing documents: all 5, at least 80% 4, 60% 3, 40% 2, otherwise 1. */
+/** The rating of a share of passing documents: all 5.5, at least 80% 4, 60% 3, 40% 2, otherwise 1. */
 export function documentCountRating(found: number, expected: number): number | null {
   if (expected <= 0) return null;
   const share = found / expected;

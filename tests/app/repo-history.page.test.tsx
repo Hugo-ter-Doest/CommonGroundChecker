@@ -30,6 +30,6 @@ describe("RepoHistoryPage", () => {
     render(await RepoHistoryPage({ params: Promise.resolve({ owner: "org", repo: "repo" }) }));
 
     expect(screen.getByRole("img", { name: "Overall rating 3.4 of 5" })).toBeTruthy();
-    expect(screen.getByRole("img", { name: "Overall rating 1.0 of 5" })).toBeTruthy();
+    expect(screen.getByRole("img", { name: "Overall rating 0.5 of 5" })).toBeTruthy();
   });
 });
