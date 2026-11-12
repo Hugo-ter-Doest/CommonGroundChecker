@@ -1,4 +1,5 @@
 import Link from "next/link";
+import FollowControl from "@/components/FollowControl";
 import RepoMeta from "@/components/RepoMeta";
 import RatingBadge from "@/components/RatingBadge";
 import { getRepoHistory } from "@/lib/apiClient";
@@ -147,6 +148,13 @@ export default async function RepoHistoryPage({ params }: HistoryPageProps) {
       </div>
 
       <RepoMeta owner={repository.owner} repo={repository.name} repoMeta={repoMeta} />
+
+      <FollowControl
+        repoId={repository.id}
+        initialFollowed={repository.followed ?? false}
+        initialCheckIntervalHours={repository.checkIntervalHours ?? null}
+        initialNextCheckAt={repository.nextCheckAt ?? null}
+      />
 
       <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
         <div className="flex items-center justify-between gap-3 flex-wrap">
