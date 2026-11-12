@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { Rating } from './Rating';
 export type CheckResult = {
     id: string;
     title: string;
@@ -16,6 +17,14 @@ export type CheckResult = {
      * 1 to 5 stars; from the criterion's own scale, or derived from its status
      */
     starRating?: number;
+    /**
+     * Continuous rating from 0.5 to 5.5, for a criterion measured on a continuous scale
+     */
+    rating?: number;
+    /**
+     * Ratings from 0.5 to 5.5 the check measures for aspects of the rating model, by key
+     */
+    aspectRatings?: Record<string, Rating>;
 };
 export namespace CheckResult {
     export enum requirementLevel {

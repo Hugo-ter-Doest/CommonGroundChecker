@@ -30,6 +30,7 @@ import {
   getActiveScoringConfig,
 } from "./config";
 import { statusToStars } from "../stars";
+import { computeEndorsement, computeRatings } from "../ratings";
 import { CATEGORY_WEIGHTS, RESULT_CATEGORY_BY_ID, type CriteriaCategory } from "../criteria";
 import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
@@ -356,6 +357,8 @@ export async function runChecks(
       "recommended",
     starRating: result.starRating ?? statusToStars(result.status),
   }));
+  const { rating, categoryRatings, aspectRatings } = computeRatings(resultsWithRequirementLevels, scoringConfig);
+  const endorsement = computeEndorsement(resultsWithRequirementLevels, rating, scoringConfig);
 
   return {
     repoUrl,
@@ -364,6 +367,10 @@ export async function runChecks(
     checkedAt: new Date().toISOString(),
     scoringConfigId: activeScoringConfig.id,
     score,
+    rating,
+    categoryRatings,
+    aspectRatings,
+    endorsement,
     results: resultsWithRequirementLevels,
     repoMeta: {
       description: meta.description ?? null,

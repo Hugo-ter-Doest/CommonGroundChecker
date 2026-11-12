@@ -1,7 +1,11 @@
 import Link from "next/link";
 import ResultCard from "@/components/ResultCard";
-import { formatStars, scoreToStars, statusToStars } from "@/lib/stars";
+import RatingBadge from "@/components/RatingBadge";
+import EndorsementChip from "@/components/EndorsementChip";
+import { statusToStars } from "@/lib/stars";
 import { getRepoHistory } from "@/lib/apiClient";
+import { isRating } from "@/lib/ratings";
+import { loadStoredRatings } from "@/lib/storedRatings";
 import type { CheckReport, CheckResult, StarRating } from "@/lib/types";
 import type { RepoMeta } from "@/generated/openapi-client";
 import { CATEGORY_ORDER, RESULT_CATEGORY_BY_ID, RESULT_ORDER_BY_ID } from "@/lib/criteria";
@@ -62,6 +66,7 @@ function normalizeResults(raw: unknown): CheckResult[] {
           typeof item.starRating === "number" && Number.isInteger(item.starRating) && item.starRating >= 1 && item.starRating <= 5
             ? (item.starRating as StarRating)
             : undefined,
+        rating: isRating(item.rating) ? item.rating : undefined,
       } satisfies CheckResult;
     });
 }
@@ -130,6 +135,7 @@ export default async function AnalysisDetailPage({ params }: AnalysisDetailPageP
 
   const results = normalizeResults(analysis.results);
   const repoMeta = normalizeRepoMeta(repository.metadata);
+  const [{ rating, categoryRatings, endorsement }] = await loadStoredRatings([analysis]);
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10 space-y-6">
@@ -168,15 +174,14 @@ export default async function AnalysisDetailPage({ params }: AnalysisDetailPageP
           Checked at {new Date(analysis.checkedAt).toLocaleString("nl-NL")}
         </p>
         <div className="flex items-center gap-2 flex-wrap">
+          <RatingBadge rating={rating} size="large" />
+          <EndorsementChip endorsement={endorsement} />
           <span
             className={`inline-flex items-center text-sm font-bold border rounded-full px-3 py-1 ${badgeClass(
               analysis.score
             )}`}
           >
-            Score {analysis.score}
-          </span>
-          <span className="text-lg leading-none text-amber-500" aria-label={`${scoreToStars(analysis.score)} of 5 stars`}>
-            {formatStars(scoreToStars(analysis.score))}
+            Compliance score {analysis.score}
           </span>
           <span className="inline-flex text-xs font-semibold px-2 py-0.5 rounded-full border border-purple-200 text-purple-700 bg-purple-50">
             Version: {analysis.version ?? repoMeta.version ?? "unknown"}
@@ -223,9 +228,12 @@ export default async function AnalysisDetailPage({ params }: AnalysisDetailPageP
 
               return (
                 <div key={category} className="space-y-2">
-                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mt-4 mb-2">
-                    {category}
-                  </h4>
+                  <div className="flex items-center gap-3 mt-4 mb-2">
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                      {category}
+                    </h4>
+                    <RatingBadge rating={categoryRatings[category] ?? null} label={`${category} rating`} />
+                  </div>
                   <div className="space-y-2">
                     {sortedResults.map((result, index) => (
                       <ResultCard

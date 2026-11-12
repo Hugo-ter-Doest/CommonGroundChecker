@@ -42,6 +42,8 @@ export interface MaintainabilityReport {
   rating: {
     overall: { range: [number, number] } | null;
     properties: Record<string, { rating: number | null; languages: Record<string, RatedLanguage> }>;
+    /** ISO 25010 sub-characteristics: analysability, modifiability, testability, modularity, reusability */
+    subcharacteristics?: Record<string, number | null>;
     levers?: Lever[];
   };
 }
@@ -97,6 +99,8 @@ export function mapMaintainabilityReport(report: MaintainabilityReport): CheckRe
     ...BASE_RESULT,
     status,
     starRating,
+    rating,
+    aspectRatings: report.rating.subcharacteristics,
     message:
       `Estimated maintainability rating ${low.toFixed(2)} to ${high.toFixed(2)} (${starRating} of 5 stars) over ${report.files} file(s). ` +
       "4 stars or more passes, 3 stars warns.",

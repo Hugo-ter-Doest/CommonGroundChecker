@@ -19,9 +19,17 @@ describe("mapMaintainabilityReport", () => {
     expect(result.id).toBe("maintainability");
     expect(result.status).toBe("fail");
     expect(result.starRating).toBe(2);
+    expect(result.rating).toBeCloseTo(2.07, 10);
     expect(result.message).toContain("1.98 to 2.16");
     expect(result.evidence).toContain("Unit size: ★★☆☆☆ 1.5 (javascript 5.5, typescript 1.5)");
     expect(result.evidence?.some((line) => line.startsWith("Module coupling"))).toBe(false);
+  });
+
+  it("exposes the sub-characteristic ratings as aspect ratings", () => {
+    const subcharacteristics = { analysability: 2.68, modifiability: 2.1, testability: 1.9, modularity: null, reusability: 2.4 };
+    const result = mapMaintainabilityReport({ ...report, rating: { ...report.rating, subcharacteristics } });
+
+    expect(result.aspectRatings).toEqual(subcharacteristics);
   });
 
   it("lists the three biggest levers with their effort", () => {
@@ -48,6 +56,7 @@ describe("mapMaintainabilityReport", () => {
 
     expect(result.status).toBe("warn");
     expect(result.starRating).toBeUndefined();
+    expect(result.rating).toBeUndefined();
   });
 });
 
