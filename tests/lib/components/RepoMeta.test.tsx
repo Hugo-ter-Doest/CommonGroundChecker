@@ -1,12 +1,14 @@
 /* @vitest-environment jsdom */
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 
 import RepoMeta from "@/components/RepoMeta";
 import HistoryPageClient from "@/components/HistoryPageClient";
 import type { CheckReport } from "@/lib/types";
 import type { RepoSummary } from "@/generated/openapi-client";
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn(), push: vi.fn() }) }));
 
 const baseMeta: CheckReport["repoMeta"] = {
   description: "GitHub description",
@@ -42,9 +44,9 @@ const baseSummary: RepoSummary = {
   maintenanceType: null,
   maintainers: [],
   followed: false,
-  checkIntervalHours: null,
-  lastCheckedAt: null,
-  nextCheckAt: null,
+  checkIntervalHours: 168,
+  lastCheckedAt: "2026-11-11T00:00:00Z",
+  nextCheckAt: "2026-11-18T00:00:00Z",
   updatedAt: "2026-11-11T00:00:00Z",
   analysisCount: 1,
   latestAnalysis: null,
@@ -97,6 +99,7 @@ describe("HistoryPageClient", () => {
       <HistoryPageClient
         sort="date"
         direction="desc"
+        query=""
         repositories={[
           {
             ...baseSummary,

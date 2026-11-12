@@ -1,10 +1,12 @@
 import HistoryPageClient, { type SortDirection, type SortKey } from "@/components/HistoryPageClient";
 import { getRepositories, type RepoSummary } from "@/lib/apiClient";
+import { normalizeSearchQuery } from "@/lib/historySearch";
 
 interface HistoryHomePageProps {
   searchParams: Promise<{
     sort?: string | string[];
     direction?: string | string[];
+    q?: string | string[];
   }>;
 }
 
@@ -26,12 +28,13 @@ export default async function HistoryHomePage({ searchParams }: HistoryHomePageP
   const query = await searchParams;
   const sortKey = normalizeSortKey(firstValue(query.sort));
   const sortDirection = normalizeSortDirection(firstValue(query.direction));
+  const searchQuery = normalizeSearchQuery(query.q);
 
   let repositories: RepoSummary[] = [];
   let error: string | undefined;
 
   try {
-    repositories = await getRepositories(50);
+    repositories = await getRepositories(50, searchQuery);
   } catch (err) {
     error = err instanceof Error ? err.message : "Unable to connect to repository history API.";
   }
@@ -40,6 +43,7 @@ export default async function HistoryHomePage({ searchParams }: HistoryHomePageP
     <HistoryPageClient
       sort={sortKey}
       direction={sortDirection}
+      query={searchQuery}
       repositories={repositories}
       error={error}
     />
