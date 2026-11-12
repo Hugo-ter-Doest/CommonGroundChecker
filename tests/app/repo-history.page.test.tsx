@@ -83,9 +83,10 @@ describe("RepoHistoryPage", () => {
       .getAllByRole("row")
       .slice(1)
       .map((row) => within(row).getAllByRole("cell").slice(2, 4).map((cell) => cell.textContent));
+    // The older run fails a mandatory criterion and its rating 1.0 is below 2.5
     expect(counts).toEqual([
       ["0", "0"],
-      ["1", "0"],
+      ["2", "0"],
     ]);
     expect(runs.textContent).not.toContain("/100");
 

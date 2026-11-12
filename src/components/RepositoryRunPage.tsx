@@ -114,7 +114,9 @@ export default function RepositoryRunPage({ owner, repo, result }: RepositoryRun
         </section>
       )}
 
-      {selected && selected.results.length > 0 && <IssueBlocks results={selected.results} />}
+      {selected && selected.results.length > 0 && (
+        <IssueBlocks results={selected.results} rating={selected.rating} endorsement={selected.endorsement} />
+      )}
 
       <section aria-labelledby="rating-history-heading" className={SECTION_CLASS}>
         <h3 id="rating-history-heading" className="text-lg font-semibold text-gray-800">

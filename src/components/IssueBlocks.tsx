@@ -1,12 +1,10 @@
 "use client";
 
-import type { CheckResult } from "@/lib/types";
+import type { CheckResult, Endorsement } from "@/lib/types";
 import { criterionAnchorId } from "@/lib/criteria";
-import { splitIssues, type IssueEntry } from "@/lib/issues";
+import { RATING_SUMMARY_ID, ratingIssue, splitIssues, type IssueEntry } from "@/lib/issues";
 import { AlertTriangle, CheckCircle, XCircle } from "lucide-react";
 import type { MouseEvent } from "react";
-
-export { splitIssues, type IssueEntry, type IssueSplit } from "@/lib/issues";
 
 function openCriterion(event: MouseEvent<HTMLAnchorElement>, id: string) {
   const hash = `#${criterionAnchorId(id)}`;
@@ -19,6 +17,8 @@ function openCriterion(event: MouseEvent<HTMLAnchorElement>, id: string) {
 interface IssueBlockProps {
   kind: "errors" | "warnings";
   entries: IssueEntry[];
+  /** An error about the overall rating, listed before the criteria */
+  ratingError?: string | null;
 }
 
 const BLOCK_CONFIG = {
@@ -48,10 +48,18 @@ const BLOCK_CONFIG = {
   },
 } as const;
 
-function IssueBlock({ kind, entries }: IssueBlockProps) {
+function IssueBlock({ kind, entries, ratingError = null }: IssueBlockProps) {
   const config = BLOCK_CONFIG[kind];
   const Icon = config.icon;
-  const countLabel = `${entries.length} ${entries.length === 1 ? config.singular : config.plural}`;
+  const count = entries.length + (ratingError === null ? 0 : 1);
+  const countLabel = `${count} ${count === 1 ? config.singular : config.plural}`;
+  const statusChip = (
+    <span
+      className={`text-xs font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${config.border} ${config.text}`}
+    >
+      {config.statusLabel}
+    </span>
+  );
 
   return (
     <section
@@ -65,21 +73,32 @@ function IssueBlock({ kind, entries }: IssueBlockProps) {
         </span>
       </h3>
 
-      {entries.length === 0 ? (
+      {count === 0 ? (
         <p className="mt-2 flex items-center gap-2 text-sm text-green-700">
           <CheckCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
           {config.empty}
         </p>
       ) : (
         <ul className="mt-3 space-y-2">
+          {ratingError !== null && (
+            <li className="rounded-lg bg-white/70 px-3 py-2 text-sm">
+              <div className="flex flex-wrap items-center gap-2">
+                {statusChip}
+                <a
+                  href={`#${RATING_SUMMARY_ID}`}
+                  className="font-semibold text-gray-900 underline hover:text-cg-lightblue"
+                >
+                  {ratingError}
+                  <span className="sr-only">: go to the overall rating</span>
+                </a>
+                <span className="text-xs text-gray-600">Overall rating</span>
+              </div>
+            </li>
+          )}
           {entries.map(({ result, category }) => (
             <li key={result.id} className="rounded-lg bg-white/70 px-3 py-2 text-sm">
               <div className="flex flex-wrap items-center gap-2">
-                <span
-                  className={`text-xs font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${config.border} ${config.text}`}
-                >
-                  {config.statusLabel}
-                </span>
+                {statusChip}
                 <a
                   href={`#${criterionAnchorId(result.id)}`}
                   onClick={(event) => openCriterion(event, result.id)}
@@ -101,14 +120,16 @@ function IssueBlock({ kind, entries }: IssueBlockProps) {
 
 interface IssueBlocksProps {
   results: CheckResult[];
+  rating?: number | null;
+  endorsement?: Endorsement | null;
 }
 
-export default function IssueBlocks({ results }: IssueBlocksProps) {
+export default function IssueBlocks({ results, rating = null, endorsement = null }: IssueBlocksProps) {
   const { errors, warnings } = splitIssues(results);
 
   return (
     <div className="grid gap-4">
-      <IssueBlock kind="errors" entries={errors} />
+      <IssueBlock kind="errors" entries={errors} ratingError={ratingIssue(rating, endorsement)} />
       <IssueBlock kind="warnings" entries={warnings} />
     </div>
   );

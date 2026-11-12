@@ -1,6 +1,7 @@
-import type { CheckResult } from "./types";
+import type { CheckResult, Endorsement } from "./types";
 import type { CriteriaCategory } from "./criteria";
 import { CATEGORY_ORDER, RESULT_CATEGORY_BY_ID, RESULT_ORDER_BY_ID } from "./criteria";
+import { PASSING_RATING } from "./ratings";
 
 export interface IssueEntry {
   result: CheckResult;
@@ -55,4 +56,37 @@ export function splitIssues(results: CheckResult[]): IssueSplit {
   }
 
   return { errors, warnings };
+}
+
+/** The id of the rating summary, which the rating error links to. */
+export const RATING_SUMMARY_ID = "rating-summary";
+
+/**
+ * The error for an endorsement that fails on the overall rating: a rating
+ * below 2.5, or no rating at all. Null when the endorsement passes, is
+ * missing or fails only on mandatory criteria.
+ */
+export function ratingIssue(rating: number | null, endorsement: Endorsement | null | undefined): string | null {
+  if (!endorsement || endorsement.passed) return null;
+  if (rating === null) return "No overall rating";
+  if (rating < PASSING_RATING) return `Overall rating ${rating.toFixed(1)} is below ${PASSING_RATING}`;
+  return null;
+}
+
+export interface IssueCounts {
+  errors: number;
+  warnings: number;
+}
+
+/** The counts in the headings of the errors and warnings blocks. */
+export function countIssues(
+  results: CheckResult[],
+  rating: number | null,
+  endorsement: Endorsement | null | undefined
+): IssueCounts {
+  const { errors, warnings } = splitIssues(results);
+  return {
+    errors: errors.length + (ratingIssue(rating, endorsement) === null ? 0 : 1),
+    warnings: warnings.length,
+  };
 }

@@ -1,6 +1,6 @@
 import { getRepoHistory } from "@/lib/apiClient";
 import { parseMeasurements } from "@/lib/measurements";
-import { splitIssues } from "@/lib/issues";
+import { countIssues } from "@/lib/issues";
 import { isRating, type Ratings } from "@/lib/ratings";
 import { loadStoredRatings } from "@/lib/storedRatings";
 import type { CheckReport, CheckResult, Endorsement, StarRating } from "@/lib/types";
@@ -174,7 +174,7 @@ export async function loadRepositoryRun(
   const ratings = await loadStoredRatings(analyses);
   const results = analyses.map((analysis) => normalizeResults(analysis.results));
   const runs: RunSummary[] = analyses.map((analysis, index) => {
-    const issues = splitIssues(results[index]);
+    const issues = countIssues(results[index], ratings[index].rating, ratings[index].endorsement);
     return {
       id: analysis.id,
       checkedAt: analysis.checkedAt,
@@ -182,8 +182,8 @@ export async function loadRepositoryRun(
       score: analysis.score,
       rating: ratings[index].rating,
       passed: ratings[index].endorsement.passed,
-      errors: results[index].length > 0 ? issues.errors.length : null,
-      warnings: results[index].length > 0 ? issues.warnings.length : null,
+      errors: results[index].length > 0 ? issues.errors : null,
+      warnings: results[index].length > 0 ? issues.warnings : null,
     };
   });
 
