@@ -120,7 +120,7 @@ describe("aspectComposition", () => {
     expect(composition).toEqual({
       type: "criteria",
       criteria: [
-        { id: "license", title: "license title", status: "pass", rating: 5, hasCard: true },
+        { id: "license", title: "license title", status: "pass", rating: 5.5, hasCard: true },
         { id: "spdxheaders", title: "spdxheaders title", status: "info", rating: null, hasCard: false },
       ],
     });

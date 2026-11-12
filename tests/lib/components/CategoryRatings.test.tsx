@@ -69,7 +69,7 @@ describe("CategoryRatings", () => {
   it("shows the category stars and number", () => {
     renderRatings();
 
-    expect(screen.getByRole("img", { name: "Governance rating 3.8 of 5" })).toBeTruthy();
+    expect(screen.getByRole("img", { name: "Governance rating 3.8 of 5.5, 4 stars" })).toBeTruthy();
   });
 
   it("puts the measurements with their thresholds under a maintainability aspect", () => {

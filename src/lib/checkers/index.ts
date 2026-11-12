@@ -355,10 +355,14 @@ export async function runChecks(
     requirementLevel:
       scoringConfig.criterionConfigByCheckId[result.id]?.requirementLevel ??
       "recommended",
-    starRating: result.starRating ?? statusToStars(result.status),
   }));
+  // Rated before the status stars are filled in, so a criterion without a scale is rated from its status.
   const { rating, categoryRatings, aspectRatings } = computeRatings(resultsWithRequirementLevels, scoringConfig);
   const endorsement = computeEndorsement(resultsWithRequirementLevels, rating, scoringConfig);
+  const resultsWithStars = resultsWithRequirementLevels.map((result) => ({
+    ...result,
+    starRating: result.starRating ?? statusToStars(result.status),
+  }));
 
   return {
     repoUrl,
@@ -371,7 +375,7 @@ export async function runChecks(
     categoryRatings,
     aspectRatings,
     endorsement,
-    results: resultsWithRequirementLevels,
+    results: resultsWithStars,
     repoMeta: {
       description: meta.description ?? null,
       language: meta.language ?? null,
