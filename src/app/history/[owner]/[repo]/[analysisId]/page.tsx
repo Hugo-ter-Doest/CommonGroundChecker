@@ -1,9 +1,12 @@
 import Link from "next/link";
+import CategoryRatings from "@/components/CategoryRatings";
+import IssueBlocks from "@/components/IssueBlocks";
 import ResultCard from "@/components/ResultCard";
 import RatingBadge from "@/components/RatingBadge";
-import EndorsementChip from "@/components/EndorsementChip";
+import RatingSummary from "@/components/RatingSummary";
 import { statusToStars } from "@/lib/stars";
 import { getRepoHistory } from "@/lib/apiClient";
+import { parseMeasurements } from "@/lib/measurements";
 import { isRating } from "@/lib/ratings";
 import { loadStoredRatings } from "@/lib/storedRatings";
 import type { CheckReport, CheckResult, StarRating } from "@/lib/types";
@@ -16,12 +19,6 @@ interface AnalysisDetailPageProps {
     repo: string;
     analysisId: string;
   }>;
-}
-
-function badgeClass(score: number): string {
-  if (score >= 80) return "bg-green-100 text-green-700 border-green-300";
-  if (score >= 60) return "bg-yellow-100 text-yellow-700 border-yellow-300";
-  return "bg-red-100 text-red-700 border-red-300";
 }
 
 function normalizeResults(raw: unknown): CheckResult[] {
@@ -67,6 +64,7 @@ function normalizeResults(raw: unknown): CheckResult[] {
             ? (item.starRating as StarRating)
             : undefined,
         rating: isRating(item.rating) ? item.rating : undefined,
+        measurements: parseMeasurements(item.measurements),
       } satisfies CheckResult;
     });
 }
@@ -141,7 +139,7 @@ export default async function AnalysisDetailPage({ params }: AnalysisDetailPageP
 
   const results = normalizeResults(analysis.results);
   const repoMeta = normalizeRepoMeta(repository.metadata);
-  const [{ rating, categoryRatings, endorsement }] = await loadStoredRatings([analysis]);
+  const [{ rating, categoryRatings, aspectRatings, endorsement }] = await loadStoredRatings([analysis]);
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10 space-y-6">
@@ -179,21 +177,19 @@ export default async function AnalysisDetailPage({ params }: AnalysisDetailPageP
         <p className="text-xs text-gray-500">
           Checked at {new Date(analysis.checkedAt).toLocaleString("nl-NL")}
         </p>
-        <div className="flex items-center gap-2 flex-wrap">
-          <RatingBadge rating={rating} size="large" />
-          <EndorsementChip endorsement={endorsement} />
-          <span
-            className={`inline-flex items-center text-sm font-bold border rounded-full px-3 py-1 ${badgeClass(
-              analysis.score
-            )}`}
-          >
-            Compliance score {analysis.score}
-          </span>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+          <RatingSummary rating={rating} endorsement={endorsement} score={analysis.score} />
           <span className="inline-flex text-xs font-semibold px-2 py-0.5 rounded-full border border-purple-200 text-purple-700 bg-purple-50">
             Version: {analysis.version ?? repoMeta.version ?? "unknown"}
           </span>
         </div>
       </section>
+
+      {results.length > 0 && <IssueBlocks results={results} rating={rating} endorsement={endorsement} />}
+
+      {results.length > 0 && (
+        <CategoryRatings results={results} categoryRatings={categoryRatings} aspectRatings={aspectRatings} />
+      )}
 
       <section className="space-y-1">
         <h3 className="font-semibold text-sm uppercase tracking-wide text-gray-600">

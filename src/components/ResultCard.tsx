@@ -11,7 +11,8 @@ import {
   ChevronUp,
   ExternalLink,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { criterionAnchorId } from "@/lib/criteria";
 
 interface ResultCardProps {
   id: string;
@@ -79,6 +80,7 @@ const STATUS_CONFIG: Record<
 };
 
 export default function ResultCard({
+  id,
   title,
   description,
   requirementLevel,
@@ -90,12 +92,26 @@ export default function ResultCard({
   starRating,
 }: ResultCardProps) {
   const [open, setOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const anchorId = criterionAnchorId(id);
+
+  useEffect(() => {
+    const openWhenTargeted = () => {
+      if (window.location.hash !== `#${anchorId}`) return;
+      setOpen(true);
+      buttonRef.current?.focus();
+    };
+    openWhenTargeted();
+    window.addEventListener("hashchange", openWhenTargeted);
+    return () => window.removeEventListener("hashchange", openWhenTargeted);
+  }, [anchorId]);
   const { icon: Icon, bg, border, text, label } = STATUS_CONFIG[status];
   const req = REQUIREMENT_CONFIG[requirementLevel ?? "recommended"];
 
   return (
-    <div className={`rounded-xl border ${border} ${bg} overflow-hidden`}>
+    <div id={anchorId} className={`rounded-xl border ${border} ${bg} overflow-hidden scroll-mt-4`}>
       <button
+        ref={buttonRef}
         className="w-full flex items-center gap-3 px-5 py-4 text-left"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}

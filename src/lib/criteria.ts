@@ -78,3 +78,8 @@ export const RESULT_CATEGORY_BY_ID: Record<string, CriteriaCategory> = {
   semver: "Software Quality",
   fivelayer: "Architecture",
 };
+
+/** DOM id of a criterion's result card, used as the target of links to it. */
+export function criterionAnchorId(id: string): string {
+  return `criterion-${id}`;
+}

@@ -12,6 +12,8 @@ An online automatic compliance checker for [Common Ground](https://commonground.
 
 Criteria are grouped into five categories. Each criterion has a requirement level (mandatory / recommended / informative) and a configurable weight that influences the overall score.
 
+The rating guide at `/docs` ("Rating guide" in the site navigation) explains per category and aspect what the 1 to 5 star ratings mean, how the checker measures them and which sources they are based on. The content lives in `src/lib/ratingDocs.ts`; every aspect has a stable anchor, `/docs/<category-slug>#<aspect-id>`.
+
 ### Governance
 
 | # | Criterion | Level | Standard |
@@ -304,6 +306,16 @@ Status scores: **Pass** = 1.0 · **Warn / Info** = 0.5 · **Fail** = 0.
 | 50–79 | ⚠️ Partial |
 | < 50 | ❌ Non-compliant |
 
+Above the detailed results, the live report and the stored analysis page list
+what is missing in two blocks:
+
+- **Errors**: mandatory criteria with status Fail.
+- **Warnings**: recommended criteria with status Fail or Warn, and mandatory
+  criteria with status Warn (present but incomplete).
+
+Informative criteria and results with status Info appear in neither block. Each
+entry links to its result card, which opens when followed.
+
 ## Ratings
 
 Next to the 0-100 compliance score, every analysis gets an **overall rating**, a **rating per category** and a **rating per aspect**, on a continuous scale from 0.5 to 5.5 shown as 1 to 5 stars (for example ★★★☆☆ 3.4). The overall rating is the headline of a report.
@@ -324,6 +336,14 @@ Each category consists of aspects, defined in `src/lib/aspects.ts`:
 - **Overall rating:** the weighted mean of the rated categories with the category weights. Categories with weight 0 don't count.
 
 Ratings are rounded to one decimal; stars round x.5 up. A component **passes** when no mandatory criterion fails and its overall rating is at least 2.5. Analyses stored before ratings existed are rated from their stored results with the active scoring config.
+
+The live report and the stored analysis page show the rating of one component from top to bottom: the overall rating with whether it passes (and why not) and the compliance score, the errors and warnings blocks, and then one section per category. Each category and aspect title links to its page in the rating guide. Every aspect has a bar from 0.5 to 5.5 with marks where the stars change (1.5, 2.5, 3.5 and 4.5), and under it a table of what the aspect is made of:
+
+- **Measured aspects** (the maintainability sub-characteristics): the measured share per property, language and bound, against the thresholds for 5, 4, 3 and 2 stars, and the stars it earns. A check provides these in the `measurements` field of its result; for maintainability they come from the analysis script's report, including its `bands`.
+- **Document aspects:** one row per document, found or missing.
+- **Other aspects:** one row per criterion with its status and stars, linking to its result card.
+
+The PDF export lists every aspect with its rating.
 
 > **Note:** Automated analysis is indicative only. Architecture checks rely on heuristics. For official certification, contact [commonground.nl](https://commonground.nl).
 
