@@ -42,6 +42,7 @@ export const RESULT_ORDER_BY_ID: string[] = [
   "tests",
   "coverage",
   "complexity",
+  "maintainability",
   "codemetrics",
   "owaspsecurecoding",
   "contributing",
@@ -68,6 +69,7 @@ export const RESULT_CATEGORY_BY_ID: Record<string, CriteriaCategory> = {
   tests: "Software Quality",
   coverage: "Software Quality",
   complexity: "Software Quality",
+  maintainability: "Software Quality",
   codemetrics: "Software Quality",
   owaspsecurecoding: "Security",
   contributing: "Governance",
@@ -76,3 +78,8 @@ export const RESULT_CATEGORY_BY_ID: Record<string, CriteriaCategory> = {
   semver: "Software Quality",
   fivelayer: "Architecture",
 };
+
+/** DOM id of a criterion's result card, used as the target of links to it. */
+export function criterionAnchorId(id: string): string {
+  return `criterion-${id}`;
+}

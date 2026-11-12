@@ -1,6 +1,9 @@
 import Link from "next/link";
+import FollowControl from "@/components/FollowControl";
 import RepoMeta from "@/components/RepoMeta";
+import RatingBadge from "@/components/RatingBadge";
 import { getRepoHistory } from "@/lib/apiClient";
+import { loadStoredRatings } from "@/lib/storedRatings";
 import type { CheckReport } from "@/lib/types";
 import type { RepoMeta as RepoMetaType } from "@/generated/openapi-client";
 
@@ -36,6 +39,12 @@ function normalizeRepoMeta(raw: RepoMetaType): CheckReport["repoMeta"] {
           ? raw.versionEvidence.detail
           : "No saved version evidence for this historical record",
     },
+    displayName: raw.displayName ?? null,
+    shortDescription: raw.shortDescription ?? null,
+    logoUrl: raw.logoUrl ?? null,
+    developmentStatus: raw.developmentStatus ?? null,
+    maintenanceType: raw.maintenanceType ?? null,
+    maintainers: Array.isArray(raw.maintainers) ? raw.maintainers : [],
   };
 }
 
@@ -107,6 +116,7 @@ export default async function RepoHistoryPage({ params }: HistoryPageProps) {
 
   const repoMeta = normalizeRepoMeta(repository.metadata);
   const analyses = repositoryResponse?.analyses ?? [];
+  const ratings = await loadStoredRatings(analyses);
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10 space-y-6">
@@ -139,6 +149,13 @@ export default async function RepoHistoryPage({ params }: HistoryPageProps) {
 
       <RepoMeta owner={repository.owner} repo={repository.name} repoMeta={repoMeta} />
 
+      <FollowControl
+        repoId={repository.id}
+        initialFollowed={repository.followed ?? false}
+        initialCheckIntervalHours={repository.checkIntervalHours ?? null}
+        initialNextCheckAt={repository.nextCheckAt ?? null}
+      />
+
       <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <h3 className="text-lg font-semibold text-gray-800">Historical analyses</h3>
@@ -151,7 +168,7 @@ export default async function RepoHistoryPage({ params }: HistoryPageProps) {
           <p className="text-sm text-gray-500">No analyses stored yet.</p>
         ) : (
           <div className="space-y-3">
-            {analyses.map((analysis) => {
+            {analyses.map((analysis, index) => {
               const stats = summarizeStatuses(analysis.results);
               return (
                 <div
@@ -172,6 +189,7 @@ export default async function RepoHistoryPage({ params }: HistoryPageProps) {
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
+                    <RatingBadge rating={ratings[index].rating} />
                     <span
                       className={`inline-flex items-center text-sm font-bold border rounded-full px-3 py-1 ${badgeClass(
                         analysis.score

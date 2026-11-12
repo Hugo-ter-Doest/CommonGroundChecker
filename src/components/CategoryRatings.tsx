@@ -1,0 +1,227 @@
+import AspectBar from "@/components/AspectBar";
+import MeasurementTable, { StarsText } from "@/components/MeasurementTable";
+import RatingBadge from "@/components/RatingBadge";
+import type { AspectDefinition } from "@/lib/aspects";
+import {
+  aspectComposition,
+  aspectsOfCategory,
+  categoryDocSlug,
+  documentCountText,
+  type AspectCriterion,
+} from "@/lib/componentRating";
+import { CATEGORY_ORDER, criterionAnchorId, type CriteriaCategory } from "@/lib/criteria";
+import { aspectDocHref } from "@/lib/ratingDocs";
+import { ratingToStars } from "@/lib/stars";
+import type { AspectRating, CheckResult, CheckStatus } from "@/lib/types";
+
+const LINK_CLASS =
+  "text-cg-lightblue underline hover:text-cg-blue rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cg-blue";
+
+const STATUS_LABELS: Record<CheckStatus, string> = {
+  pass: "Pass",
+  warn: "Warning",
+  fail: "Fail",
+  info: "Not measured",
+};
+
+function documentLabel(status: CheckStatus): string {
+  if (status === "pass") return "Found";
+  if (status === "info") return "Not measured";
+  return "Missing";
+}
+
+function CriterionName({ criterion }: { criterion: AspectCriterion }) {
+  if (!criterion.hasCard) return <>{criterion.title}</>;
+  return (
+    <a href={`#${criterionAnchorId(criterion.id)}`} className={LINK_CLASS}>
+      {criterion.title}
+      <span className="sr-only">: go to the {criterion.title} result</span>
+    </a>
+  );
+}
+
+function CriterionTable({
+  caption,
+  criteria,
+  documents,
+}: {
+  caption: string;
+  criteria: AspectCriterion[];
+  documents: boolean;
+}) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="min-w-full text-xs text-left border border-gray-200">
+        <caption className="text-left text-gray-600 pb-1">{caption}</caption>
+        <thead className="bg-cg-gray">
+          <tr>
+            <th scope="col" className="px-2 py-1">{documents ? "Document" : "Criterion"}</th>
+            <th scope="col" className="px-2 py-1">{documents ? "Found" : "Status"}</th>
+            {!documents && <th scope="col" className="px-2 py-1">Stars</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {criteria.map((criterion) => (
+            <tr key={criterion.id} className="border-t border-gray-100">
+              <th scope="row" className="px-2 py-1 font-normal text-gray-800">
+                <CriterionName criterion={criterion} />
+              </th>
+              <td className="px-2 py-1 text-gray-800">
+                {documents ? documentLabel(criterion.status) : STATUS_LABELS[criterion.status]}
+              </td>
+              {!documents && (
+                <td className="px-2 py-1 whitespace-nowrap text-gray-800">
+                  {criterion.rating === null ? (
+                    <span className="text-gray-600">not measured</span>
+                  ) : (
+                    <>
+                      <StarsText stars={ratingToStars(criterion.rating)} /> {criterion.rating.toFixed(1)}
+                    </>
+                  )}
+                </td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function AspectComposition({ aspect, results }: { aspect: AspectDefinition; results: CheckResult[] }) {
+  const composition = aspectComposition(aspect, results);
+  const caption = `What ${aspect.title} is made of`;
+
+  if (composition.type === "measurements") {
+    return <MeasurementTable caption={caption} groups={composition.groups} />;
+  }
+  if (composition.criteria.length === 0) {
+    return <p className="text-xs text-gray-600">None of its criteria were checked.</p>;
+  }
+  return (
+    <CriterionTable caption={caption} criteria={composition.criteria} documents={composition.type === "documents"} />
+  );
+}
+
+function AspectValue({ aspect, aspectRating }: { aspect: AspectDefinition; aspectRating?: AspectRating }) {
+  const rating = aspectRating?.rating ?? null;
+  if (rating === null) return <span className="text-xs text-gray-600">not measured</span>;
+  const count = documentCountText(aspectRating);
+  return (
+    <span className="inline-flex items-baseline gap-2">
+      <RatingBadge rating={rating} label={`${aspect.title} rating`} />
+      {count && <span className="text-xs text-gray-700">{count}</span>}
+    </span>
+  );
+}
+
+function AspectRow({
+  aspect,
+  aspectRating,
+  results,
+  docSlug,
+}: {
+  aspect: AspectDefinition;
+  aspectRating?: AspectRating;
+  results: CheckResult[];
+  docSlug?: string;
+}) {
+  const headingId = `aspect-rating-${aspect.id}`;
+  return (
+    <div role="group" aria-labelledby={headingId} className="space-y-2">
+      <div className="grid gap-2 sm:grid-cols-[12rem_1fr_11rem] sm:items-center">
+        <h5 id={headingId} className="text-sm font-semibold text-gray-800">
+          {docSlug ? (
+            <a href={aspectDocHref(docSlug, aspect.id)} className={LINK_CLASS}>
+              {aspect.title}
+            </a>
+          ) : (
+            aspect.title
+          )}
+          {aspect.weight === 0 && <span className="ml-1 text-xs font-normal text-gray-600">(not counted)</span>}
+        </h5>
+        <AspectBar title={aspect.title} rating={aspectRating?.rating ?? null} />
+        <AspectValue aspect={aspect} aspectRating={aspectRating} />
+      </div>
+      <details className="mt-1">
+        <summary className="cursor-pointer text-xs text-cg-lightblue focus-visible:outline focus-visible:outline-2 focus-visible:outline-cg-lightblue">
+          Show what {aspect.title} is made of
+        </summary>
+        <div className="mt-2">
+          <AspectComposition aspect={aspect} results={results} />
+        </div>
+      </details>
+    </div>
+  );
+}
+
+function CategorySection({
+  category,
+  rating,
+  aspectRatings,
+  results,
+}: {
+  category: CriteriaCategory;
+  rating: number | null;
+  aspectRatings: Record<string, AspectRating>;
+  results: CheckResult[];
+}) {
+  const aspects = aspectsOfCategory(category);
+  const docSlug = categoryDocSlug(category);
+  const headingId = `category-rating-${category.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+
+  return (
+    <section aria-labelledby={headingId} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <h4 id={headingId} className="text-lg font-semibold text-cg-blue">
+          {docSlug ? (
+            <a href={`/docs/${docSlug}`} className={LINK_CLASS}>
+              {category}
+            </a>
+          ) : (
+            category
+          )}
+        </h4>
+        <RatingBadge rating={rating} label={`${category} rating`} />
+      </div>
+      {aspects.map((aspect) => (
+        <AspectRow
+          key={aspect.id}
+          aspect={aspect}
+          aspectRating={aspectRatings[aspect.id]}
+          results={results}
+          docSlug={docSlug}
+        />
+      ))}
+    </section>
+  );
+}
+
+interface CategoryRatingsProps {
+  results: CheckResult[];
+  categoryRatings: Record<string, number | null>;
+  aspectRatings: Record<string, AspectRating>;
+}
+
+/** One section per category with a bar per aspect and a table of what each aspect is made of. */
+export default function CategoryRatings({ results, categoryRatings, aspectRatings }: CategoryRatingsProps) {
+  return (
+    <section aria-labelledby="category-ratings-heading" className="space-y-4">
+      <h3 id="category-ratings-heading" className="font-semibold text-sm uppercase tracking-wide text-gray-600">
+        Rating per category and aspect
+      </h3>
+      <p className="text-xs text-gray-600">
+        Each bar runs from 0.5 to 5.5; the marks are where the stars change, at 1.5, 2.5, 3.5 and 4.5.
+      </p>
+      {CATEGORY_ORDER.filter((category) => aspectsOfCategory(category).length > 0).map((category) => (
+        <CategorySection
+          key={category}
+          category={category}
+          rating={categoryRatings[category] ?? null}
+          aspectRatings={aspectRatings}
+          results={results}
+        />
+      ))}
+    </section>
+  );
+}
