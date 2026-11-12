@@ -12,6 +12,8 @@ An online automatic compliance checker for [Common Ground](https://commonground.
 
 Criteria are grouped into five categories. Each criterion has a requirement level (mandatory / recommended / informative) and a configurable weight that influences the overall score.
 
+The rating guide at `/docs` ("Rating guide" in the site navigation) explains per category and aspect what the 1 to 5 star ratings mean, how the checker measures them and which sources they are based on. The content lives in `src/lib/ratingDocs.ts`; every aspect has a stable anchor, `/docs/<category-slug>#<aspect-id>`.
+
 ### Governance
 
 | # | Criterion | Level | Standard |
