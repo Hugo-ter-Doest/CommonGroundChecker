@@ -34,7 +34,7 @@ function renderRatings() {
 describe("CategoryRatings", () => {
   afterEach(() => cleanup());
 
-  it("draws a meter per rated aspect on the 0.5 to 5.5 scale", () => {
+  it("draws a meter per rated aspect on the 0.5 to 5.5 scale, with white ticks on the fill", () => {
     renderRatings();
 
     const meter = screen.getByRole("meter", { name: "Testability 1.8 of 5.5" });
@@ -42,7 +42,9 @@ describe("CategoryRatings", () => {
     expect(meter.getAttribute("aria-valuemax")).toBe("5.5");
     expect(meter.getAttribute("aria-valuenow")).toBe("1.76");
     expect((meter.firstElementChild as HTMLElement).style.width).toBe("25.2%");
-    expect(meter.querySelectorAll("span[aria-hidden='true']")).toHaveLength(4);
+    const ticks = Array.from(meter.querySelectorAll("span[aria-hidden='true']"));
+    expect(ticks).toHaveLength(4);
+    expect(ticks.map((tick) => tick.className.includes("bg-white"))).toEqual([true, false, false, false]);
   });
 
   it("says not measured for an aspect without a rating, without a meter", () => {
