@@ -116,4 +116,14 @@ describe("CategoryRatings", () => {
     expect(within(row).getAllByRole("cell").map((cell) => cell.textContent)).toEqual(["Warning", "★★★☆☆3 stars 3.0"]);
     expect(within(row).getByRole("link").getAttribute("href")).toBe("#criterion-eupllicense");
   });
+
+  it("keeps each aspect's table collapsed under its bar, with a labelled summary", () => {
+    renderRatings();
+
+    const table = screen.getByRole("table", { name: "What Licensing is made of" });
+    const details = table.closest("details");
+    expect(details).not.toBeNull();
+    expect(details?.open).toBe(false);
+    expect(details?.querySelector("summary")?.textContent).toBe("Show what Licensing is made of");
+  });
 });

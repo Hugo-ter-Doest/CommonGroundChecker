@@ -143,7 +143,14 @@ function AspectRow({
         <AspectBar title={aspect.title} rating={aspectRating?.rating ?? null} />
         <AspectValue aspect={aspect} aspectRating={aspectRating} />
       </div>
-      <AspectComposition aspect={aspect} results={results} />
+      <details className="mt-1">
+        <summary className="cursor-pointer text-xs text-cg-lightblue focus-visible:outline focus-visible:outline-2 focus-visible:outline-cg-lightblue">
+          Show what {aspect.title} is made of
+        </summary>
+        <div className="mt-2">
+          <AspectComposition aspect={aspect} results={results} />
+        </div>
+      </details>
     </div>
   );
 }
