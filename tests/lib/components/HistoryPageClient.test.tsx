@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 
 import HistoryPageClient from "@/components/HistoryPageClient";
 import type { RepoSummary } from "@/generated/openapi-client";
@@ -73,6 +73,9 @@ describe("HistoryPageClient search", () => {
 
     expect(screen.getByRole("link", { name: "Score ↓" }).getAttribute("href")).toBe(
       "/history?sort=score&direction=desc&q=zaak"
+    );
+    expect(screen.getByRole("link", { name: "Rating ↑" }).getAttribute("href")).toBe(
+      "/history?sort=rating&direction=asc&q=zaak"
     );
   });
 
@@ -185,25 +188,116 @@ describe("HistoryPageClient", () => {
     expect(screen.getByText(/Next check:/).closest("a")?.textContent).toContain("followed-repo");
   });
 
-  it("shows the latest overall rating next to the score", () => {
+  function renderCard(overrides: Record<string, unknown>) {
     render(
       <HistoryPageClient
         sort="date"
         direction="desc"
         query=""
-        repositories={[
-          repositoryWith({
-            id: "rated",
-            name: "rated",
-            latestAnalysis: { checkedAt: "2026-11-11T15:39:33Z", score: 71, rating: 3.4 },
-          }),
-          repositoryWith({ id: "older", name: "older", latestAnalysis: { checkedAt: "2026-11-10T15:39:33Z", score: 50 } }),
-        ]}
+        repositories={[repositoryWith({ id: "card", name: "card-repo", ...overrides })]}
       />
     );
+    return screen.getByRole("link", { name: /card-repo/ });
+  }
 
-    expect(screen.getAllByRole("img", { name: /^Overall rating/ })).toHaveLength(1);
-    expect(screen.getByRole("img", { name: "Overall rating 3.4 of 5" })).toBeTruthy();
-    expect(screen.getByText("Latest score: 71")).toBeTruthy();
+  function footerOf(card: HTMLElement): string[] {
+    const footer = card.lastElementChild as HTMLElement;
+    return Array.from(footer.children).map((child) => child.textContent ?? "");
+  }
+
+  const checkedAt = "2026-11-11T15:39:33Z";
+
+  it("shows the rating right behind the title and no score", () => {
+    const card = renderCard({
+      latestAnalysis: { checkedAt, score: 71, rating: 3.4 },
+    });
+
+    const title = within(card).getByText("example/card-repo").parentElement as HTMLElement;
+    expect(within(title).getByRole("img", { name: "Overall rating 3.4 of 5" })).toBeTruthy();
+    expect(within(card).queryByText(/score/i)).toBeNull();
+    expect(within(card).queryByText("71")).toBeNull();
+  });
+
+  it("shows Passed without counts for a run without warnings", () => {
+    const card = renderCard({
+      latestAnalysis: {
+        checkedAt,
+        score: 90,
+        rating: 4.2,
+        endorsement: { passed: true, reasons: [] },
+        issueCounts: { errors: 0, warnings: 0 },
+      },
+    });
+
+    expect(footerOf(card)).toEqual(["Passed", "Version: unknown"]);
+  });
+
+  it("shows the warnings after Passed", () => {
+    const card = renderCard({
+      latestAnalysis: {
+        checkedAt,
+        score: 90,
+        rating: 4.2,
+        endorsement: { passed: true, reasons: [] },
+        issueCounts: { errors: 0, warnings: 5 },
+      },
+    });
+
+    expect(footerOf(card)).toEqual(["Passed", "5 warnings", "Version: unknown"]);
+  });
+
+  it("shows Failed, the failures, the warnings, Followed and the version, in that order", () => {
+    const card = renderCard({
+      followed: true,
+      checkIntervalHours: 168,
+      nextCheckAt: "2026-11-18T10:00:00.000Z",
+      latestAnalysis: {
+        checkedAt,
+        score: 68,
+        rating: 3.4,
+        endorsement: { passed: false, reasons: ["a", "b", "c"] },
+        issueCounts: { errors: 3, warnings: 5 },
+      },
+    });
+
+    expect(footerOf(card)).toEqual(["Failed", "3 failures", "5 warnings", "Followed", "Version: unknown"]);
+    const title = within(card).getByText("example/card-repo").parentElement as HTMLElement;
+    expect(within(title).queryByText("Followed")).toBeNull();
+  });
+
+  it("uses the singular for one failure and one warning", () => {
+    const card = renderCard({
+      latestAnalysis: {
+        checkedAt,
+        score: 68,
+        rating: 2.1,
+        endorsement: { passed: false, reasons: ["Overall rating below 2.5"] },
+        issueCounts: { errors: 1, warnings: 1 },
+      },
+    });
+
+    expect(footerOf(card)).toEqual(["Failed", "1 failure", "1 warning", "Version: unknown"]);
+  });
+
+  it("counts the endorsement reasons as failures for a run without stored counts", () => {
+    const card = renderCard({
+      latestAnalysis: {
+        checkedAt,
+        score: 68,
+        rating: 3.4,
+        endorsement: { passed: false, reasons: ["Mandatory criterion fails: Helm chart", "Mandatory criterion fails: OWASP"] },
+      },
+    });
+
+    expect(footerOf(card)).toEqual(["Failed", "2 failures", "Version: unknown"]);
+  });
+
+  it("shows no chip and no counts for an older run without an endorsement", () => {
+    const card = renderCard({
+      latestAnalysis: { checkedAt, score: 50, issueCounts: { errors: 2, warnings: 1 } },
+    });
+
+    expect(footerOf(card)).toEqual(["Version: unknown"]);
+    expect(within(card).queryByText(/Passed|Failed|failure|warning/)).toBeNull();
   });
 });
