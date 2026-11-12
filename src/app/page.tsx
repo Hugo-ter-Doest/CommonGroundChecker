@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import CheckerForm from "@/components/CheckerForm";
+import IssueBlocks from "@/components/IssueBlocks";
 import ResultCard from "@/components/ResultCard";
 import ScoreBadge from "@/components/ScoreBadge";
 import RatingBadge from "@/components/RatingBadge";
@@ -725,6 +726,8 @@ export default function HomePage() {
                 </div>
               </div>
             </div>
+
+            <IssueBlocks results={report.results} />
 
             {/* Individual results */}
             <div className="space-y-1">

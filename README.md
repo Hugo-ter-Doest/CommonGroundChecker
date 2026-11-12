@@ -301,6 +301,16 @@ Status scores: **Pass** = 1.0 · **Warn / Info** = 0.5 · **Fail** = 0.
 | 50–79 | ⚠️ Partial |
 | < 50 | ❌ Non-compliant |
 
+Above the detailed results, the live report and the stored analysis page list
+what is missing in two blocks:
+
+- **Errors**: mandatory criteria with status Fail.
+- **Warnings**: recommended criteria with status Fail or Warn, and mandatory
+  criteria with status Warn (present but incomplete).
+
+Informative criteria and results with status Info appear in neither block. Each
+entry links to its result card, which opens when followed.
+
 ## Ratings
 
 Next to the 0-100 compliance score, every analysis gets an **overall rating**, a **rating per category** and a **rating per aspect**, on a continuous scale from 0.5 to 5.5 shown as 1 to 5 stars (for example ★★★☆☆ 3.4). The overall rating is the headline of a report.
