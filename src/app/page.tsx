@@ -179,7 +179,7 @@ const CRITERIA_OVERVIEW = [
   {
     icon: "",
     label: "Actual Source Code",
-    category: "Software Quality" as CriteriaCategory,
+    category: "Maintainability" as CriteriaCategory,
     desc: "Actual source code files and code metrics",
     extra:
       "Includes code metrics such as total lines of code, functions, and files analyzed.",
@@ -277,7 +277,7 @@ const CRITERIA_OVERVIEW = [
   {
     icon: "🧾",
     label: "SBOM",
-    category: "Software Quality" as CriteriaCategory,
+    category: "Security" as CriteriaCategory,
     desc: "SPDX or CycloneDX inventory file",
     tooltip:
       "A Software Bill of Materials (SBOM) lists every dependency and its version. Common formats are SPDX (.spdx.json) and CycloneDX (.cdx.json / bom.xml). Currently a recommended — not mandatory — check.",
@@ -285,7 +285,7 @@ const CRITERIA_OVERVIEW = [
   {
     icon: "📚",
     label: "Documentation",
-    category: "Software Quality" as CriteriaCategory,
+    category: "Governance" as CriteriaCategory,
     desc: "Docs in repo or external docs site",
     tooltip:
       "Documentation should be available for users and integrators. This checker looks for common docs files in the repository and optionally accepts a separate documentation site URL.",
@@ -293,7 +293,7 @@ const CRITERIA_OVERVIEW = [
   {
     icon: "📝",
     label: "Changelog presence",
-    category: "Software Quality" as CriteriaCategory,
+    category: "Governance" as CriteriaCategory,
     desc: "CHANGELOG or release notes present",
     tooltip:
       "A changelog helps users and integrators understand what changed between releases. The checker looks for common changelog or release notes files.",
@@ -301,7 +301,7 @@ const CRITERIA_OVERVIEW = [
   {
     icon: "🧪",
     label: "Test suite presence",
-    category: "Software Quality" as CriteriaCategory,
+    category: "Maintainability" as CriteriaCategory,
     desc: "Automated tests detected",
     tooltip:
       "Checks for common test directories, test file naming conventions, or test configuration files.",
@@ -309,7 +309,7 @@ const CRITERIA_OVERVIEW = [
   {
     icon: "🧪",
     label: "Code coverage",
-    category: "Software Quality" as CriteriaCategory,
+    category: "Maintainability" as CriteriaCategory,
     desc: "Coverage above 80%",
     tooltip:
       "Checks whether code coverage is reported and exceeds 80% based on available coverage reports.",
@@ -317,7 +317,7 @@ const CRITERIA_OVERVIEW = [
   {
     icon: "📉",
     label: "Cyclomatic complexity",
-    category: "Software Quality" as CriteriaCategory,
+    category: "Maintainability" as CriteriaCategory,
     desc: "Lizard analysis on target repo",
     tooltip:
       "Clones the analyzed repository and runs Lizard locally to measure cyclomatic complexity across supported languages.",
@@ -357,7 +357,7 @@ const CRITERIA_OVERVIEW = [
   {
     icon: "🔢",
     label: "Semantic Versioning",
-    category: "Software Quality" as CriteriaCategory,
+    category: "Deployment & Operations" as CriteriaCategory,
     desc: "Version follows semver format",
     tooltip:
       "Checks whether the detected repository version follows semantic versioning (MAJOR.MINOR.PATCH), optionally with prerelease/build metadata.",

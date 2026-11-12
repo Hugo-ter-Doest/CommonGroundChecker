@@ -267,7 +267,9 @@ describe("runChecks", () => {
     });
 
     expect(report.scoringConfigId).toBe("cfg-1");
-    expect(report.score).toBe(25);
+    // Maintainability (tests, warn) = 0.5 at weight 0.15, Deployment & Operations
+    // (semver, fail) = 0 at weight 0.20: 0.075 / 0.35 = 0.214 => 21%
+    expect(report.score).toBe(21);
     expect(mocks.checkOpenApi).not.toHaveBeenCalled();
     expect(report.results).toHaveLength(23);
 
@@ -299,7 +301,7 @@ describe("runChecks", () => {
       isRegister: true,
     });
 
-    // Software Quality category score = 1.0, Architecture category score = 0.5
+    // Maintainability category score = 1.0, Architecture category score = 0.5
     // Fixed category weights are 0.15 and 0.20 respectively.
     // Total weighted category score = 1*0.15 + 0.5*0.20 = 0.25
     // Normalized by active category weights = 0.25 / 0.35 = 0.714 => 71%
@@ -323,7 +325,7 @@ describe("runChecks", () => {
           Architecture: 1,
           Security: 0,
           "Deployment & Operations": 0,
-          "Software Quality": 0,
+          Maintainability: 0,
         },
         statusScoreByStatus: { pass: 1, warn: 0.5, info: 0.5, fail: 0 },
         complexityThreshold: 12,
