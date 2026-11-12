@@ -213,7 +213,7 @@ describe("HistoryPageClient", () => {
     });
 
     const title = within(card).getByText("example/card-repo").parentElement as HTMLElement;
-    expect(within(title).getByRole("img", { name: "Overall rating 3.4 of 5" })).toBeTruthy();
+    expect(within(title).getByRole("img", { name: "Overall rating 3.4 of 5.5, 3 stars" })).toBeTruthy();
     expect(within(card).queryByText(/score/i)).toBeNull();
     expect(within(card).queryByText("71")).toBeNull();
   });

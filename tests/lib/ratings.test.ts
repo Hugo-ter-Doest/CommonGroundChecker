@@ -60,11 +60,16 @@ describe("criterionRating", () => {
   });
 
   it.each([
-    ["pass", 5],
+    ["pass", 5.5],
     ["warn", 3],
-    ["fail", 1],
+    ["fail", 0.5],
   ] as const)("maps status %s to %s", (status, rating) => {
     expect(criterionRating(result("license", status))).toBe(rating);
+  });
+
+  it("keeps the stars of a criterion that has stars but no continuous rating", () => {
+    expect(criterionRating(result("license", "pass", { starRating: 5 }))).toBe(5);
+    expect(criterionRating(result("license", "fail", { starRating: 1 }))).toBe(1);
   });
 
   it("does not rate a result that was not measured", () => {
@@ -74,7 +79,7 @@ describe("criterionRating", () => {
 
 describe("documentCountRating", () => {
   it.each([
-    [5, 5, 5],
+    [5, 5, 5.5],
     [4, 5, 4],
     [8, 10, 4],
     [79, 100, 3],
@@ -84,7 +89,8 @@ describe("documentCountRating", () => {
     [39, 100, 1],
     [1, 5, 1],
     [0, 5, 1],
-    [1, 1, 5],
+    [1, 1, 5.5],
+    [99, 100, 4],
   ])("rates %s of %s as %s", (found, expected, rating) => {
     expect(documentCountRating(found, expected)).toBe(rating);
   });
@@ -202,8 +208,8 @@ describe("computeRatings", () => {
         config({ tests: mandatory, coverage: { weight: 0.5, requirementLevel: "mandatory" } })
       );
 
-      // (5 * 1 + 1 * 0.5) / 1.5 = 3.67
-      expect(ratings.aspectRatings.testing).toEqual({ rating: 3.7 });
+      // (5.5 * 1 + 0.5 * 0.5) / 1.5 = 3.83
+      expect(ratings.aspectRatings.testing).toEqual({ rating: 3.8 });
     });
 
     it("uses the test code ratio when present and the rest when absent", () => {
@@ -228,7 +234,7 @@ describe("computeRatings", () => {
         config({ license: mandatory, licenceconsistency: { weight: 0, requirementLevel: "mandatory" } })
       );
 
-      expect(ratings.aspectRatings.licensing.rating).toBe(5);
+      expect(ratings.aspectRatings.licensing.rating).toBe(5.5);
     });
 
     it("leaves out criteria the config makes informative", () => {
@@ -237,13 +243,18 @@ describe("computeRatings", () => {
         config({ license: mandatory, eupllicense: { weight: 1, requirementLevel: "informative" } })
       );
 
-      expect(ratings.aspectRatings.licensing.rating).toBe(5);
+      expect(ratings.aspectRatings.licensing.rating).toBe(5.5);
     });
 
     it("counts a criterion missing from the config with weight 1", () => {
       const ratings = computeRatings([result("license", "pass"), result("eupllicense", "fail")], config());
 
       expect(ratings.aspectRatings.licensing.rating).toBe(3);
+    });
+
+    it("rates a passing and a failing criterion at the ends of the scale", () => {
+      expect(computeRatings([result("license", "pass")], config()).aspectRatings.licensing.rating).toBe(5.5);
+      expect(computeRatings([result("license", "fail")], config()).aspectRatings.licensing.rating).toBe(0.5);
     });
 
     it("is null when none of its criteria count", () => {
@@ -255,8 +266,8 @@ describe("computeRatings", () => {
     it("counts a criterion where the model places it", () => {
       const ratings = computeRatings([result("sbom", "fail")], config());
 
-      expect(ratings.aspectRatings["supply-chain"].rating).toBe(1);
-      expect(ratings.categoryRatings[SECURITY]).toBe(1);
+      expect(ratings.aspectRatings["supply-chain"].rating).toBe(0.5);
+      expect(ratings.categoryRatings[SECURITY]).toBe(0.5);
       expect(ratings.categoryRatings[MAINTAINABILITY]).toBeNull();
     });
 
@@ -295,7 +306,7 @@ describe("computeRatings", () => {
         config({ changelog: { weight: 0, requirementLevel: "recommended" } })
       );
 
-      expect(ratings.aspectRatings["community-documents"]).toEqual({ rating: 5, found: 2, expected: 2 });
+      expect(ratings.aspectRatings["community-documents"]).toEqual({ rating: 5.5, found: 2, expected: 2 });
     });
 
     it("rates containerisation by its documents", () => {
@@ -330,22 +341,22 @@ describe("computeRatings", () => {
         config()
       );
 
-      // Licensing (5 + 1 + 1) / 3 = 2.33, ownership 5; (2.33 + 5) / 2 = 3.67
-      expect(ratings.aspectRatings.licensing.rating).toBe(2.3);
-      expect(ratings.categoryRatings[GOVERNANCE]).toBe(3.7);
+      // Licensing (5.5 + 0.5 + 0.5) / 3 = 2.17, ownership 5.5; (2.17 + 5.5) / 2 = 3.83
+      expect(ratings.aspectRatings.licensing.rating).toBe(2.2);
+      expect(ratings.categoryRatings[GOVERNANCE]).toBe(3.8);
     });
 
     it("show layering without counting it", () => {
       const ratings = computeRatings([result("openapi", "pass"), result("fivelayer", "fail")], config());
 
-      expect(ratings.aspectRatings.layering.rating).toBe(1);
-      expect(ratings.categoryRatings[ARCHITECTURE]).toBe(5);
+      expect(ratings.aspectRatings.layering.rating).toBe(0.5);
+      expect(ratings.categoryRatings[ARCHITECTURE]).toBe(5.5);
     });
 
     it("are null when only aspects with weight 0 are rated", () => {
       const ratings = computeRatings([result("fivelayer", "pass")], config());
 
-      expect(ratings.aspectRatings.layering.rating).toBe(5);
+      expect(ratings.aspectRatings.layering.rating).toBe(5.5);
       expect(ratings.categoryRatings[ARCHITECTURE]).toBeNull();
       expect(ratings.rating).toBeNull();
     });
@@ -367,8 +378,8 @@ describe("computeRatings", () => {
     it("is the weighted mean of the categories", () => {
       const ratings = computeRatings(results, config({}, { ...onlyCategories(), [GOVERNANCE]: 0.75, [SECURITY]: 0.25 }));
 
-      // (5 * 0.75 + 1 * 0.25) / 1 = 4
-      expect(ratings.rating).toBe(4);
+      // (5.5 * 0.75 + 0.5 * 0.25) / 1 = 4.25
+      expect(ratings.rating).toBe(4.3);
     });
 
     it("falls back to the default category weights", () => {
@@ -376,14 +387,14 @@ describe("computeRatings", () => {
 
       const governance = CATEGORY_WEIGHTS[GOVERNANCE as keyof typeof CATEGORY_WEIGHTS];
       const security = CATEGORY_WEIGHTS[SECURITY as keyof typeof CATEGORY_WEIGHTS];
-      expect(ratings.rating).toBe(roundRating((5 * governance + 1 * security) / (governance + security)));
+      expect(ratings.rating).toBe(roundRating((5.5 * governance + 0.5 * security) / (governance + security)));
     });
 
     it("leaves out categories with weight 0", () => {
       const ratings = computeRatings(results, config({}, onlyCategories(SECURITY)));
 
-      expect(ratings.categoryRatings[GOVERNANCE]).toBe(5);
-      expect(ratings.rating).toBe(1);
+      expect(ratings.categoryRatings[GOVERNANCE]).toBe(5.5);
+      expect(ratings.rating).toBe(0.5);
     });
 
     it("is null when every rated category has weight 0", () => {
@@ -396,16 +407,16 @@ describe("computeRatings", () => {
           result("license", "pass"),
           result("eupllicense", "fail"),
           result("spdxheaders", "fail"),
-          result("owaspsecurecoding", "warn", { rating: 2.35 }),
+          result("owaspsecurecoding", "warn", { rating: 2.33 }),
         ],
         config({}, onlyCategories(GOVERNANCE, SECURITY))
       );
 
-      // Governance 2.333..., Security 2.35; the mean 2.3416... rounds to 2.3,
-      // where the rounded ratings (2.3 + 2.4) / 2 = 2.35 would round to 2.4.
-      expect(ratings.categoryRatings[GOVERNANCE]).toBe(2.3);
-      expect(ratings.categoryRatings[SECURITY]).toBe(2.4);
-      expect(ratings.rating).toBe(2.3);
+      // Governance 2.1666..., Security 2.33; the mean 2.2483... rounds to 2.2,
+      // where the rounded ratings (2.2 + 2.3) / 2 = 2.25 would round to 2.3.
+      expect(ratings.categoryRatings[GOVERNANCE]).toBe(2.2);
+      expect(ratings.categoryRatings[SECURITY]).toBe(2.3);
+      expect(ratings.rating).toBe(2.2);
     });
   });
 });
@@ -518,7 +529,7 @@ describe("ratingsForStoredAnalysis", () => {
     expect(hasStoredRatings(older)).toBe(false);
     const ratings = ratingsForStoredAnalysis(older, config());
     expect(ratings.categoryRatings[GOVERNANCE]).toBe(1);
-    expect(ratings.categoryRatings[SECURITY]).toBe(5);
+    expect(ratings.categoryRatings[SECURITY]).toBe(5.5);
     expect(ratings.aspectRatings.analysability.rating).toBe(2.6);
     expect(ratings.aspectRatings.modularity.rating).toBeNull();
     expect(ratings.endorsement.reasons).toContain("Mandatory criterion fails: Open source licence");
