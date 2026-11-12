@@ -60,9 +60,9 @@ describe("AnalysisDetailPage", () => {
 
     render(await AnalysisDetailPage({ params: Promise.resolve({ owner: "org", repo: "repo", analysisId: "analysis-1" }) }));
 
-    expect(screen.getByRole("img", { name: "Overall rating 3.4 of 5" })).toBeTruthy();
-    expect(screen.getByRole("img", { name: `${GOVERNANCE} rating 4.6 of 5` })).toBeTruthy();
-    expect(screen.getByRole("img", { name: `${MAINTAINABILITY} rating 2.1 of 5` })).toBeTruthy();
+    expect(screen.getByRole("img", { name: "Overall rating 3.4 of 5.5, 3 stars" })).toBeTruthy();
+    expect(screen.getByRole("img", { name: `${GOVERNANCE} rating 4.6 of 5.5, 5 stars` })).toBeTruthy();
+    expect(screen.getByRole("img", { name: `${MAINTAINABILITY} rating 2.1 of 5.5, 2 stars` })).toBeTruthy();
     expect(screen.getByText("Compliance score 71")).toBeTruthy();
     expect(screen.getByText("Passes")).toBeTruthy();
     expect(getAdminScoring).not.toHaveBeenCalled();
@@ -89,8 +89,8 @@ describe("AnalysisDetailPage", () => {
     render(await AnalysisDetailPage({ params: Promise.resolve({ owner: "org", repo: "repo", analysisId: "analysis-1" }) }));
 
     // Ownership: copyright owner passes (5), publiccode.yml fails (1)
-    expect(screen.getByRole("img", { name: "Overall rating 3.0 of 5" })).toBeTruthy();
-    expect(screen.getByRole("img", { name: `${GOVERNANCE} rating 3.0 of 5` })).toBeTruthy();
+    expect(screen.getByRole("img", { name: "Overall rating 3.0 of 5.5, 3 stars" })).toBeTruthy();
+    expect(screen.getByRole("img", { name: `${GOVERNANCE} rating 3.0 of 5.5, 3 stars` })).toBeTruthy();
     expect(screen.getByText("Does not pass")).toBeTruthy();
   });
 });
