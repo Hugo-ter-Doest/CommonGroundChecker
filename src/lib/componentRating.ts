@@ -8,11 +8,14 @@ import type { AspectRating, CheckResult, CheckStatus, MeasurementGroup } from ".
 /** The ratings where the rounded stars change: 1.5, 2.5, 3.5 and 4.5. */
 export const STAR_BOUNDARIES = [1.5, 2.5, 3.5, 4.5] as const;
 
+/** The rating that fills the bar: the top of the 0.5 to 5.5 scale. */
+export const BAR_MAX_RATING = MAX_RATING;
+
 /** Where a rating lies on the 0.5 to 5.5 scale, in percent of the bar; null and out-of-range values are clamped. */
 export function ratingPercent(rating: number | null): number {
   if (rating === null || !Number.isFinite(rating)) return 0;
-  const clamped = Math.min(MAX_RATING, Math.max(MIN_RATING, rating));
-  return Math.round(((clamped - MIN_RATING) / (MAX_RATING - MIN_RATING)) * 1000) / 10;
+  const clamped = Math.min(BAR_MAX_RATING, Math.max(MIN_RATING, rating));
+  return Math.round(((clamped - MIN_RATING) / (BAR_MAX_RATING - MIN_RATING)) * 1000) / 10;
 }
 
 /** The positions of the star boundaries on the bar, in percent. */
@@ -22,7 +25,7 @@ export function tickPercents(): number[] {
 
 /** "Testability 1.8 of 5.5" */
 export function meterLabel(title: string, rating: number): string {
-  return `${title} ${rating.toFixed(1)} of ${MAX_RATING}`;
+  return `${title} ${rating.toFixed(1)} of ${BAR_MAX_RATING}`;
 }
 
 /** "4 of 5 found" for a document-count aspect, otherwise null. */

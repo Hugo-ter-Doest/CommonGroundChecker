@@ -35,6 +35,7 @@ describe("bar geometry", () => {
   it.each([
     [0.5, 0],
     [5.5, 100],
+    [5, 90],
     [3, 50],
     [1.8, 26],
     [0, 0],
@@ -119,7 +120,7 @@ describe("aspectComposition", () => {
     expect(composition).toEqual({
       type: "criteria",
       criteria: [
-        { id: "license", title: "license title", status: "pass", rating: 5, hasCard: true },
+        { id: "license", title: "license title", status: "pass", rating: 5.5, hasCard: true },
         { id: "spdxheaders", title: "spdxheaders title", status: "info", rating: null, hasCard: false },
       ],
     });

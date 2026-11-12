@@ -305,7 +305,9 @@ Status scores: **Pass** = 1.0 · **Warn / Info** = 0.5 · **Fail** = 0.
 Above the detailed results, the live report and the stored analysis page list
 what is missing in two blocks:
 
-- **Errors**: mandatory criteria with status Fail.
+- **Errors**: mandatory criteria with status Fail, and an overall rating below
+  2.5 (it links to the overall rating), so the count matches the reasons the
+  component does not pass.
 - **Warnings**: recommended criteria with status Fail or Warn, and mandatory
   criteria with status Warn (present but incomplete).
 
@@ -326,8 +328,8 @@ Each category consists of aspects, defined in `src/lib/aspects.ts`:
 | Maintainability | analysability, modifiability, testability, modularity, reusability, testing |
 | Deployment & Operations | containerisation, release management |
 
-- **Criterion rating:** the criterion's continuous rating when it has one, otherwise its stars, otherwise its status: pass = 5, warn = 3, fail = 1. Mandatory and recommended criteria count with their criterion weight; informative criteria, criteria with weight 0 and results that were not measured (`info`) are left out.
-- **Aspect rating:** the weighted mean of its criteria. Some aspects are rated by a check itself, such as the maintainability sub-characteristics. A document-count aspect (community documents, containerisation) rates the share of its documents that pass: all 5, at least 80% 4, 60% 3, 40% 2, otherwise 1, and shows the count, for example "4 of 5".
+- **Criterion rating:** the criterion's continuous rating when it has one, otherwise its stars, otherwise its status: pass = 5.5, warn = 3, fail = 0.5, the ends and the middle of the scale. Mandatory and recommended criteria count with their criterion weight; informative criteria, criteria with weight 0 and results that were not measured (`info`) are left out.
+- **Aspect rating:** the weighted mean of its criteria. Some aspects are rated by a check itself, such as the maintainability sub-characteristics. A document-count aspect (community documents, containerisation) rates the share of its documents that pass: all 5.5, at least 80% 4, 60% 3, 40% 2, otherwise 1, and shows the count, for example "4 of 5".
 - **Category rating:** the mean of its rated aspects.
 - **Overall rating:** the weighted mean of the rated categories with the category weights. Categories with weight 0 don't count.
 

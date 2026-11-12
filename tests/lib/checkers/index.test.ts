@@ -318,18 +318,19 @@ describe("runChecks", () => {
 
     const governance = resolveCategory("Governance")!;
     const maintainability = resolveCategory("Maintainability")!;
-    expect(report.aspectRatings.licensing).toEqual({ rating: 5 });
+    expect(report.aspectRatings.licensing).toEqual({ rating: 5.5 });
     expect(report.aspectRatings.analysability).toEqual({ rating: 3 });
     expect(report.aspectRatings.modularity).toEqual({ rating: null });
-    expect(report.categoryRatings[governance]).toBe(5);
+    expect(report.categoryRatings[governance]).toBe(5.5);
     expect(report.categoryRatings[maintainability]).toBe(3.5);
     expect(Object.keys(report.categoryRatings)).toEqual(CATEGORY_ORDER);
     const governanceWeight = CATEGORY_WEIGHTS[governance];
     const maintainabilityWeight = CATEGORY_WEIGHTS[maintainability];
     expect(report.rating).toBe(
-      Math.round(((5 * governanceWeight + 3.5 * maintainabilityWeight) / (governanceWeight + maintainabilityWeight)) * 10) / 10
+      Math.round(((5.5 * governanceWeight + 3.5 * maintainabilityWeight) / (governanceWeight + maintainabilityWeight)) * 10) / 10
     );
     expect(report.endorsement).toEqual({ passed: true, reasons: [] });
+    expect(report.results.find((result) => result.id === "license")?.starRating).toBe(5);
   });
 
   it("does not endorse a component whose mandatory criterion fails", async () => {
