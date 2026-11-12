@@ -125,6 +125,11 @@ export default function HistoryPageClient({
                     <div>
                       <p className="font-semibold text-gray-800">
                         {repository.owner}/{repository.name}
+                        {repository.followed && (
+                          <span className="inline-flex ml-2 align-middle text-xs font-semibold px-2 py-0.5 rounded-full border border-green-300 text-green-800 bg-green-50">
+                            Followed
+                          </span>
+                        )}
                       </p>
                       <p className="text-xs text-gray-500">{repository.repoUrl}</p>
                     </div>
@@ -133,6 +138,11 @@ export default function HistoryPageClient({
                       {latest && (
                         <p>
                           Last: {new Date(latest.checkedAt).toLocaleString("nl-NL")}
+                        </p>
+                      )}
+                      {repository.followed && repository.nextCheckAt && (
+                        <p>
+                          Next check: {new Date(repository.nextCheckAt).toLocaleString("nl-NL")}
                         </p>
                       )}
                     </div>
