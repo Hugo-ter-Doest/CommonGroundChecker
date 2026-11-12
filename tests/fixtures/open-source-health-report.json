@@ -8,6 +8,7 @@
   "properties": {
     "vulnerabilities": {
       "stars": 1,
+      "rating": 1.0,
       "detail": {
         "unknown": 0,
         "low": 3,
@@ -32,6 +33,7 @@
     },
     "freshness": {
       "stars": 3,
+      "rating": 3.36,
       "detail": {
         ">1.0y": 24.5,
         ">2.0y": 18.2,
@@ -43,6 +45,7 @@
     },
     "activity": {
       "stars": 2,
+      "rating": 1.98,
       "detail": {
         ">1.0y": 53.0,
         ">2.0y": 39.4,
@@ -54,6 +57,7 @@
     },
     "licence": {
       "stars": 1,
+      "rating": 1.0,
       "detail": {
         "none": 819,
         "low": 0,
@@ -64,6 +68,7 @@
     },
     "management": {
       "stars": 5,
+      "rating": 5.5,
       "detail": {
         "unmanaged_percent": 0.0,
         "note": "0 unmanaged of 840 dependencies"
@@ -71,7 +76,8 @@
     }
   },
   "errors": [],
-  "overall": 2,
+  "overall_rating": 2.57,
+  "overall": 3,
   "bands": {
     "vulnerabilities": {
       "5": {

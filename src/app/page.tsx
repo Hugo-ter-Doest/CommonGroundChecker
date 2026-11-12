@@ -380,7 +380,7 @@ const CRITERIA_OVERVIEW = [
     category: "Security" as CriteriaCategory,
     desc: "1 to 5 star rating of the dependencies",
     tooltip:
-      "Rates the production dependencies from the lockfiles on known vulnerabilities (OSV.dev), freshness, activity, licence risk and dependency management, each from 1 to 5 stars. 4 stars or more passes.",
+      "Rates the production dependencies from the lockfiles on known vulnerabilities (OSV.dev), freshness, activity, licence risk and dependency management, each from 0.5 to 5.5 (1 to 5 stars). 4 stars or more passes.",
   },
   {
     icon: "🛡️",

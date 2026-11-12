@@ -21,6 +21,8 @@ const PROPERTY_LABELS: Record<string, string> = {
 
 interface HealthProperty {
   stars: StarRating | null;
+  /** Continuous rating from 0.5 to 5.5 in the band of `stars`; absent in reports written before it existed */
+  rating?: number | null;
   detail: Record<string, unknown> | null;
   affected?: Record<string, string> | null;
 }
@@ -49,6 +51,8 @@ export interface OpenSourceHealthReport {
   dependencies: number;
   ecosystems: string[];
   overall: StarRating | null;
+  /** Mean of the property ratings, from 0.5 to 5.5 */
+  overall_rating?: number | null;
   properties: Record<string, HealthProperty>;
   errors?: string[];
   bands?: HealthBands;
@@ -58,7 +62,7 @@ const BASE_RESULT = {
   id: "opensourcehealth",
   title: "Open Source Health",
   description:
-    "Rates the third-party dependencies from 1 to 5 stars on known vulnerabilities, freshness, activity, licence risk and dependency management.",
+    "Rates the third-party dependencies from 0.5 to 5.5 (1 to 5 stars) on known vulnerabilities, freshness, activity, licence risk and dependency management.",
   referenceUrl: REFERENCE_URL,
 } as const;
 
@@ -262,8 +266,9 @@ export function mapOpenSourceHealthReport(report: OpenSourceHealthReport): Check
     ...BASE_RESULT,
     status,
     starRating,
+    ...(typeof report.overall_rating === "number" ? { rating: report.overall_rating } : {}),
     aspectRatings: Object.fromEntries(
-      Object.entries(report.properties).map(([key, property]) => [key, property.stars])
+      Object.entries(report.properties).map(([key, property]) => [key, property.rating ?? property.stars])
     ),
     ...(measurements.length > 0 ? { measurements } : {}),
     message:

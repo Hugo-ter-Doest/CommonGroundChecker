@@ -13,26 +13,43 @@ import fixture from "../../fixtures/open-source-health-report.json";
 const report = fixture as unknown as OpenSourceHealthReport;
 
 describe("mapOpenSourceHealthReport", () => {
-  it("fails a real report rated 2 stars and lists every property", () => {
+  it("warns on a real report rated 2.57, 3 stars, and lists every property", () => {
     const result = mapOpenSourceHealthReport(report);
 
     expect(result.id).toBe("opensourcehealth");
-    expect(result.status).toBe("fail");
-    expect(result.starRating).toBe(2);
+    expect(result.status).toBe("warn");
+    expect(result.starRating).toBe(3);
+    expect(result.rating).toBe(2.57);
     expect(result.message).toContain("840 production dependencies");
     expect(result.evidence).toContain("Vulnerabilities: ★☆☆☆☆ 1 critical, 9 high, 4 moderate");
     expect(result.evidence).toContain("Licence use: ★☆☆☆☆ 5 critical, 0 high, 16 medium, 0 low risk");
     expect(result.evidence).toContain("Management: ★★★★★ 0 unmanaged of 840 dependencies");
   });
 
-  it("reports each property's stars as an aspect rating", () => {
+  it("reports each property's continuous rating as an aspect rating", () => {
     expect(mapOpenSourceHealthReport(report).aspectRatings).toEqual({
       vulnerabilities: 1,
-      freshness: 3,
-      activity: 2,
+      freshness: 3.36,
+      activity: 1.98,
       licence: 1,
-      management: 5,
+      management: 5.5,
     });
+  });
+
+  it("falls back to a property's stars and leaves out the rating in a report without ratings", () => {
+    const withoutRatings: OpenSourceHealthReport = {
+      ...report,
+      overall: 2,
+      overall_rating: undefined,
+      properties: Object.fromEntries(
+        Object.entries(report.properties).map(([key, property]) => [key, { ...property, rating: undefined }])
+      ),
+    };
+    const result = mapOpenSourceHealthReport(withoutRatings);
+
+    expect(result.aspectRatings).toEqual({ vulnerabilities: 1, freshness: 3, activity: 2, licence: 1, management: 5 });
+    expect(result.starRating).toBe(2);
+    expect(result.rating).toBeUndefined();
   });
 
   it("lists the severely vulnerable dependencies", () => {
