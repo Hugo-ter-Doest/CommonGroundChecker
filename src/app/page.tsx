@@ -5,10 +5,10 @@ import Link from "next/link";
 import CheckerForm from "@/components/CheckerForm";
 import IssueBlocks from "@/components/IssueBlocks";
 import ResultCard from "@/components/ResultCard";
-import ScoreBadge from "@/components/ScoreBadge";
 import RatingBadge from "@/components/RatingBadge";
-import EndorsementChip from "@/components/EndorsementChip";
-import { ASPECT_MODEL, resolveCategory } from "@/lib/aspects";
+import RatingSummary from "@/components/RatingSummary";
+import CategoryRatings from "@/components/CategoryRatings";
+import { aspectsOfCategory, documentCountText } from "@/lib/componentRating";
 import { ratingToStars } from "@/lib/stars";
 import RepoMeta from "@/components/RepoMeta";
 import type { CheckReport } from "@/lib/types";
@@ -89,12 +89,12 @@ async function exportAnalysisReportAsPdf(report: CheckReport): Promise<void> {
       indent: 10,
       gapAfter: 1,
     });
-    const aspects = ASPECT_MODEL.find((entry) => resolveCategory(entry.category) === category)?.aspects ?? [];
-    for (const aspect of aspects) {
+    for (const aspect of aspectsOfCategory(category)) {
       const aspectRating = report.aspectRatings?.[aspect.id];
-      const count =
-        aspectRating?.expected !== undefined ? ` (${aspectRating.found ?? 0} of ${aspectRating.expected})` : "";
-      addBlock(`${aspect.title}: ${describeRating(aspectRating?.rating ?? null)}${count}`, {
+      const count = documentCountText(aspectRating);
+      const rating = aspectRating?.rating ?? null;
+      const value = rating === null ? "not measured" : describeRating(rating);
+      addBlock(`${aspect.title}: ${value}${count ? ` (${count})` : ""}`, {
         size: 9,
         indent: 20,
         gapAfter: 1,
@@ -663,14 +663,11 @@ export default function HomePage() {
             {/* Summary header */}
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-                <div className="flex flex-col items-center gap-2">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    Overall rating
-                  </span>
-                  <RatingBadge rating={report.rating ?? null} size="large" />
-                  {report.endorsement && <EndorsementChip endorsement={report.endorsement} />}
-                </div>
-                <ScoreBadge score={report.score} />
+                <RatingSummary
+                  rating={report.rating ?? null}
+                  endorsement={report.endorsement}
+                  score={report.score}
+                />
                 <div className="flex-1 space-y-3">
                   <RepoMeta
                     owner={report.owner}
@@ -728,6 +725,12 @@ export default function HomePage() {
             </div>
 
             <IssueBlocks results={report.results} />
+
+            <CategoryRatings
+              results={report.results}
+              categoryRatings={report.categoryRatings ?? {}}
+              aspectRatings={report.aspectRatings ?? {}}
+            />
 
             {/* Individual results */}
             <div className="space-y-1">

@@ -2,7 +2,7 @@
 
 import type { CheckResult } from "@/lib/types";
 import type { CriteriaCategory } from "@/lib/criteria";
-import { CATEGORY_ORDER, RESULT_CATEGORY_BY_ID, RESULT_ORDER_BY_ID } from "@/lib/criteria";
+import { CATEGORY_ORDER, RESULT_CATEGORY_BY_ID, RESULT_ORDER_BY_ID, criterionAnchorId } from "@/lib/criteria";
 import { AlertTriangle, CheckCircle, XCircle } from "lucide-react";
 import type { MouseEvent } from "react";
 
@@ -14,11 +14,6 @@ export interface IssueEntry {
 export interface IssueSplit {
   errors: IssueEntry[];
   warnings: IssueEntry[];
-}
-
-/** DOM id of a criterion's result card, used as the target of issue links. */
-export function criterionAnchorId(id: string): string {
-  return `criterion-${id}`;
 }
 
 function resultSortIndex(result: CheckResult, category: CriteriaCategory): [number, number] {

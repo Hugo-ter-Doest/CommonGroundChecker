@@ -32,6 +32,37 @@ export interface CheckResult {
   rating?: number;
   /** Ratings from 0.5 to 5.5 the check measures for aspects of the rating model, by key */
   aspectRatings?: Record<string, number | null>;
+  /** The measured values behind the check's rating, with the thresholds per star level */
+  measurements?: MeasurementGroup[];
+}
+
+/** A star level that has a threshold of its own; below 2 stars is 1 star. */
+export type StarLevel = 5 | 4 | 3 | 2;
+
+export const STAR_LEVELS: readonly StarLevel[] = [5, 4, 3, 2];
+
+/** One measured value against the thresholds of the star levels. */
+export interface MeasurementRow {
+  /** What is measured, for example "Python, more than 15 lines" */
+  label: string;
+  /** The measured value as shown, for example "58.8%" */
+  value: string;
+  /** The threshold per star level as shown, for example "at most 48.0%"; a missing level has no threshold */
+  thresholds: Partial<Record<StarLevel, string>>;
+  /** The stars this value earns, or null when no level applies */
+  stars: StarRating | null;
+  /** Shown in place of the stars when they are null, for example "below 4 stars" */
+  starsText?: string;
+}
+
+/** The measurements of one property of a check, for example unit size. */
+export interface MeasurementGroup {
+  /** Stable kebab-case id, for example "unit-size" */
+  id: string;
+  title: string;
+  /** Keys in the check's `aspectRatings` this property counts in */
+  aspects: string[];
+  rows: MeasurementRow[];
 }
 
 export interface AspectRating {

@@ -1,12 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
+  SUBCHARACTERISTIC_PROPERTIES,
   checkMaintainability,
+  maintainabilityMeasurements,
   mapMaintainabilityReport,
   type MaintainabilityReport,
 } from "@/lib/checkers/maintainability";
+import { RATING_DOCS } from "@/lib/ratingDocs";
 import fixture from "../../fixtures/maintainability-report.json";
+import openZaakFixture from "../../fixtures/maintainability-report-open-zaak.json";
 
 const report = fixture as unknown as MaintainabilityReport;
+const openZaak = openZaakFixture as unknown as MaintainabilityReport;
 
 function withOverall(low: number, high: number): MaintainabilityReport {
   return { ...report, rating: { ...report.rating, overall: { range: [low, high] } } };
@@ -57,6 +62,89 @@ describe("mapMaintainabilityReport", () => {
     expect(result.status).toBe("warn");
     expect(result.starRating).toBeUndefined();
     expect(result.rating).toBeUndefined();
+  });
+});
+
+describe("maintainabilityMeasurements", () => {
+  it("lists the share per language and bound of a real report against every star band", () => {
+    const groups = maintainabilityMeasurements(openZaak);
+    const unitSize = groups.find((group) => group.id === "unit-size");
+
+    expect(groups.map((group) => group.id)).toEqual([
+      "duplication",
+      "unit-size",
+      "unit-complexity",
+      "unit-interfacing",
+      "module-coupling",
+      "component-independence",
+      "component-entanglement",
+    ]);
+    expect(unitSize?.aspects).toEqual(["analysability", "reusability"]);
+    expect(unitSize?.rows.find((row) => row.label === "Python, more than 30 lines")).toEqual({
+      label: "Python, more than 30 lines",
+      value: "34.7%",
+      thresholds: { 5: "≤ 17.0%", 4: "≤ 24.2%", 3: "≤ 34.7%", 2: "≤ 49.0%" },
+      stars: 2,
+    });
+    expect(unitSize?.rows.map((row) => row.label)).toEqual([
+      "JavaScript, more than 15 lines",
+      "JavaScript, more than 30 lines",
+      "JavaScript, more than 60 lines",
+      "Python, more than 15 lines",
+      "Python, more than 30 lines",
+      "Python, more than 60 lines",
+    ]);
+  });
+
+  it("labels each bound the way the property is measured", () => {
+    const labels = maintainabilityMeasurements(openZaak).flatMap((group) => group.rows.map((row) => row.label));
+
+    expect(labels).toContain("Python, complexity above 25");
+    expect(labels).toContain("Python, 3 or more parameters");
+    expect(labels).toContain("Python, fan-in above 50");
+  });
+
+  it("shows duplication and the component properties as one row per language", () => {
+    const groups = maintainabilityMeasurements(openZaak);
+    const row = (id: string) => groups.find((group) => group.id === id)?.rows;
+
+    expect(row("duplication")?.find((entry) => entry.label === "Python")).toEqual({
+      label: "Python",
+      value: "6.6%",
+      thresholds: { 5: "≤ 3.5%", 4: "≤ 5.8%", 3: "≤ 11.6%", 2: "≤ 23.0%" },
+      stars: 3,
+    });
+    expect(row("component-independence")).toEqual([
+      {
+        label: "Python",
+        value: "81.1%",
+        thresholds: { 5: "≥ 97.3%", 4: "≥ 94.5%" },
+        stars: null,
+        starsText: "below 4 stars",
+      },
+    ]);
+    expect(row("component-entanglement")?.[0]).toMatchObject({ value: "0.2239", thresholds: { 5: "≤ 0.0375", 4: "≤ 0.075" } });
+  });
+
+  it("falls back to the 4-star limit of each row when the report has no bands", () => {
+    const groups = maintainabilityMeasurements({ ...openZaak, bands: undefined });
+
+    expect(groups.find((group) => group.id === "unit-size")?.rows[0].thresholds).toEqual({ 4: "≤ 48.0%" });
+    expect(groups.find((group) => group.id === "component-independence")?.rows[0].thresholds).toEqual({ 4: "≥ 94.5%" });
+  });
+
+  it("puts the measurements on the check result, and none for a report without them", () => {
+    expect(mapMaintainabilityReport(openZaak).measurements).toHaveLength(7);
+    expect(mapMaintainabilityReport(report).measurements).toBeUndefined();
+  });
+
+  it("measures each sub-characteristic through the properties the rating guide names", () => {
+    const docs = RATING_DOCS.find((category) => category.slug === "maintainability")?.aspects ?? [];
+
+    for (const [subcharacteristic, properties] of Object.entries(SUBCHARACTERISTIC_PROPERTIES)) {
+      const doc = docs.find((aspect) => aspect.id === subcharacteristic);
+      expect(doc?.properties).toEqual(properties.map((property) => property.replace(/_/g, "-")));
+    }
   });
 });
 

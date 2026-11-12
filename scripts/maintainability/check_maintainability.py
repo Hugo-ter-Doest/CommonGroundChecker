@@ -196,6 +196,17 @@ def stars_of(kind, share, index=None):
 
 
 LIMITS = band_limits(4)
+
+
+def star_bands():
+    """Every star level of every check, for readers that show the thresholds next to a value.
+    Shares are the maximum share above each bound; independence is a minimum share."""
+    bands = {prop: {"bounds": list(BOUNDS[prop]), **{str(lvl): list(caps) for lvl, caps in STAR_BANDS[prop].items()}}
+             for prop in BOUNDS}
+    bands["duplication"] = {str(lvl): cap for lvl, cap in STAR_BANDS["duplication"].items()}
+    bands["component_independence"] = {str(lvl): cap for lvl, cap in INDEPENDENCE_BANDS.items()}
+    bands["component_entanglement"] = {str(lvl): cap for lvl, cap in ENTANGLEMENT_BANDS.items()}
+    return bands
 DUPLICATION_LIMIT = STAR_BANDS["duplication"][4]
 INDEPENDENCE_MIN = INDEPENDENCE_BANDS[4]
 ENTANGLEMENT_LIMIT = ENTANGLEMENT_BANDS[4]
@@ -237,6 +248,25 @@ FILE_TIMEOUT = int(os.environ.get("HYDRA_GATE_SIG_FILE_TIMEOUT", "30"))
 # --------------------------------------------------------------------------
 # scope
 # --------------------------------------------------------------------------
+
+def sigrid_yaml_top_level_components(app):
+    """True when sigrid.yaml / sigrid.yml declares `component_base_dirs: [""]`."""
+    for name in ("sigrid.yaml", "sigrid.yml"):
+        path = os.path.join(app, name)
+        if os.path.isfile(path):
+            with open(path, encoding="utf-8", errors="replace") as fh:
+                return any(re.match(r"""^component_base_dirs:\s*\[\s*(""|'')\s*\]\s*(#.*)?$""", line)
+                           for line in fh)
+    return False
+
+
+def top_level_component_of(rel):
+    """Components are the repository's top-level directories; root files form one component."""
+    return rel.split("/")[0] if "/" in rel else "Root files"
+
+
+COMPONENTS_FROM_SCOPE = False
+
 
 def sigrid_yaml_excludes(app):
     """Top-level `exclude:` regexes of sigrid.yaml / sigrid.yml, if present."""
@@ -915,7 +945,10 @@ def structure(app, files, deps, prof=PROFILES[DEFAULT_PROFILE]):
         share = above / total
         coupling.append({"above": bound, "share": round(share, 4), "loc": above, "limit": cap, "ok": share <= cap,
                          "stars": stars_of("module_coupling", round(share, 4), i)})
-    root, comp = component_of_factory(modules)
+    if COMPONENTS_FROM_SCOPE and sigrid_yaml_top_level_components(app):
+        root, comp = "", top_level_component_of
+    else:
+        root, comp = component_of_factory(modules)
     hidden = sum(loc[m] for m in modules if all(comp(s) == comp(m) for s in incoming[m]))
     lines = collections.Counter()
     for t, srcs in incoming.items():
@@ -1011,6 +1044,7 @@ def build_report(app, lizard, jscpd, profile_name=DEFAULT_PROFILE, reader=None):
     if py:
         report["structure"]["python"] = structure(app, py, python_dependencies(app, py), prof)
     report["rating"] = rating_estimate(report)
+    report["bands"] = star_bands()
     return report
 
 
@@ -1497,7 +1531,11 @@ def main(argv):
     p.add_argument("--profile", default=os.environ.get("HYDRA_GATE_SIG_PROFILE") or DEFAULT_PROFILE,
                    help="limits to report against: " + ", ".join(PROFILES)
                         + " (default: HYDRA_GATE_SIG_PROFILE, else " + DEFAULT_PROFILE + ")")
+    p.add_argument("--components-from-scope", action="store_true",
+                   help='use top-level directories as components when sigrid.yaml declares component_base_dirs: [""]')
     args = ap.parse_args(argv)
+    global COMPONENTS_FROM_SCOPE
+    COMPONENTS_FROM_SCOPE = getattr(args, "components_from_scope", False)
     args.app = os.path.abspath(args.app)
     if args.mode == "report" and args.profile not in PROFILES:
         print(f"{GATE}: unknown profile '{args.profile}'; choose one of {', '.join(PROFILES)}")

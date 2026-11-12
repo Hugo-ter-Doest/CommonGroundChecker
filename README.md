@@ -332,6 +332,14 @@ Each category consists of aspects, defined in `src/lib/aspects.ts`:
 
 Ratings are rounded to one decimal; stars round x.5 up. A component **passes** when no mandatory criterion fails and its overall rating is at least 2.5. Analyses stored before ratings existed are rated from their stored results with the active scoring config.
 
+The live report and the stored analysis page show the rating of one component from top to bottom: the overall rating with whether it passes (and why not) and the compliance score, the errors and warnings blocks, and then one section per category. Each category and aspect title links to its page in the rating guide. Every aspect has a bar from 0.5 to 5.5 with marks where the stars change (1.5, 2.5, 3.5 and 4.5), and under it a table of what the aspect is made of:
+
+- **Measured aspects** (the maintainability sub-characteristics): the measured share per property, language and bound, against the thresholds for 5, 4, 3 and 2 stars, and the stars it earns. A check provides these in the `measurements` field of its result; for maintainability they come from the analysis script's report, including its `bands`.
+- **Document aspects:** one row per document, found or missing.
+- **Other aspects:** one row per criterion with its status and stars, linking to its result card.
+
+The PDF export lists every aspect with its rating.
+
 > **Note:** Automated analysis is indicative only. Architecture checks rely on heuristics. For official certification, contact [commonground.nl](https://commonground.nl).
 
 ## License

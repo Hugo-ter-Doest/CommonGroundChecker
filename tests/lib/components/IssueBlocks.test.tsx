@@ -3,7 +3,8 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 
-import IssueBlocks, { criterionAnchorId, splitIssues } from "@/components/IssueBlocks";
+import IssueBlocks, { splitIssues } from "@/components/IssueBlocks";
+import { criterionAnchorId } from "@/lib/criteria";
 import ResultCard from "@/components/ResultCard";
 import type { CheckResult, CheckStatus, RequirementLevel } from "@/lib/types";
 

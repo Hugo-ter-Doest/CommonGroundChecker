@@ -12,7 +12,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { criterionAnchorId } from "@/components/IssueBlocks";
+import { criterionAnchorId } from "@/lib/criteria";
 
 interface ResultCardProps {
   id: string;
