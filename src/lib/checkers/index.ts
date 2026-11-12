@@ -17,6 +17,7 @@ import { checkCodeOfConduct } from "./codeofconduct";
 import { checkSecurity } from "./security";
 import { checkTests } from "./tests";
 import { checkComplexity } from "./complexity";
+import { checkMaintainability } from "./maintainability";
 import { checkCodeMetrics } from "./codeMetrics";
 import { checkCoverage } from "./coverage";
 import { checkAdrValidator } from "./adrValidator";
@@ -25,9 +26,11 @@ import { checkSemver } from "./semver";
 import { checkCopyrightOwner } from "./copyrightOwner";
 import { checkOwaspSecureCoding } from "./owaspSecureCoding";
 import { checkEuplLicense } from "./eupl";
+import { checkSecretScanning } from "./secretScanning";
 import {
   getActiveScoringConfig,
 } from "./config";
+import { statusToStars } from "../stars";
 import { CATEGORY_WEIGHTS, RESULT_CATEGORY_BY_ID, type CriteriaCategory } from "../criteria";
 import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
@@ -160,8 +163,10 @@ export async function runChecks(
     localRepoPath,
     cloneUrl
   );
+  const maintainabilityPromise = checkMaintainability(localRepoPath);
   const codeMetricsPromise = checkCodeMetrics(owner, repo, localRepoPath, cloneUrl);
   const owaspSecureCodingPromise = checkOwaspSecureCoding(context, tree, localRepoPath);
+  const secretScanningPromise = checkSecretScanning(localRepoPath);
   const adrValidatorPromise = checkAdrValidator(
     owner,
     repo,
@@ -191,11 +196,13 @@ export async function runChecks(
 
   // Instant checks done; emit next step while slower checks complete in parallel
   onProgress?.("Analysing API specs, licence & deployment files...", 60);
-  const [[openapi, license, copyrightowner, publiccode, fivelayer, helmchart], complexity, codemetrics, owaspsecurecoding, adrvalidator] = await Promise.all([
+  const [[openapi, license, copyrightowner, publiccode, fivelayer, helmchart], complexity, maintainability, codemetrics, owaspsecurecoding, secretscanning, adrvalidator] = await Promise.all([
     networkChecksPromise,
     complexityPromise,
+    maintainabilityPromise,
     codeMetricsPromise,
     owaspSecureCodingPromise,
+    secretScanningPromise,
     adrValidatorPromise,
   ]);
 
@@ -245,12 +252,14 @@ export async function runChecks(
     tests,
     coverage,
     complexity,
+    maintainability,
     // codemetrics is now merged into sourcecode, so do not include separately
     owaspsecurecoding,
     adrvalidator,
     contributing,
     codeofconduct,
     security,
+    secretscanning,
     semver,
     fivelayer,
     helmchart,
@@ -334,12 +343,14 @@ export async function runChecks(
     tests,
     coverage,
     complexity,
+    maintainability,
     // codemetrics is now merged into sourcecode, so do not include separately
     owaspsecurecoding,
     adrvalidator,
     contributing,
     codeofconduct,
     security,
+    secretscanning,
     semver,
     fivelayer,
     helmchart,
@@ -348,6 +359,7 @@ export async function runChecks(
     requirementLevel:
       scoringConfig.criterionConfigByCheckId[result.id]?.requirementLevel ??
       "recommended",
+    starRating: result.starRating ?? statusToStars(result.status),
   }));
 
   return {

@@ -133,6 +133,12 @@ const CRITERION_CATEGORIES: CriterionCategory[] = [
           "Clones the analyzed repository and runs Lizard locally. The criterion passes when average cyclomatic complexity (AvgCCN) stays within the configured threshold, and the maximum cyclomatic complexity stays within the configured threshold.",
       },
       {
+        id: "maintainability",
+        label: "Maintainability (ISO 25010)",
+        explanation:
+          "Clones the analyzed repository and rates unit size, unit complexity, unit interfacing, duplication, module coupling and component structure from 1 to 5 stars. The criterion passes at an estimated rating of 4 stars or more and warns at 3 stars.",
+      },
+      {
         id: "codemetrics",
         label: "Code metrics",
         explanation:
@@ -144,6 +150,12 @@ const CRITERION_CATEGORIES: CriterionCategory[] = [
         label: "OWASP Secure Coding",
         explanation:
           "Runs a heuristic static scan for common risky coding patterns aligned with OWASP secure coding concerns, such as dynamic code execution, weak hashes, disabled TLS verification, or possible hardcoded secrets.",
+      },
+      {
+        id: "secretscanning",
+        label: "No committed secrets",
+        explanation:
+          "Scans the cloned repository's working tree with gitleaks for committed secrets such as API keys, tokens and private keys, honouring the project's .gitleaks.toml. Passes when nothing is found, fails with the rule and location of each finding.",
       },
       {
         id: "semver",

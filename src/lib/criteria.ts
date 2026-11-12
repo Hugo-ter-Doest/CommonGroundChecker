@@ -42,11 +42,13 @@ export const RESULT_ORDER_BY_ID: string[] = [
   "tests",
   "coverage",
   "complexity",
+  "maintainability",
   "codemetrics",
   "owaspsecurecoding",
   "contributing",
   "codeofconduct",
   "security",
+  "secretscanning",
   "semver",
 ];
 
@@ -68,11 +70,13 @@ export const RESULT_CATEGORY_BY_ID: Record<string, CriteriaCategory> = {
   tests: "Software Quality",
   coverage: "Software Quality",
   complexity: "Software Quality",
+  maintainability: "Software Quality",
   codemetrics: "Software Quality",
   owaspsecurecoding: "Security",
   contributing: "Governance",
   codeofconduct: "Governance",
   security: "Security",
+  secretscanning: "Security",
   semver: "Software Quality",
   fivelayer: "Architecture",
 };
