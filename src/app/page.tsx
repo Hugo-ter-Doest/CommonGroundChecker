@@ -9,6 +9,7 @@ import RatingBadge from "@/components/RatingBadge";
 import EndorsementChip from "@/components/EndorsementChip";
 import { ASPECT_MODEL, resolveCategory } from "@/lib/aspects";
 import { ratingToStars } from "@/lib/stars";
+import { MAX_RATING } from "@/lib/ratings";
 import RepoMeta from "@/components/RepoMeta";
 import type { CheckReport } from "@/lib/types";
 import type { CriteriaCategory } from "@/lib/criteria";
@@ -24,7 +25,7 @@ function sanitizePdfFileName(value: string): string {
 function describeRating(rating: number | null): string {
   if (rating === null) return "not rated";
   const stars = ratingToStars(rating);
-  return `${rating.toFixed(1)} of 5 (${stars} ${stars === 1 ? "star" : "stars"})`;
+  return `${rating.toFixed(1)} of ${MAX_RATING} (${stars} ${stars === 1 ? "star" : "stars"})`;
 }
 
 async function exportAnalysisReportAsPdf(report: CheckReport): Promise<void> {
