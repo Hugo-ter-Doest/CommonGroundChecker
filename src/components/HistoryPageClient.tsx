@@ -6,8 +6,8 @@ import type { RepoSummary } from "@/generated/openapi-client";
 import RatingBadge from "@/components/RatingBadge";
 import { isRating } from "@/lib/ratings";
 
-type SortKey = "date" | "score";
-type SortDirection = "asc" | "desc";
+export type SortKey = "rating" | "date" | "score";
+export type SortDirection = "asc" | "desc";
 
 interface HistoryPageClientProps {
   sort: SortKey;
@@ -16,7 +16,16 @@ interface HistoryPageClientProps {
   error?: string;
 }
 
-function sortRepositories(
+function sortValue(repository: RepoSummary, sortKey: SortKey): number | null {
+  const latest = repository.latestAnalysis as { checkedAt: string; score: number; rating?: unknown } | null;
+  if (!latest) return null;
+  if (sortKey === "date") return new Date(latest.checkedAt).getTime();
+  if (sortKey === "score") return latest.score;
+  return isRating(latest.rating) ? latest.rating : null;
+}
+
+/** Sorts on the latest analysis; repositories without a value for the key come last in either direction. */
+export function sortRepositories(
   repositories: RepoSummary[],
   sortKey: SortKey,
   sortDirection: SortDirection
@@ -25,21 +34,12 @@ function sortRepositories(
   const directionMultiplier = sortDirection === "asc" ? 1 : -1;
 
   sorted.sort((a, b) => {
-    const latestA = a.latestAnalysis as { checkedAt: string; score: number } | null;
-    const latestB = b.latestAnalysis as { checkedAt: string; score: number } | null;
+    const valueA = sortValue(a, sortKey);
+    const valueB = sortValue(b, sortKey);
 
-    if (!latestA && !latestB) return 0;
-    if (!latestA) return 1;
-    if (!latestB) return -1;
-
-    const valueA =
-      sortKey === "date"
-        ? new Date(latestA.checkedAt).getTime()
-        : latestA.score;
-    const valueB =
-      sortKey === "date"
-        ? new Date(latestB.checkedAt).getTime()
-        : latestB.score;
+    if (valueA === null && valueB === null) return 0;
+    if (valueA === null) return 1;
+    if (valueB === null) return -1;
 
     if (valueA === valueB) return 0;
     return valueA > valueB ? directionMultiplier : -directionMultiplier;
@@ -49,6 +49,8 @@ function sortRepositories(
 }
 
 const sortOptions: Array<{ label: string; sort: SortKey; direction: SortDirection }> = [
+  { label: "Rating ↓", sort: "rating", direction: "desc" },
+  { label: "Rating ↑", sort: "rating", direction: "asc" },
   { label: "Date ↑", sort: "date", direction: "asc" },
   { label: "Date ↓", sort: "date", direction: "desc" },
   { label: "Score ↑", sort: "score", direction: "asc" },
@@ -81,6 +83,7 @@ export default function HistoryPageClient({
               <Link
                 key={`${option.sort}-${option.direction}`}
                 href={`/history?sort=${option.sort}&direction=${option.direction}`}
+                aria-current={isActive ? "true" : undefined}
                 className={`inline-flex text-xs font-semibold px-2 py-0.5 rounded-full border transition-colors ${
                   isActive
                     ? "border-cg-lightblue text-cg-blue bg-cg-lightblue/10"
