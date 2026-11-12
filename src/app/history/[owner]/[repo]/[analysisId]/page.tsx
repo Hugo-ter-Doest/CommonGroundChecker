@@ -1,6 +1,7 @@
 import Link from "next/link";
 import ResultCard from "@/components/ResultCard";
 import { getRepoHistory } from "@/lib/apiClient";
+import { formatDateTime } from "@/lib/dates";
 import type { CheckReport, CheckResult } from "@/lib/types";
 import type { RepoMeta } from "@/generated/openapi-client";
 import { CATEGORY_ORDER, RESULT_CATEGORY_BY_ID, RESULT_ORDER_BY_ID } from "@/lib/criteria";
@@ -160,7 +161,7 @@ export default async function AnalysisDetailPage({ params }: AnalysisDetailPageP
           {owner}/{repo}
         </p>
         <p className="text-xs text-gray-500">
-          Checked at {new Date(analysis.checkedAt).toLocaleString("nl-NL")}
+          Checked at {formatDateTime(analysis.checkedAt)}
         </p>
         <div className="flex items-center gap-2 flex-wrap">
           <span

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import RepoMeta from "@/components/RepoMeta";
 import { getRepoHistory } from "@/lib/apiClient";
+import { formatDateTime } from "@/lib/dates";
 import type { CheckReport } from "@/lib/types";
 import type { RepoMeta as RepoMetaType } from "@/generated/openapi-client";
 
@@ -160,7 +161,7 @@ export default async function RepoHistoryPage({ params }: HistoryPageProps) {
                 >
                   <div className="space-y-1">
                     <p className="text-sm font-semibold text-gray-800">
-                      {new Date(analysis.checkedAt).toLocaleString("nl-NL")}
+                      {formatDateTime(analysis.checkedAt)}
                     </p>
                     <p className="text-xs text-gray-500">
                       pass {stats.pass} • warn {stats.warn} • fail {stats.fail}
