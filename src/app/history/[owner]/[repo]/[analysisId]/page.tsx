@@ -1,7 +1,8 @@
 import Link from "next/link";
 import ResultCard from "@/components/ResultCard";
+import { formatStars, scoreToStars, statusToStars } from "@/lib/stars";
 import { getRepoHistory } from "@/lib/apiClient";
-import type { CheckReport, CheckResult } from "@/lib/types";
+import type { CheckReport, CheckResult, StarRating } from "@/lib/types";
 import type { RepoMeta } from "@/generated/openapi-client";
 import { CATEGORY_ORDER, RESULT_CATEGORY_BY_ID, RESULT_ORDER_BY_ID } from "@/lib/criteria";
 
@@ -57,6 +58,10 @@ function normalizeResults(raw: unknown): CheckResult[] {
           : [],
         referenceUrl:
           typeof item.referenceUrl === "string" ? item.referenceUrl : undefined,
+        starRating:
+          typeof item.starRating === "number" && Number.isInteger(item.starRating) && item.starRating >= 1 && item.starRating <= 5
+            ? (item.starRating as StarRating)
+            : undefined,
       } satisfies CheckResult;
     });
 }
@@ -170,6 +175,9 @@ export default async function AnalysisDetailPage({ params }: AnalysisDetailPageP
           >
             Score {analysis.score}
           </span>
+          <span className="text-lg leading-none text-amber-500" aria-label={`${scoreToStars(analysis.score)} of 5 stars`}>
+            {formatStars(scoreToStars(analysis.score))}
+          </span>
           <span className="inline-flex text-xs font-semibold px-2 py-0.5 rounded-full border border-purple-200 text-purple-700 bg-purple-50">
             Version: {analysis.version ?? repoMeta.version ?? "unknown"}
           </span>
@@ -231,6 +239,7 @@ export default async function AnalysisDetailPage({ params }: AnalysisDetailPageP
                         message={result.message}
                         evidence={result.evidence}
                         referenceUrl={result.referenceUrl}
+                        starRating={result.starRating ?? statusToStars(result.status)}
                       />
                     ))}
                   </div>
