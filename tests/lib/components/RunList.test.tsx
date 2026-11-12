@@ -33,7 +33,7 @@ describe("RunList", () => {
 
     const newest = within(rows[0]);
     expect(newest.getByRole("link").getAttribute("href")).toBe("/history/org/repo/new");
-    expect(newest.getByRole("img", { name: "Overall rating 3.4 of 5" })).toBeTruthy();
+    expect(newest.getByRole("img", { name: "Overall rating 3.4 of 5.5, 3 stars" })).toBeTruthy();
     expect(newest.getByText("Passes")).toBeTruthy();
     const counts = (row: HTMLElement) => within(row).getAllByRole("cell").slice(2, 4).map((cell) => cell.textContent);
     expect(counts(rows[0])).toEqual(["0", "2"]);
@@ -41,7 +41,7 @@ describe("RunList", () => {
     expect(newest.getByText("Latest")).toBeTruthy();
 
     const oldest = within(rows[1]);
-    expect(oldest.getByRole("img", { name: "Overall rating 1.8 of 5" })).toBeTruthy();
+    expect(oldest.getByRole("img", { name: "Overall rating 1.8 of 5.5, 2 stars" })).toBeTruthy();
     expect(oldest.getByText("Does not pass")).toBeTruthy();
     expect(counts(rows[1])).toEqual(["3", "–not stored"]);
     expect(oldest.getByText("unknown")).toBeTruthy();

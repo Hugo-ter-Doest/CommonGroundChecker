@@ -53,7 +53,7 @@ describe("HistoryPageClient", () => {
     );
 
     expect(screen.getAllByRole("img", { name: /^Overall rating/ })).toHaveLength(1);
-    expect(screen.getByRole("img", { name: "Overall rating 3.4 of 5" })).toBeTruthy();
+    expect(screen.getByRole("img", { name: "Overall rating 3.4 of 5.5, 3 stars" })).toBeTruthy();
     expect(screen.getByText("Latest score: 71")).toBeTruthy();
   });
 

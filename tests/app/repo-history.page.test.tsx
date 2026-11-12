@@ -64,7 +64,7 @@ describe("RepoHistoryPage", () => {
     expect(screen.getByText("Followed")).toBeTruthy();
 
     const summary = screen.getByRole("region", { name: "Latest run" });
-    expect(within(summary).getByRole("img", { name: "Overall rating 3.4 of 5" })).toBeTruthy();
+    expect(within(summary).getByRole("img", { name: "Overall rating 3.4 of 5.5, 3 stars" })).toBeTruthy();
     expect(within(summary).getByText("Passes")).toBeTruthy();
     expect(within(summary).getByText("71")).toBeTruthy();
     expect(within(summary).getByText("Version: 2.0.0")).toBeTruthy();
@@ -83,7 +83,7 @@ describe("RepoHistoryPage", () => {
       .getAllByRole("row")
       .slice(1)
       .map((row) => within(row).getAllByRole("cell").slice(2, 4).map((cell) => cell.textContent));
-    // The older run fails a mandatory criterion and its rating 1.0 is below 2.5
+    // The older run fails a mandatory criterion and its rating 0.5 is below 2.5
     expect(counts).toEqual([
       ["0", "0"],
       ["2", "0"],
@@ -104,7 +104,7 @@ describe("RepoHistoryPage", () => {
 
     const runs = screen.getByRole("region", { name: "All runs" });
     const oldRow = within(runs).getAllByRole("row")[2];
-    expect(within(oldRow).getByRole("img", { name: "Overall rating 1.0 of 5" })).toBeTruthy();
+    expect(within(oldRow).getByRole("img", { name: "Overall rating 0.5 of 5.5, 1 star" })).toBeTruthy();
     expect(within(oldRow).getByText("Does not pass")).toBeTruthy();
 
     const table = screen.getByRole("table", { name: /Overall rating per run/ });
@@ -113,7 +113,7 @@ describe("RepoHistoryPage", () => {
       .slice(1)
       .map((row) => within(row).getAllByRole("cell").slice(1).map((cell) => cell.textContent));
     expect(cells).toEqual([
-      ["1.0", "Does not pass"],
+      ["0.5", "Does not pass"],
       ["3.4", "Passes"],
     ]);
   });
