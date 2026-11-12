@@ -89,6 +89,9 @@ export function mapOpenSourceHealthReport(report: OpenSourceHealthReport): Check
     ...BASE_RESULT,
     status,
     starRating,
+    aspectRatings: Object.fromEntries(
+      Object.entries(report.properties).map(([key, property]) => [key, property.stars])
+    ),
     message:
       `Open Source Health ${starRating} of 5 stars over ${report.dependencies} production dependencies ` +
       `(${report.ecosystems.join(", ")}). 4 stars or more passes, 3 stars warns.`,

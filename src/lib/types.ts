@@ -28,6 +28,8 @@ export interface CheckResult {
   confidence?: ConfidenceLevel;
   /** 1 to 5 stars; from the criterion's own scale, or derived from its status */
   starRating?: StarRating;
+  /** Ratings from 0.5 to 5.5 the check measures for aspects of the rating model, by key */
+  aspectRatings?: Record<string, number | null>;
 }
 
 export interface CheckReport {

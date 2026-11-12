@@ -21,6 +21,16 @@ describe("mapOpenSourceHealthReport", () => {
     expect(result.evidence).toContain("Management: ★★★★★ 0 unmanaged of 840 dependencies");
   });
 
+  it("reports each property's stars as an aspect rating", () => {
+    expect(mapOpenSourceHealthReport(report).aspectRatings).toEqual({
+      vulnerabilities: 1,
+      freshness: 3,
+      activity: 2,
+      licence: 1,
+      management: 5,
+    });
+  });
+
   it("lists the severely vulnerable dependencies", () => {
     const vulnerable = mapOpenSourceHealthReport(report).evidence?.filter((line) => line.startsWith("Vulnerable:"));
 
