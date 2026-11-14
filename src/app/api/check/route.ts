@@ -112,6 +112,10 @@ export async function POST(request: Request) {
         checkedAt: report.checkedAt,
         version: toApiString(report.repoMeta.version) ?? null,
         score: report.score,
+        rating: report.rating,
+        categoryRatings: report.categoryRatings,
+        aspectRatings: report.aspectRatings,
+        endorsement: report.endorsement,
         results: report.results.map(toApiCheckResult),
       };
 

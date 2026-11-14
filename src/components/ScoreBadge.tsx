@@ -20,6 +20,7 @@ export default function ScoreBadge({ score }: ScoreBadgeProps) {
 
   return (
     <div className="flex flex-col items-center gap-2">
+      <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Compliance score</span>
       <div className="relative w-28 h-28">
         <svg
           className="w-full h-full -rotate-90"
