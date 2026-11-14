@@ -115,4 +115,67 @@ describe("checkFiveLayer", () => {
     ]);
     expect(result.message).toContain("Service layer");
   });
+
+  it.each([
+    ["A register for objects."],
+    ["Build a register for objects."],
+    ["A register with an interest in objects."],
+    ["A register; see the user guide for the next steps."],
+  ])("matches whole words only, so %s is a data layer component", async (readme) => {
+    mocks.getFileContent.mockResolvedValueOnce(readme);
+
+    const result = await checkFiveLayer("org", "repo", ["README.md", "lib/Db/ObjectMapper.php"], { topics: [], description: "" });
+
+    expect(result.status).toBe("pass");
+    expect(result.message).toContain("Data layer");
+  });
+
+  it("matches whole directory names, not parts of file or directory names", async () => {
+    mocks.getFileContent.mockResolvedValueOnce("A register for objects.");
+
+    const result = await checkFiveLayer(
+      "org",
+      "repo",
+      ["README.md", "lib/BackgroundJob/StateHistoryRebuildJob.php", "lib/Db/CountLinksByObjectUuidTrait.php", "src/guides/index.ts"],
+      { topics: [], description: "" }
+    );
+
+    expect(result.status).toBe("pass");
+    expect(result.evidence).toEqual([
+      "Found path segment \"db\" in lib/Db/CountLinksByObjectUuidTrait.php",
+      "Found \"register\" in repository metadata and docs",
+    ]);
+  });
+
+  it("ignores documentation, test, example and vendored directories", async () => {
+    mocks.getFileContent.mockResolvedValueOnce("A register for objects.");
+
+    const result = await checkFiveLayer(
+      "org",
+      "repo",
+      ["README.md", "docs/ui/screens.md", "tests/api/ObjectTest.php", "examples/portal/index.html", "vendor/acme/service/Client.php", ".github/workflows/ui.yml"],
+      { topics: [], description: "" }
+    );
+
+    expect(result.status).toBe("pass");
+    expect(result.message).toContain("Data layer");
+  });
+
+  it("still reads a layer directory in the component's own code", async () => {
+    mocks.getFileContent.mockResolvedValueOnce("A register for objects.");
+
+    const result = await checkFiveLayer("org", "repo", ["README.md", "src/ui/index.ts"], { topics: [], description: "" });
+
+    expect(result.status).toBe("warn");
+    expect(result.evidence).toContain("Found path segment \"ui\" in src/ui/index.ts");
+  });
+
+  it("reads Next.js as a framework name, not the word next", async () => {
+    mocks.getFileContent.mockResolvedValueOnce("A portal built with Next.js.");
+
+    const result = await checkFiveLayer("org", "repo", ["README.md"], { topics: [], description: "" });
+
+    expect(result.evidence).toEqual(expect.arrayContaining([expect.stringContaining("portal")]));
+    expect(result.message).toContain("Interaction layer");
+  });
 });

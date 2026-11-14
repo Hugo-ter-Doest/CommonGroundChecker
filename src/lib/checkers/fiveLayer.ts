@@ -23,8 +23,6 @@ const LAYER_DEFINITIONS: Record<LayerKey, LayerDefinition> = {
       { value: "/client/", strength: "strong" },
       { value: "/admin/", strength: "weak" },
       { value: "/admin-ui/", strength: "weak" },
-      { value: "frontend", strength: "strong" },
-      { value: "ui", strength: "strong" },
     ],
     textKeywords: [
       { value: "frontend", strength: "strong" },
@@ -34,7 +32,8 @@ const LAYER_DEFINITIONS: Record<LayerKey, LayerDefinition> = {
       { value: "react", strength: "strong" },
       { value: "vue", strength: "strong" },
       { value: "angular", strength: "strong" },
-      { value: "next", strength: "strong" },
+      { value: "next.js", strength: "strong" },
+      { value: "nextjs", strength: "strong" },
       { value: "nuxt", strength: "strong" },
       { value: "web app", strength: "strong" },
       { value: "user interface", strength: "strong" },
@@ -137,8 +136,25 @@ const LAYER_DEFINITIONS: Record<LayerKey, LayerDefinition> = {
 const README_FILENAMES = ["readme.md", "readme.txt", "readme.rst", "readme"];
 const PUBLICCODE_FILENAMES = ["publiccode.yml", "publiccode.yaml"];
 
+/** Documentation, tests, examples, dependencies and build output say nothing about the component's own layer. */
+const IGNORED_DIRECTORIES = new Set([
+  "docs", "doc", "documentation", "test", "tests", "__tests__", "spec", "e2e", "fixtures", "__fixtures__",
+  "testdata", "example", "examples", "samples", "vendor", "node_modules", "third_party", "dist", "build", ".github",
+]);
+
 function normalizePath(path: string): string {
   return path.replace(/\\/g, "/").toLowerCase();
+}
+
+/** The directory names of a path, without the file name. */
+function directorySegments(path: string): string[] {
+  return normalizePath(path).split("/").slice(0, -1);
+}
+
+/** Whether `keyword` occurs in `text` as a whole word, not as part of a longer word. */
+function containsWord(text: string, keyword: string): boolean {
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(?<![a-z0-9])${escaped}(?![a-z0-9])`).test(text);
 }
 
 function flattenStrings(value: unknown): string[] {
@@ -157,12 +173,15 @@ interface LayerDetection {
 }
 
 function detectLayerSignalsFromPath(repoPath: string): LayerDetection[] {
-  const normalized = normalizePath(repoPath);
+  const directories = directorySegments(repoPath);
   const detections: LayerDetection[] = [];
+  if (directories.some((directory) => IGNORED_DIRECTORIES.has(directory))) {
+    return detections;
+  }
 
   for (const [layer, definition] of Object.entries(LAYER_DEFINITIONS) as [LayerKey, LayerDefinition][]) {
     for (const keyword of definition.pathKeywords) {
-      if (normalized.includes(keyword.value)) {
+      if (directories.includes(keyword.value.replace(/\//g, ""))) {
         detections.push({
           layer,
           strength: keyword.strength,
@@ -185,7 +204,7 @@ function detectLayerSignalsFromText(
 
   for (const [layer, definition] of Object.entries(LAYER_DEFINITIONS) as [LayerKey, LayerDefinition][]) {
     for (const keyword of definition.textKeywords) {
-      if (lower.includes(keyword.value)) {
+      if (containsWord(lower, keyword.value)) {
         detections.push({
           layer,
           strength: keyword.strength,
