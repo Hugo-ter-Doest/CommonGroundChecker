@@ -64,6 +64,36 @@ async function detectLizardCommand(): Promise<{ command: string; argsPrefix: str
   return null;
 }
 
+/** Dependency, build and generated output; the same directories the OWASP check skips, plus .git. */
+export const EXCLUDED_DIRECTORIES = ["node_modules", ".next", ".git", "dist", "build", "coverage", "vendor", "generated"];
+
+/**
+ * Test code, as Lizard globs: test directories (including end-to-end suites, Android instrumentation
+ * tests, test stubs and `test-*` support folders) and test file names (`*.test.ts`, Go's `*_test.go`,
+ * pytest's `test_*.py`). The same paths the OWASP check treats as test code.
+ */
+export const TEST_CODE_PATTERNS = [
+  ...["test", "tests", "__tests__", "spec", "fixtures", "__fixtures__", "testdata", "e2e", "androidTest"].map(
+    (directory) => `*/${directory}/*`
+  ),
+  "*/test-*/*",
+  "*/tests-*/*",
+  "*/test_*/*",
+  "*.test.*",
+  "*.spec.*",
+  "*_test.*",
+  "*/test_*.py",
+];
+
+export function lizardExcludeArgs(): string[] {
+  return [
+    ...EXCLUDED_DIRECTORIES.flatMap((directory) => ["-x", `*/${directory}/*`]),
+    "-x",
+    "*.min.js",
+    ...TEST_CODE_PATTERNS.flatMap((pattern) => ["-x", pattern]),
+  ];
+}
+
 function extractThresholdBreaches(output: string): string[] {
   return output
     .split(/\r?\n/)
@@ -204,16 +234,7 @@ export async function checkComplexity(
 
     const averageThresholdText = String(Math.max(1, Math.round(averageThreshold)));
     const maxCcnThresholdText = String(Math.max(1, Math.round(maxCcnThreshold)));
-    const args = [
-      ...lizard.argsPrefix,
-      "-x",
-      "*/node_modules/*",
-      "-x",
-      "*/.next/*",
-      "-x",
-      "*/.git/*",
-      repoDir,
-    ];
+    const args = [...lizard.argsPrefix, ...lizardExcludeArgs(), repoDir];
 
     const analysis = await runCommand(lizard.command, args);
     const combinedOutput = `${analysis.stdout}\n${analysis.stderr}`;
