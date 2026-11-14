@@ -8,7 +8,7 @@ vi.mock("@/lib/github", () => ({
   getFileContent: mocks.getFileContent,
 }));
 
-import { checkFiveLayer } from "@/lib/checkers/fiveLayer";
+import { checkFiveLayer, LAYER_URI } from "@/lib/checkers/fiveLayer";
 
 describe("checkFiveLayer", () => {
   beforeEach(() => {
@@ -177,5 +177,59 @@ describe("checkFiveLayer", () => {
 
     expect(result.evidence).toEqual(expect.arrayContaining([expect.stringContaining("portal")]));
     expect(result.message).toContain("Interaction layer");
+  });
+
+  describe("declared layer", () => {
+    const tree = ["README.md", "publiccode.yml", "src/ui/index.js", "lib/Service/Api.php"];
+    const readme = "A Nextcloud app with a frontend and a backend API service.";
+
+    async function check(publiccode: string) {
+      mocks.getFileContent.mockResolvedValueOnce(readme).mockResolvedValueOnce(publiccode);
+      return checkFiveLayer("org", "repo", tree, { topics: [], description: "" });
+    }
+
+    it("passes on a single layer declared in supports, ignoring the heuristics", async () => {
+      const result = await check(`supports:\n  - id: ${LAYER_URI}#process\n  - id: alias:gdpr\n`);
+
+      expect(result.status).toBe("pass");
+      expect(result.confidence).toBe("high");
+      expect(result.message).toBe("Declared layer: Process layer (orchestration / BFF).");
+      expect(result.evidence).toEqual(['Declared "process" in publiccode.yml supports']);
+    });
+
+    it("accepts the Dutch layer name", async () => {
+      const result = await check(`supports:\n  - id: ${LAYER_URI}#Integratie\n`);
+
+      expect(result.status).toBe("pass");
+      expect(result.message).toContain("Integration layer");
+    });
+
+    it("warns when more than one layer is declared", async () => {
+      const result = await check(`supports:\n  - id: ${LAYER_URI}#interaction\n  - id: ${LAYER_URI}#process\n`);
+
+      expect(result.status).toBe("warn");
+      expect(result.message).toContain("should belong to one Common Ground layer");
+    });
+
+    it("warns on an unknown layer value", async () => {
+      const result = await check(`supports:\n  - id: ${LAYER_URI}#frontend\n`);
+
+      expect(result.status).toBe("warn");
+      expect(result.message).toContain("unknown layer: frontend");
+    });
+
+    it("falls back to the heuristics when nothing is declared", async () => {
+      const result = await check("name: App\n");
+
+      expect(result.status).toBe("warn");
+      expect(result.message).toContain("appears to span multiple Common Ground layers");
+    });
+
+    it("does not read a country section, which publiccode.yml does not define for NL", async () => {
+      const result = await check("NL:\n  vng:\n    commonground:\n      layer: process\n");
+
+      expect(result.status).toBe("warn");
+      expect(result.message).toContain("appears to span multiple Common Ground layers");
+    });
   });
 });
