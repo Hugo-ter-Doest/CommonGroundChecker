@@ -526,12 +526,12 @@ export const RATING_DOCS: RatingCategoryDoc[] = [
         id: "maintenance",
         title: "Maintenance",
         meaning:
-          "Whether someone maintains the component: a buyer needs to know that bugs and security issues will be fixed. publiccode.yml declares the kind of maintenance, the contractors with the end date of their contract, or the people who maintain it.",
+          "Whether the component has a valid maintenance contract: a buyer needs to know who fixes bugs and security issues, and until when. publiccode.yml declares the contractors and the end date of their contract.",
         criteria: [
           {
             checkId: "maintenance",
             name: "Maintained",
-            tool: "the maintenance section of publiccode.yml: fails on type none or when every contract has ended",
+            tool: "the maintenance section of publiccode.yml: passes only on a contract with a named contractor whose end date has not passed, and says what is missing or invalid otherwise",
           },
         ],
         rating: [STATUS_RATING],

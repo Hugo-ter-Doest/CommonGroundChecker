@@ -464,17 +464,25 @@ describe("computeEndorsement", () => {
     expect(computeEndorsement([result("maintenance", "pass")], 4, config())).toEqual({ passed: true, reasons: [] });
   });
 
-  it("is not yet suitable when nobody maintains the component or the contract has ended", () => {
-    expect(computeEndorsement([result("maintenance", "fail")], 4, config())).toEqual({
+  it("is not yet suitable without a valid maintenance contract, and gives the criterion's reason", () => {
+    const message = "No valid maintenance contract: Maykin has no end date (until).";
+
+    expect(computeEndorsement([result("maintenance", "fail", { message })], 4, config())).toEqual({
       passed: false,
-      reasons: ["Not maintained"],
+      reasons: [message],
     });
   });
 
-  it("is not yet suitable when maintenance is not declared or incomplete", () => {
+  it("falls back to a general reason for a failing maintenance criterion without a message", () => {
+    expect(computeEndorsement([result("maintenance", "fail")], 4, config()).reasons).toEqual([
+      "No valid maintenance contract",
+    ]);
+  });
+
+  it("is not yet suitable when the maintenance contract could not be checked", () => {
     expect(computeEndorsement([result("maintenance", "warn")], 4, config())).toEqual({
       passed: false,
-      reasons: ["Maintenance not confirmed"],
+      reasons: ["Maintenance contract not checked"],
     });
   });
 
@@ -533,6 +541,13 @@ describe("ratingsForStoredAnalysis", () => {
       aspectRatings: { licensing: { rating: 4.2 }, "community-documents": { rating: 4, found: 4, expected: 5 } },
       endorsement: { passed: true, reasons: [] },
     });
+  });
+
+  it("gives an older analysis the reason its stored Maintained result gave", () => {
+    const message = "publiccode.yml declares maintenance.type internal: there is no maintenance contract.";
+    const older = { results: [{ id: "maintenance", title: "Maintained", status: "fail", message }] };
+
+    expect(ratingsForStoredAnalysis(older, config()).endorsement.reasons).toContain(message);
   });
 
   it("keeps a stored null rating", () => {

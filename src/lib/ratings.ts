@@ -32,7 +32,7 @@ export interface RatingConfig {
 export type RatingInput = Pick<
   CheckResult,
   "id" | "status" | "requirementLevel" | "rating" | "starRating" | "aspectRatings"
-> & { title?: string };
+> & { title?: string; message?: string };
 
 /** An analysis as the backend stores it; older analyses have no ratings. */
 export interface StoredAnalysis {
@@ -198,8 +198,8 @@ export function computeRatings(
  * A component is suitable for Common Ground when no mandatory criterion fails,
  * its overall rating is at least 2.5, and it is maintained. The verdict is
  * advice for a buyer, not a condition for being listed. The reasons name each
- * failing mandatory criterion, a rating that is too low, and maintenance that
- * has ended, or that publiccode.yml does not declare completely. A scan
+ * failing mandatory criterion, a rating that is too low, and, in the words of
+ * the Maintained criterion, why there is no valid maintenance contract. A scan
  * without the maintenance criterion is not judged on it.
  */
 export function computeEndorsement(
@@ -220,7 +220,11 @@ export function computeEndorsement(
   const maintenance = results.find((result) => result.id === "maintenance");
   const alreadyCounted = maintenance?.status === "fail" && requirementLevelOf(maintenance, config) === "mandatory";
   if (maintenance && maintenance.status !== "pass" && !alreadyCounted) {
-    reasons.push(maintenance.status === "fail" ? "Not maintained" : "Maintenance not confirmed");
+    reasons.push(
+      maintenance.status === "fail"
+        ? (maintenance.message ?? "No valid maintenance contract")
+        : "Maintenance contract not checked"
+    );
   }
 
   return { passed: reasons.length === 0, reasons };
@@ -235,6 +239,7 @@ function parseStoredResults(raw: unknown): RatingInput[] {
     .map((item) => ({
       id: item.id as string,
       title: typeof item.title === "string" ? item.title : undefined,
+      message: typeof item.message === "string" ? item.message : undefined,
       status:
         item.status === "pass" || item.status === "warn" || item.status === "fail" || item.status === "info"
           ? item.status
