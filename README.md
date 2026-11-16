@@ -22,7 +22,7 @@ The rating guide at `/docs` ("Rating guide" in the site navigation) explains per
 | 2 | **EUPL license preference** — explicit check whether the repository uses the European Union Public Licence | Mandatory | [EU EUPL](https://interoperable-europe.ec.europa.eu/collection/eupl/eupl-text-eupl-12) |
 | 3 | **Copyright / IP owner disclosure** — probable owner inferred from legal files and metadata | Recommended | [opensource.guide/legal](https://opensource.guide/legal/) |
 | 4 | **publiccode.yml** — government metadata file in the repository root | Mandatory | [Standard for Public Code](https://standard.publiccode.net) |
-| 4a | **Maintained** — `maintenance` in publiccode.yml: not `none`, and a maintenance contract has not ended | Recommended | [publiccode.yml maintenance](https://publiccodeyml.github.io/v0/schema.core.html#section-maintenance) |
+| 4a | **Maintained** — a valid maintenance contract in publiccode.yml: a contractor with a name and an end date that has not passed | Recommended | [publiccode.yml maintenance](https://publiccodeyml.github.io/v0/schema.core.html#section-maintenance) |
 | 5 | **Contributing guide** — CONTRIBUTING file explaining how to contribute | Recommended | [GitHub docs](https://docs.github.com/en/communities/setting-up-your-project-for-healthy-contributions/setting-guidelines-for-repository-contributors) |
 | 6 | **Code of Conduct** — CODE_OF_CONDUCT file present | Recommended | [opensource.guide](https://opensource.guide/code-of-conduct/) |
 
