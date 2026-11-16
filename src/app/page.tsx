@@ -114,6 +114,7 @@ const DEFAULT_REQUIREMENT_LEVEL_BY_CHECK_ID: Record<string, RequirementLevelLabe
   eupllicense: "recommended",
   copyrightowner: "mandatory",
   publiccode: "mandatory",
+  maintenance: "recommended",
   docker: "mandatory",
   dockerimage: "mandatory",
   openapi: "mandatory",
@@ -140,6 +141,7 @@ const CHECK_ID_BY_CRITERION_LABEL: Record<string, string> = {
   "EUPL License": "eupllicense",
   "Copyright / IP owner": "copyrightowner",
   "publiccode.yml": "publiccode",
+  Maintained: "maintenance",
   "Docker support": "docker",
   "Available Docker image": "dockerimage",
   "OpenAPI / API-first": "openapi",
@@ -225,6 +227,14 @@ const CRITERIA_OVERVIEW = [
     desc: "Government reuse metadata file",
     tooltip:
       "A publiccode.yml file in the root of the repository provides standardised metadata (name, description, category, maintenance) used by government software catalogues across Europe.",
+  },
+  {
+    icon: "🛠️",
+    label: "Maintained",
+    category: "Governance" as CriteriaCategory,
+    desc: "Someone maintains the component",
+    tooltip:
+      "Reads maintenance from publiccode.yml. Fails when maintenance.type is none or every maintenance contract has ended; passes when a contract is current, or internal or community maintenance names a contact.",
   },
   {
     icon: "🐳",
