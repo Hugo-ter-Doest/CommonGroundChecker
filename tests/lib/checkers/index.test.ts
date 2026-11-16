@@ -8,6 +8,7 @@ const ids = [
   "eupllicense",
   "copyrightowner",
   "publiccode",
+  "maintenance",
   "docker",
   "dockerimage",
   "cicd",
@@ -39,6 +40,7 @@ const mocks = vi.hoisted(() => ({
   checkOpenApi: vi.fn(),
   checkLicense: vi.fn(),
   analysePublicCode: vi.fn(),
+  checkMaintenance: vi.fn(),
   checkCopyrightOwner: vi.fn(),
   checkDocker: vi.fn(),
   checkDockerImage: vi.fn(),
@@ -109,6 +111,7 @@ vi.mock("@/lib/checkers/openapi", () => ({ checkOpenApi: mocks.checkOpenApi }));
 vi.mock("@/lib/checkers/license", () => ({ checkLicense: mocks.checkLicense }));
 vi.mock("@/lib/checkers/copyrightOwner", () => ({ checkCopyrightOwner: mocks.checkCopyrightOwner }));
 vi.mock("@/lib/checkers/publiccode", () => ({ analysePublicCode: mocks.analysePublicCode }));
+vi.mock("@/lib/checkers/maintenance", () => ({ checkMaintenance: mocks.checkMaintenance }));
 vi.mock("@/lib/checkers/docker", () => ({ checkDocker: mocks.checkDocker }));
 vi.mock("@/lib/checkers/dockerImage", () => ({ checkDockerImage: mocks.checkDockerImage }));
 vi.mock("@/lib/checkers/ciConfig", () => ({ checkCiConfig: mocks.checkCiConfig }));
@@ -240,6 +243,7 @@ describe("runChecks", () => {
         maintainers: ["Test Team"],
       },
     });
+    mocks.checkMaintenance.mockResolvedValue(resultFor("maintenance", "pass"));
     mocks.checkDocker.mockReturnValue(resultFor("docker", "pass"));
     mocks.checkDockerImage.mockReturnValue(resultFor("dockerimage", "pass"));
     mocks.checkCiConfig.mockReturnValue(resultFor("cicd", "pass"));
@@ -285,7 +289,7 @@ describe("runChecks", () => {
     expect(report.scoringConfigId).toBe("cfg-1");
     expect(report.score).toBe(25);
     expect(mocks.checkOpenApi).not.toHaveBeenCalled();
-    expect(report.results).toHaveLength(24);
+    expect(report.results).toHaveLength(25);
     expect(report.results.find((result) => result.id === "maintainability")?.starRating).toBe(3);
     expect(report.results.find((result) => result.id === "semver")?.starRating).toBe(1);
     expect(report.results.find((result) => result.id === "tests")?.starRating).toBe(3);

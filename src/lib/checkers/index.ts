@@ -12,6 +12,7 @@ import { checkHelmChart } from "./helmchart";
 import { checkSbom } from "./sbom";
 import { checkDocumentation } from "./documentation";
 import { checkChangelog } from "./changelog";
+import { checkMaintenance } from "./maintenance";
 import { checkContributing } from "./contributing";
 import { checkCodeOfConduct } from "./codeofconduct";
 import { checkSecurity } from "./security";
@@ -152,6 +153,7 @@ export async function runChecks(
     checkLicense(context, meta, tree),
     checkCopyrightOwner(context, meta, tree),
     analysePublicCode(context, tree),
+    checkMaintenance(context, tree),
     checkFiveLayer(context, tree, meta),
     checkHelmChart(context, tree, options?.helmChartLocations ?? []),
   ]);
@@ -195,7 +197,7 @@ export async function runChecks(
 
   // Instant checks done; emit next step while slower checks complete in parallel
   onProgress?.("Analysing API specs, licence & deployment files...", 60);
-  const [[openapi, license, copyrightowner, publiccodeAnalysis, fivelayer, helmchart], complexity, maintainability, codemetrics, owaspsecurecoding, adrvalidator] = await Promise.all([
+  const [[openapi, license, copyrightowner, publiccodeAnalysis, maintenance, fivelayer, helmchart], complexity, maintainability, codemetrics, owaspsecurecoding, adrvalidator] = await Promise.all([
     networkChecksPromise,
     complexityPromise,
     maintainabilityPromise,
@@ -242,6 +244,7 @@ export async function runChecks(
     eupllicense,
     copyrightowner,
     publiccode,
+    maintenance,
     docker,
     dockerimage,
     cicd,
@@ -332,6 +335,7 @@ export async function runChecks(
     eupllicense,
     copyrightowner,
     publiccode,
+    maintenance,
     docker,
     dockerimage,
     cicd,

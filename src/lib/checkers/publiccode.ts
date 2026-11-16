@@ -100,11 +100,8 @@ export function extractPublicCodeDetails(
   };
 }
 
-/** Checks publiccode.yml and returns the repository details it declares. */
-export async function analysePublicCode(
-  context: RepoContext,
-  tree: string[]
-): Promise<PublicCodeAnalysis> {
+/** The repository's publiccode.yml: the one in the root, else the first one found deeper in the tree. */
+export function findPubliccodeFile(tree: string[]): string | undefined {
   const isPubliccodeFile = (path: string) => {
     const lower = path.toLowerCase().replace(/^\/+|\/+$/g, "");
     const filename = lower.split("/").pop() ?? lower;
@@ -115,8 +112,15 @@ export async function analysePublicCode(
     const lower = p.toLowerCase().replace(/^\/+|\/+$/g, "");
     return lower === "publiccode.yml" || lower === "publiccode.yaml";
   });
-  const fallbackMatch = tree.find(isPubliccodeFile);
-  const file = rootMatch ?? fallbackMatch;
+  return rootMatch ?? tree.find(isPubliccodeFile);
+}
+
+/** Checks publiccode.yml and returns the repository details it declares. */
+export async function analysePublicCode(
+  context: RepoContext,
+  tree: string[]
+): Promise<PublicCodeAnalysis> {
+  const file = findPubliccodeFile(tree);
 
   if (!file) {
     return {
