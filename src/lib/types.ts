@@ -75,7 +75,7 @@ export interface AspectRating {
 }
 
 export interface Endorsement {
-  /** No mandatory criterion fails and the overall rating is at least 2.5 */
+  /** Suitable for Common Ground: no mandatory criterion fails, the overall rating is at least 2.5 and the component is maintained */
   passed: boolean;
   reasons: string[];
 }

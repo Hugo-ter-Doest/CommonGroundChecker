@@ -26,7 +26,7 @@ const EXPECTED_MODEL: Record<string, string[]> = {
     "supply-chain",
   ],
   maintainability: ["analysability", "modifiability", "testability", "modularity", "reusability", "testing"],
-  governance: ["licensing", "ownership", "community-documents"],
+  governance: ["licensing", "ownership", "maintenance", "community-documents"],
   "deployment-operations": ["containerisation", "release-management"],
   architecture: ["api", "layering"],
 };

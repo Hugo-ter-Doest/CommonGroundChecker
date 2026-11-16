@@ -41,19 +41,19 @@ function plural(count: number, singular: string, pluralForm: string): string {
   return `${count} ${count === 1 ? singular : pluralForm}`;
 }
 
-/** A "Passed" or "Failed" chip, followed by the failures (when failed) and the warnings, when there are any. */
+/** A "Suitable" or "Not yet suitable" chip, followed by the failures (when not suitable) and the warnings, when there are any. */
 export default function RunStatus({ status }: { status: RunStatusSummary }) {
   return (
     <>
       {status.passed ? (
         <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border border-green-300 text-green-700 bg-green-50">
           <CheckCircle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-          Passed
+          Suitable
         </span>
       ) : (
         <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border border-red-300 text-red-700 bg-red-50">
           <XCircle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-          Failed
+          Not yet suitable
         </span>
       )}
       {!status.passed && status.failures > 0 && (

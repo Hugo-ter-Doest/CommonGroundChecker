@@ -460,6 +460,38 @@ describe("computeEndorsement", () => {
     expect(endorsement.reasons).toEqual(["Mandatory criterion fails: tests", "Overall rating below 2.5"]);
   });
 
+  it("is suitable when the component is maintained", () => {
+    expect(computeEndorsement([result("maintenance", "pass")], 4, config())).toEqual({ passed: true, reasons: [] });
+  });
+
+  it("is not yet suitable when nobody maintains the component or the contract has ended", () => {
+    expect(computeEndorsement([result("maintenance", "fail")], 4, config())).toEqual({
+      passed: false,
+      reasons: ["Not maintained"],
+    });
+  });
+
+  it("is not yet suitable when maintenance is not declared or incomplete", () => {
+    expect(computeEndorsement([result("maintenance", "warn")], 4, config())).toEqual({
+      passed: false,
+      reasons: ["Maintenance not confirmed"],
+    });
+  });
+
+  it("names a mandatory maintenance criterion that fails once", () => {
+    const endorsement = computeEndorsement(
+      [result("maintenance", "fail", { title: "Maintained" })],
+      4,
+      config({ maintenance: mandatory })
+    );
+
+    expect(endorsement.reasons).toEqual(["Mandatory criterion fails: Maintained"]);
+  });
+
+  it("does not judge maintenance for a scan made before the criterion existed", () => {
+    expect(computeEndorsement([result("license", "pass")], 4, config()).passed).toBe(true);
+  });
+
   it("passes with a mandatory criterion that warns", () => {
     expect(computeEndorsement([result("tests", "warn", { requirementLevel: "mandatory" })], 3, config()).passed).toBe(true);
   });

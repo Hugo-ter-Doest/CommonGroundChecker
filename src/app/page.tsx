@@ -78,8 +78,8 @@ async function exportAnalysisReportAsPdf(report: CheckReport): Promise<void> {
   if (report.endorsement) {
     addBlock(
       report.endorsement.passed
-        ? "Passes"
-        : `Does not pass: ${report.endorsement.reasons.join("; ")}`,
+        ? "Suitable for Common Ground"
+        : `Not yet suitable for Common Ground: ${report.endorsement.reasons.join("; ")}`,
       { size: 10, indent: 10, gapAfter: 4 }
     );
   }

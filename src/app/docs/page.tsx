@@ -65,8 +65,10 @@ export default function RatingGuidePage() {
             <strong>The overall rating</strong> is the weighted mean of the categories.
           </li>
           <li>
-            <strong>A component passes</strong> when every mandatory item is present and the overall rating is at
-            least 2.5. That is 3 stars, as the SIG models count 3 stars from 2.5.
+            <strong>A component is suitable for Common Ground</strong> when every mandatory item is present, the
+            overall rating is at least 2.5, and publiccode.yml shows that someone maintains it. 2.5 is 3 stars, as
+            the SIG models count 3 stars from 2.5. The verdict is advice for a buyer: a component that is not yet
+            suitable is still listed.
           </li>
         </ul>
         <p className="text-gray-700">

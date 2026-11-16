@@ -5,7 +5,7 @@ import { formatStars, ratingToStars } from "./stars";
 
 export const MIN_RATING = 0.5;
 export const MAX_RATING = 5.5;
-/** The overall rating a component needs to pass. */
+/** The overall rating a component needs to be suitable for Common Ground. */
 export const PASSING_RATING = 2.5;
 
 /** Ratings of a criterion that has no scale of its own: the ends and the middle of the scale. */
@@ -195,9 +195,12 @@ export function computeRatings(
 }
 
 /**
- * A component passes when no mandatory criterion fails and its overall rating
- * is at least 2.5. The reasons name each failing mandatory criterion and a
- * rating that is too low.
+ * A component is suitable for Common Ground when no mandatory criterion fails,
+ * its overall rating is at least 2.5, and it is maintained. The verdict is
+ * advice for a buyer, not a condition for being listed. The reasons name each
+ * failing mandatory criterion, a rating that is too low, and maintenance that
+ * has ended, or that publiccode.yml does not declare completely. A scan
+ * without the maintenance criterion is not judged on it.
  */
 export function computeEndorsement(
   results: RatingInput[],
@@ -212,6 +215,12 @@ export function computeEndorsement(
     reasons.push("No overall rating");
   } else if (rating < PASSING_RATING) {
     reasons.push(`Overall rating below ${PASSING_RATING}`);
+  }
+
+  const maintenance = results.find((result) => result.id === "maintenance");
+  const alreadyCounted = maintenance?.status === "fail" && requirementLevelOf(maintenance, config) === "mandatory";
+  if (maintenance && maintenance.status !== "pass" && !alreadyCounted) {
+    reasons.push(maintenance.status === "fail" ? "Not maintained" : "Maintenance not confirmed");
   }
 
   return { passed: reasons.length === 0, reasons };

@@ -67,7 +67,7 @@ describe("AnalysisDetailPage", () => {
     expect(screen.getAllByRole("img", { name: `${MAINTAINABILITY} rating 2.1 of 5.5, 2 stars` }).length).toBeGreaterThan(0);
     expect(screen.getByText("Compliance score")).toBeTruthy();
     expect(screen.getByText("71")).toBeTruthy();
-    expect(screen.getByText("Passes")).toBeTruthy();
+    expect(screen.getByText("Suitable for Common Ground")).toBeTruthy();
     expect(getAdminScoring).not.toHaveBeenCalled();
   });
 
@@ -94,8 +94,8 @@ describe("AnalysisDetailPage", () => {
     // Ownership: copyright owner passes (5), publiccode.yml fails (1)
     expect(screen.getByRole("img", { name: "Overall rating 3.0 of 5.5, 3 stars" })).toBeTruthy();
     expect(screen.getAllByRole("img", { name: `${GOVERNANCE} rating 3.0 of 5.5, 3 stars` }).length).toBeGreaterThan(0);
-    expect(screen.getByText("Does not pass")).toBeTruthy();
-    expect(screen.getByRole("list", { name: "Why it does not pass" }).textContent).toContain(
+    expect(screen.getByText("Not yet suitable for Common Ground")).toBeTruthy();
+    expect(screen.getByRole("list", { name: "Why it is not yet suitable" }).textContent).toContain(
       "Mandatory criterion fails: publiccode"
     );
   });
@@ -126,7 +126,7 @@ describe("AnalysisDetailPage", () => {
     const table = screen.getByRole("table", { name: "What Testability is made of" });
     expect(table.textContent).toContain("Python, complexity above 10");
     expect(table.textContent).toContain("≤ 7.5%");
-    expect(screen.getByRole("list", { name: "Why it does not pass" }).textContent).toBe("Overall rating below 2.5");
+    expect(screen.getByRole("list", { name: "Why it is not yet suitable" }).textContent).toBe("Overall rating below 2.5");
     expect(screen.getByRole("heading", { name: /^1 error: missing mandatory items$/ })).toBeTruthy();
     const ratingError = screen.getByRole("link", { name: "Overall rating 2.4 is below 2.5: go to the overall rating" });
     expect(document.getElementById(ratingError.getAttribute("href")!.slice(1))?.textContent).toContain("Overall rating");

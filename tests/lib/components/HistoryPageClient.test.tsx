@@ -229,7 +229,7 @@ describe("HistoryPageClient", () => {
       },
     });
 
-    expect(footerOf(card)).toEqual(["Passed", "Version: unknown"]);
+    expect(footerOf(card)).toEqual(["Suitable", "Version: unknown"]);
   });
 
   it("shows the warnings after Passed", () => {
@@ -243,7 +243,7 @@ describe("HistoryPageClient", () => {
       },
     });
 
-    expect(footerOf(card)).toEqual(["Passed", "5 warnings", "Version: unknown"]);
+    expect(footerOf(card)).toEqual(["Suitable", "5 warnings", "Version: unknown"]);
   });
 
   it("shows Failed, the failures, the warnings, Followed and the version, in that order", () => {
@@ -260,7 +260,7 @@ describe("HistoryPageClient", () => {
       },
     });
 
-    expect(footerOf(card)).toEqual(["Failed", "3 failures", "5 warnings", "Followed", "Version: unknown"]);
+    expect(footerOf(card)).toEqual(["Not yet suitable", "3 failures", "5 warnings", "Followed", "Version: unknown"]);
     const title = within(card).getByText("example/card-repo").parentElement as HTMLElement;
     expect(within(title).queryByText("Followed")).toBeNull();
   });
@@ -276,7 +276,7 @@ describe("HistoryPageClient", () => {
       },
     });
 
-    expect(footerOf(card)).toEqual(["Failed", "1 failure", "1 warning", "Version: unknown"]);
+    expect(footerOf(card)).toEqual(["Not yet suitable", "1 failure", "1 warning", "Version: unknown"]);
   });
 
   it("counts the endorsement reasons as failures for a run without stored counts", () => {
@@ -289,7 +289,7 @@ describe("HistoryPageClient", () => {
       },
     });
 
-    expect(footerOf(card)).toEqual(["Failed", "2 failures", "Version: unknown"]);
+    expect(footerOf(card)).toEqual(["Not yet suitable", "2 failures", "Version: unknown"]);
   });
 
   it("shows no chip and no counts for an older run without an endorsement", () => {
@@ -298,6 +298,6 @@ describe("HistoryPageClient", () => {
     });
 
     expect(footerOf(card)).toEqual(["Version: unknown"]);
-    expect(within(card).queryByText(/Passed|Failed|failure|warning/)).toBeNull();
+    expect(within(card).queryByText(/suitable|failure|warning/i)).toBeNull();
   });
 });

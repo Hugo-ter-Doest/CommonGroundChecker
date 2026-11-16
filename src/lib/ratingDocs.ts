@@ -150,6 +150,10 @@ const SOURCES = {
     url: "https://standard.publiccode.net/criteria/use-continuous-integration.html",
   },
   publiccodeYml: { title: "publiccode.yml specification", url: "https://yml.publiccode.tools/" },
+  publiccodeMaintenance: {
+    title: "publiccode.yml specification: maintenance",
+    url: "https://publiccodeyml.github.io/v0/schema.core.html#section-maintenance",
+  },
   legalGuide: { title: "Open Source Guides: the legal side of open source", url: "https://opensource.guide/legal/" },
   contributingGuide: {
     title: "GitHub Docs: setting guidelines for repository contributors",
@@ -517,6 +521,22 @@ export const RATING_DOCS: RatingCategoryDoc[] = [
         rating: [STATUS_RATING],
         counted: true,
         sources: [SOURCES.legalGuide, SOURCES.publiccodeYml, SOURCES.publicCodeFindable],
+      },
+      {
+        id: "maintenance",
+        title: "Maintenance",
+        meaning:
+          "Whether someone maintains the component: a buyer needs to know that bugs and security issues will be fixed. publiccode.yml declares the kind of maintenance, the contractors with the end date of their contract, or the people who maintain it.",
+        criteria: [
+          {
+            checkId: "maintenance",
+            name: "Maintained",
+            tool: "the maintenance section of publiccode.yml: fails on type none or when every contract has ended",
+          },
+        ],
+        rating: [STATUS_RATING],
+        counted: true,
+        sources: [SOURCES.publiccodeMaintenance],
       },
       {
         id: "community-documents",

@@ -51,6 +51,11 @@ export const ASPECT_MODEL: CategoryAspects[] = [
         source: { type: "criteria", checkIds: ["copyrightowner", "publiccode"] },
       },
       {
+        id: "maintenance",
+        title: "Maintenance",
+        source: { type: "criteria", checkIds: ["maintenance"] },
+      },
+      {
         id: "community-documents",
         title: "Community documents",
         source: {

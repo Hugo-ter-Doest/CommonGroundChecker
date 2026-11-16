@@ -79,6 +79,7 @@ describe("categoryDocSlug", () => {
     expect(aspectsOfCategory("Governance").map((entry) => entry.id)).toEqual([
       "licensing",
       "ownership",
+      "maintenance",
       "community-documents",
     ]);
   });
