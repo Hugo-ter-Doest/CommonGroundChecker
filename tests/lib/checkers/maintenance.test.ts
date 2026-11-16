@@ -14,136 +14,113 @@ function contextWith(content: string | null): RepoContext {
   } as unknown as RepoContext;
 }
 
+function contract(...contractors: unknown[]) {
+  return { maintenance: { type: "contract", contractors } };
+}
+
 describe("judgeMaintenance", () => {
-  it("fails when nobody maintains the component", () => {
-    const result = judgeMaintenance({ maintenance: { type: "none" } }, "publiccode.yml", TODAY);
-
-    expect(result.status).toBe("fail");
-    expect(result.message).toContain("nobody maintains");
-  });
-
   it("passes on a current maintenance contract", () => {
-    const result = judgeMaintenance(
-      { maintenance: { type: "contract", contractors: [{ name: "Acme", until: "2027-06-30" }] } },
-      "publiccode.yml",
-      TODAY
-    );
+    const result = judgeMaintenance(contract({ name: "Acme", until: "2027-06-30" }), "publiccode.yml", TODAY);
 
     expect(result.status).toBe("pass");
     expect(result.message).toBe("Maintained under contract by Acme until 2027-06-30.");
+    expect(result.evidence).toEqual(["Acme: valid until 2027-06-30"]);
   });
 
   it("passes on a contract that ends today", () => {
+    expect(judgeMaintenance(contract({ name: "Acme", until: TODAY }), "publiccode.yml", TODAY).status).toBe("pass");
+  });
+
+  it("passes on a valid contract next to an invalid one, and says so", () => {
     const result = judgeMaintenance(
-      { maintenance: { type: "contract", contractors: [{ name: "Acme", until: TODAY }] } },
+      contract({ name: "Acme", until: "2024-12-31" }, { name: "Beta", until: "2027-01-01" }),
       "publiccode.yml",
       TODAY
     );
 
     expect(result.status).toBe("pass");
+    expect(result.message).toBe(
+      "Maintained under contract by Beta until 2027-01-01. 1 other contractor entry is not valid; see the evidence."
+    );
+    expect(result.evidence).toEqual(["Acme: ended on 2024-12-31", "Beta: valid until 2027-01-01"]);
   });
 
-  it("fails when every maintenance contract has ended, naming the last end date", () => {
+  it.each([
+    ["none", "nobody maintains the component"],
+    ["internal", "there is no maintenance contract"],
+    ["community", "there is no maintenance contract"],
+  ])("fails on maintenance.type %s", (type, meaning) => {
     const result = judgeMaintenance(
-      {
-        maintenance: {
-          type: "contract",
-          contractors: [
-            { name: "Acme", until: "2024-12-31" },
-            { name: "Beta", until: new Date("2025-06-30") },
-          ],
-        },
-      },
+      { maintenance: { type, contacts: [{ name: "Jane Doe" }] } },
       "publiccode.yml",
       TODAY
     );
 
     expect(result.status).toBe("fail");
-    expect(result.message).toBe("The maintenance contract ended on 2025-06-30.");
-    expect(result.evidence).toEqual(["Acme, until 2024-12-31", "Beta, until 2025-06-30"]);
-  });
-
-  it("passes when one of several contracts is still current", () => {
-    const result = judgeMaintenance(
-      {
-        maintenance: {
-          type: "contract",
-          contractors: [
-            { name: "Acme", until: "2024-12-31" },
-            { name: "Beta", until: "2027-01-01" },
-          ],
-        },
-      },
-      "publiccode.yml",
-      TODAY
-    );
-
-    expect(result.status).toBe("pass");
-    expect(result.message).toContain("Beta until 2027-01-01");
+    expect(result.message).toBe(`publiccode.yml declares maintenance.type ${type}: ${meaning}.`);
   });
 
   it.each([
-    ["without an end date", { name: "Acme" }],
-    ["with an invalid end date", { name: "Acme", until: "soon" }],
-  ])("warns on a contractor %s, since the contract may still run", (_label, contractor) => {
-    const result = judgeMaintenance(
-      { maintenance: { type: "contract", contractors: [contractor] } },
-      "publiccode.yml",
-      TODAY
-    );
+    ["no maintenance section", { name: "App" }, "publiccode.yml has no maintenance section, so there is no maintenance contract."],
+    ["no type", { maintenance: {} }, "publiccode.yml does not declare maintenance.type, so there is no maintenance contract."],
+    [
+      "an unknown type",
+      { maintenance: { type: "sometimes" } },
+      'publiccode.yml declares maintenance.type "sometimes", which is not a known type: there is no maintenance contract.',
+    ],
+    ["an empty file", null, "publiccode.yml has no maintenance section, so there is no maintenance contract."],
+    [
+      "a contract without contractors",
+      { maintenance: { type: "contract" } },
+      "publiccode.yml declares maintenance under contract, but names no contractor.",
+    ],
+  ])("fails on %s", (_label, publiccode, message) => {
+    const result = judgeMaintenance(publiccode, "publiccode.yml", TODAY);
 
-    expect(result.status).toBe("warn");
-    expect(result.message).toContain("unknown whether the contract still runs");
-  });
-
-  it("warns when an ended contract sits next to one without an end date", () => {
-    const result = judgeMaintenance(
-      { maintenance: { type: "contract", contractors: [{ name: "Acme", until: "2024-12-31" }, { name: "Beta" }] } },
-      "publiccode.yml",
-      TODAY
-    );
-
-    expect(result.status).toBe("warn");
-  });
-
-  it("warns on a contract without contractors", () => {
-    expect(judgeMaintenance({ maintenance: { type: "contract" } }, "publiccode.yml", TODAY).status).toBe("warn");
-  });
-
-  it.each(["internal", "community"])("passes on %s maintenance with a contact", (type) => {
-    const result = judgeMaintenance(
-      { maintenance: { type, contacts: [{ name: "Jane Doe", email: "jane@example.org" }] } },
-      "publiccode.yml",
-      TODAY
-    );
-
-    expect(result.status).toBe("pass");
-    expect(result.evidence).toEqual(["Jane Doe"]);
-  });
-
-  it("ends the message with one full stop when a contact's name ends with one", () => {
-    const result = judgeMaintenance(
-      { maintenance: { type: "community", contacts: [{ name: "Example B.V." }] } },
-      "publiccode.yml",
-      TODAY
-    );
-
-    expect(result.message).toBe("Maintained (community) by Example B.V.");
-  });
-
-  it("warns on internal maintenance without a contact", () => {
-    expect(judgeMaintenance({ maintenance: { type: "internal", contacts: [] } }, "publiccode.yml", TODAY).status).toBe(
-      "warn"
-    );
+    expect(result.status).toBe("fail");
+    expect(result.message).toBe(message);
   });
 
   it.each([
-    ["no maintenance section", { name: "App" }],
-    ["no type", { maintenance: {} }],
-    ["an unknown type", { maintenance: { type: "sometimes" } }],
-    ["an empty file", null],
-  ])("warns on %s", (_label, publiccode) => {
-    expect(judgeMaintenance(publiccode, "publiccode.yml", TODAY).status).toBe("warn");
+    ["an ended contract", { name: "Acme", until: "2025-06-30" }, "Acme ended on 2025-06-30"],
+    ["an end date parsed as a YAML date", { name: "Acme", until: new Date("2025-06-30") }, "Acme ended on 2025-06-30"],
+    ["no end date", { name: "Maykin" }, "Maykin has no end date (until)"],
+    ["an end date that is not a date", { name: "Acme", until: "soon" }, 'Acme has an end date that is not a date: "soon"'],
+    ["an impossible date", { name: "Acme", until: "2027-02-30" }, 'Acme has an end date that is not a date: "2027-02-30"'],
+    ["no name", { until: "2027-01-01" }, "contractor 1 has no name"],
+    [
+      "an invalid email address",
+      { name: "Acme", until: "2027-01-01", email: "acme-at-example" },
+      'Acme has an invalid email address: "acme-at-example"',
+    ],
+    ["an entry that is not a contractor", "Acme", "contractor 1 is not a contractor entry"],
+  ])("fails on a contract with %s, and says what is invalid", (_label, contractor, problem) => {
+    const result = judgeMaintenance(contract(contractor), "publiccode.yml", TODAY);
+
+    expect(result.status).toBe("fail");
+    expect(result.message).toBe(`No valid maintenance contract: ${problem}.`);
+  });
+
+  it("names every problem of every contractor", () => {
+    const result = judgeMaintenance(
+      contract({ until: "2024-01-01" }, { name: "Beta", until: "soon", email: "nope" }),
+      "publiccode.yml",
+      TODAY
+    );
+
+    expect(result.message).toBe(
+      'No valid maintenance contract: contractor 1 has no name and ended on 2024-01-01; Beta has an end date that is not a date: "soon" and has an invalid email address: "nope".'
+    );
+    expect(result.evidence).toEqual([
+      "contractor 1: has no name, ended on 2024-01-01",
+      'Beta: has an end date that is not a date: "soon", has an invalid email address: "nope"',
+    ]);
+  });
+
+  it("ends the message with one full stop when a contractor's name ends with one", () => {
+    const result = judgeMaintenance(contract({ name: "Example B.V.", until: "2025-01-01" }), "publiccode.yml", TODAY);
+
+    expect(result.message).toBe("No valid maintenance contract: Example B.V. ended on 2025-01-01.");
   });
 });
 
@@ -151,25 +128,32 @@ describe("checkMaintenance", () => {
   const today = new Date(`${TODAY}T12:00:00Z`);
 
   it("reads maintenance from publiccode.yml, with until parsed as a YAML date", async () => {
-    const yaml = "publiccodeYmlVersion: '0.4'\nmaintenance:\n  type: contract\n  contractors:\n    - name: Acme\n      until: 2025-01-31\n";
+    const yaml = "publiccodeYmlVersion: '0.4'\nmaintenance:\n  type: contract\n  contractors:\n    - name: Acme\n      until: 2027-01-31\n";
 
     const result = await checkMaintenance(contextWith(yaml), ["README.md", "publiccode.yml"], today);
 
-    expect(result.status).toBe("fail");
-    expect(result.message).toBe("The maintenance contract ended on 2025-01-31.");
+    expect(result.status).toBe("pass");
+    expect(result.message).toBe("Maintained under contract by Acme until 2027-01-31.");
   });
 
-  it("warns without a publiccode.yml", async () => {
+  it("fails without a publiccode.yml", async () => {
     const result = await checkMaintenance(contextWith(null), ["README.md"], today);
 
-    expect(result.status).toBe("warn");
-    expect(result.message).toContain("No publiccode.yml");
+    expect(result.status).toBe("fail");
+    expect(result.message).toBe("No publiccode.yml was found, so there is no maintenance contract.");
   });
 
-  it("warns on invalid YAML", async () => {
+  it("fails on invalid YAML", async () => {
     const result = await checkMaintenance(contextWith("maintenance: [unclosed"), ["publiccode.yml"], today);
 
-    expect(result.status).toBe("warn");
+    expect(result.status).toBe("fail");
     expect(result.message).toContain("not valid YAML");
+  });
+
+  it("warns when the checker cannot read the file, since that says nothing about the component", async () => {
+    const result = await checkMaintenance(contextWith(null), ["publiccode.yml"], today);
+
+    expect(result.status).toBe("warn");
+    expect(result.message).toContain("could not read");
   });
 });

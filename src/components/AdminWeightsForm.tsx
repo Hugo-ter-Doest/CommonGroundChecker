@@ -48,7 +48,7 @@ const CRITERION_CATEGORIES: CriterionCategory[] = [
         id: "maintenance",
         label: "Maintained",
         explanation:
-          "Reads maintenance from publiccode.yml: fails when maintenance.type is none or every maintenance contract has ended, passes when a contract is current or internal or community maintenance names a contact.",
+          "Reads maintenance from publiccode.yml: passes only on maintenance under contract with at least one valid contractor (a name, an end date that has not passed, a valid email address if given). Any other declaration fails and says what is missing or invalid.",
       },
       {
         id: "contributing",

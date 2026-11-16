@@ -232,9 +232,9 @@ const CRITERIA_OVERVIEW = [
     icon: "🛠️",
     label: "Maintained",
     category: "Governance" as CriteriaCategory,
-    desc: "Someone maintains the component",
+    desc: "A valid maintenance contract",
     tooltip:
-      "Reads maintenance from publiccode.yml. Fails when maintenance.type is none or every maintenance contract has ended; passes when a contract is current, or internal or community maintenance names a contact.",
+      "Reads maintenance from publiccode.yml. Passes only on maintenance under contract with at least one valid contractor: a name, a valid end date (until) that has not passed, and a valid email address if one is given. Any other declaration fails and says what is missing or invalid.",
   },
   {
     icon: "🐳",
