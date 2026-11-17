@@ -112,14 +112,17 @@ describe("IssueBlocks", () => {
     expect(screen.queryByText("Title tests")).toBeNull();
   });
 
-  it("shows a positive line in a block with no entries", () => {
-    render(<IssueBlocks results={[result("license", "mandatory", "pass")]} />);
+  it("shows nothing when there are no errors or warnings", () => {
+    const { container } = render(<IssueBlocks results={[result("license", "mandatory", "pass")]} />);
 
-    const errors = screen.getByRole("region", { name: /0 errors/i });
-    const warnings = screen.getByRole("region", { name: /0 warnings/i });
-    expect(within(errors).getByText("No missing mandatory items")).toBeTruthy();
-    expect(within(warnings).getByText("No missing or incomplete items")).toBeTruthy();
-    expect(screen.queryAllByRole("listitem")).toHaveLength(0);
+    expect(container.innerHTML).toBe("");
+  });
+
+  it("leaves out the errors block when there are only warnings", () => {
+    render(<IssueBlocks results={[result("license", "recommended", "warn")]} />);
+
+    expect(screen.queryByRole("region", { name: /errors?:/i })).toBeNull();
+    expect(screen.getByRole("region", { name: /^1 warning:/i })).toBeTruthy();
   });
 
   it("uses the singular for a count of one", () => {
