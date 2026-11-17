@@ -3,7 +3,7 @@
 import type { CheckResult, Endorsement } from "@/lib/types";
 import { criterionAnchorId } from "@/lib/criteria";
 import { RATING_SUMMARY_ID, ratingIssue, splitIssues, type IssueEntry } from "@/lib/issues";
-import { AlertTriangle, CheckCircle, XCircle } from "lucide-react";
+import { AlertTriangle, XCircle } from "lucide-react";
 import type { MouseEvent } from "react";
 
 function openCriterion(event: MouseEvent<HTMLAnchorElement>, id: string) {
@@ -28,7 +28,6 @@ const BLOCK_CONFIG = {
     singular: "error",
     plural: "errors",
     title: "Missing mandatory items",
-    empty: "No missing mandatory items",
     bg: "bg-red-50",
     border: "border-red-300",
     text: "text-red-700",
@@ -40,7 +39,6 @@ const BLOCK_CONFIG = {
     singular: "warning",
     plural: "warnings",
     title: "Missing or incomplete items",
-    empty: "No missing or incomplete items",
     bg: "bg-yellow-50",
     border: "border-yellow-300",
     text: "text-yellow-700",
@@ -48,10 +46,13 @@ const BLOCK_CONFIG = {
   },
 } as const;
 
+/** One block of issues; a block without entries is left out. */
 function IssueBlock({ kind, entries, ratingError = null }: IssueBlockProps) {
+  const count = entries.length + (ratingError === null ? 0 : 1);
+  if (count === 0) return null;
+
   const config = BLOCK_CONFIG[kind];
   const Icon = config.icon;
-  const count = entries.length + (ratingError === null ? 0 : 1);
   const countLabel = `${count} ${count === 1 ? config.singular : config.plural}`;
   const statusChip = (
     <span
@@ -73,47 +74,40 @@ function IssueBlock({ kind, entries, ratingError = null }: IssueBlockProps) {
         </span>
       </h3>
 
-      {count === 0 ? (
-        <p className="mt-2 flex items-center gap-2 text-sm text-green-700">
-          <CheckCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
-          {config.empty}
-        </p>
-      ) : (
-        <ul className="mt-3 space-y-2">
-          {ratingError !== null && (
-            <li className="rounded-lg bg-white/70 px-3 py-2 text-sm">
-              <div className="flex flex-wrap items-center gap-2">
-                {statusChip}
-                <a
-                  href={`#${RATING_SUMMARY_ID}`}
-                  className="font-semibold text-gray-900 underline hover:text-cg-lightblue"
-                >
-                  {ratingError}
-                  <span className="sr-only">: go to the overall rating</span>
-                </a>
-                <span className="text-xs text-gray-600">Overall rating</span>
-              </div>
-            </li>
-          )}
-          {entries.map(({ result, category }) => (
-            <li key={result.id} className="rounded-lg bg-white/70 px-3 py-2 text-sm">
-              <div className="flex flex-wrap items-center gap-2">
-                {statusChip}
-                <a
-                  href={`#${criterionAnchorId(result.id)}`}
-                  onClick={(event) => openCriterion(event, result.id)}
-                  className="font-semibold text-gray-900 underline hover:text-cg-lightblue"
-                >
-                  {result.title}
-                  <span className="sr-only">: go to the {result.title} result</span>
-                </a>
-                <span className="text-xs text-gray-600">{category}</span>
-              </div>
-              <p className="mt-1 text-gray-700">{result.message}</p>
-            </li>
-          ))}
-        </ul>
-      )}
+      <ul className="mt-3 space-y-2">
+        {ratingError !== null && (
+          <li className="rounded-lg bg-white/70 px-3 py-2 text-sm">
+            <div className="flex flex-wrap items-center gap-2">
+              {statusChip}
+              <a
+                href={`#${RATING_SUMMARY_ID}`}
+                className="font-semibold text-gray-900 underline hover:text-cg-lightblue"
+              >
+                {ratingError}
+                <span className="sr-only">: go to the overall rating</span>
+              </a>
+              <span className="text-xs text-gray-600">Overall rating</span>
+            </div>
+          </li>
+        )}
+        {entries.map(({ result, category }) => (
+          <li key={result.id} className="rounded-lg bg-white/70 px-3 py-2 text-sm">
+            <div className="flex flex-wrap items-center gap-2">
+              {statusChip}
+              <a
+                href={`#${criterionAnchorId(result.id)}`}
+                onClick={(event) => openCriterion(event, result.id)}
+                className="font-semibold text-gray-900 underline hover:text-cg-lightblue"
+              >
+                {result.title}
+                <span className="sr-only">: go to the {result.title} result</span>
+              </a>
+              <span className="text-xs text-gray-600">{category}</span>
+            </div>
+            <p className="mt-1 text-gray-700">{result.message}</p>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -126,10 +120,12 @@ interface IssueBlocksProps {
 
 export default function IssueBlocks({ results, rating = null, endorsement = null }: IssueBlocksProps) {
   const { errors, warnings } = splitIssues(results);
+  const ratingError = ratingIssue(rating, endorsement);
+  if (errors.length === 0 && warnings.length === 0 && ratingError === null) return null;
 
   return (
     <div className="grid gap-4">
-      <IssueBlock kind="errors" entries={errors} ratingError={ratingIssue(rating, endorsement)} />
+      <IssueBlock kind="errors" entries={errors} ratingError={ratingError} />
       <IssueBlock kind="warnings" entries={warnings} />
     </div>
   );
