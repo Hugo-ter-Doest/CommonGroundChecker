@@ -16,6 +16,8 @@ const ids = [
   "changelog",
   "tests",
   "complexity",
+  "maintainability",
+  "opensourcehealth",
   "codemetrics",
   "owaspsecurecoding",
   "adrvalidator",
@@ -49,6 +51,8 @@ const mocks = vi.hoisted(() => ({
   checkSecurity: vi.fn(),
   checkTests: vi.fn(),
   checkComplexity: vi.fn(),
+  checkMaintainability: vi.fn(),
+  checkOpenSourceHealth: vi.fn(),
   checkSourceCode: vi.fn(),
   checkSemver: vi.fn(),
   checkFiveLayer: vi.fn(),
@@ -117,6 +121,8 @@ vi.mock("@/lib/checkers/codeofconduct", () => ({ checkCodeOfConduct: mocks.check
 vi.mock("@/lib/checkers/security", () => ({ checkSecurity: mocks.checkSecurity }));
 vi.mock("@/lib/checkers/tests", () => ({ checkTests: mocks.checkTests }));
 vi.mock("@/lib/checkers/complexity", () => ({ checkComplexity: mocks.checkComplexity }));
+vi.mock("@/lib/checkers/maintainability", () => ({ checkMaintainability: mocks.checkMaintainability }));
+vi.mock("@/lib/checkers/openSourceHealth", () => ({ checkOpenSourceHealth: mocks.checkOpenSourceHealth }));
 vi.mock("@/lib/checkers/codeMetrics", () => ({ checkCodeMetrics: mocks.checkCodeMetrics }));
 vi.mock("@/lib/checkers/owaspSecureCoding", () => ({ checkOwaspSecureCoding: mocks.checkOwaspSecureCoding }));
 vi.mock("@/lib/checkers/eupl", () => ({
@@ -130,6 +136,8 @@ vi.mock("@/lib/checkers/helmchart", () => ({ checkHelmChart: mocks.checkHelmChar
 vi.mock("@/lib/checkers/config", () => ({ getActiveScoringConfig: mocks.getActiveScoringConfig }));
 
 import { runChecks } from "@/lib/checkers/index";
+import { CATEGORY_ORDER, CATEGORY_WEIGHTS } from "@/lib/criteria";
+import { resolveCategory } from "@/lib/aspects";
 
 function resultFor(id: string, status: CheckResult["status"]): CheckResult {
   return {
@@ -232,6 +240,8 @@ describe("runChecks", () => {
     mocks.checkDocumentation.mockReturnValue(resultFor("documentation", "pass"));
     mocks.checkTests.mockReturnValue(resultFor("tests", "pass"));
     mocks.checkComplexity.mockResolvedValue(resultFor("complexity", "pass"));
+    mocks.checkMaintainability.mockResolvedValue({ ...resultFor("maintainability", "warn"), starRating: 3 });
+    mocks.checkOpenSourceHealth.mockResolvedValue({ ...resultFor("opensourcehealth", "pass"), starRating: 4 });
     mocks.checkCodeMetrics.mockResolvedValue(resultFor("codemetrics", "info"));
     mocks.checkOwaspSecureCoding.mockResolvedValue(resultFor("owaspsecurecoding", "pass"));
     mocks.checkAdrValidator.mockResolvedValue(resultFor("adrvalidator", "pass"));
@@ -269,11 +279,78 @@ describe("runChecks", () => {
     expect(report.scoringConfigId).toBe("cfg-1");
     expect(report.score).toBe(25);
     expect(mocks.checkOpenApi).not.toHaveBeenCalled();
-    expect(report.results).toHaveLength(23);
+    expect(report.results).toHaveLength(25);
+    expect(report.results.find((result) => result.id === "opensourcehealth")?.starRating).toBe(4);
+    expect(report.results.find((result) => result.id === "maintainability")?.starRating).toBe(3);
+    expect(report.results.find((result) => result.id === "semver")?.starRating).toBe(1);
+    expect(report.results.find((result) => result.id === "tests")?.starRating).toBe(3);
 
     const openApiResult = report.results.find((result) => result.id === "openapi");
     expect(openApiResult?.status).toBe("pass");
     expect(openApiResult?.message).toContain("not marked as a register");
+  });
+
+  it("rates the aspects, the categories and the component, and judges the endorsement", async () => {
+    const configById = criterionConfig(0);
+    configById.maintainability = { weight: 1, requirementLevel: "recommended" };
+    configById.license = { weight: 1, requirementLevel: "mandatory" };
+    configById.coverage = { weight: 0, requirementLevel: "mandatory" };
+
+    mocks.checkMaintainability.mockResolvedValue({
+      ...resultFor("maintainability", "warn"),
+      starRating: 3,
+      rating: 3.4,
+      aspectRatings: { analysability: 3, modifiability: 4, testability: 3, modularity: null, reusability: 4 },
+    });
+
+    mocks.getActiveScoringConfig.mockResolvedValue({
+      id: "cfg-ratings",
+      config: {
+        criterionConfigByCheckId: configById,
+        statusScoreByStatus: { pass: 1, warn: 0.5, info: 0.5, fail: 0 },
+        complexityThreshold: 12,
+        complexityMaxCcnThreshold: 20,
+        spectralRulesetSource: "https://static.developer.overheid.nl/adr/ruleset.yaml",
+      },
+    });
+
+    const report = await runChecks("https://github.com/org/repo", { isRegister: false });
+
+    const governance = resolveCategory("Governance")!;
+    const maintainability = resolveCategory("Maintainability")!;
+    expect(report.aspectRatings.licensing).toEqual({ rating: 5.5 });
+    expect(report.aspectRatings.analysability).toEqual({ rating: 3 });
+    expect(report.aspectRatings.modularity).toEqual({ rating: null });
+    expect(report.categoryRatings[governance]).toBe(5.5);
+    expect(report.categoryRatings[maintainability]).toBe(3.5);
+    expect(Object.keys(report.categoryRatings)).toEqual(CATEGORY_ORDER);
+    const governanceWeight = CATEGORY_WEIGHTS[governance];
+    const maintainabilityWeight = CATEGORY_WEIGHTS[maintainability];
+    expect(report.rating).toBe(
+      Math.round(((5.5 * governanceWeight + 3.5 * maintainabilityWeight) / (governanceWeight + maintainabilityWeight)) * 10) / 10
+    );
+    expect(report.endorsement).toEqual({ passed: true, reasons: [] });
+    expect(report.results.find((result) => result.id === "license")?.starRating).toBe(5);
+  });
+
+  it("does not endorse a component whose mandatory criterion fails", async () => {
+    const configById = criterionConfig(1, "recommended");
+    configById.license = { weight: 1, requirementLevel: "mandatory" };
+    mocks.checkLicense.mockResolvedValue({ ...resultFor("license", "fail"), title: "Open source licence" });
+    mocks.getActiveScoringConfig.mockResolvedValue({
+      id: "cfg-endorsement",
+      config: {
+        criterionConfigByCheckId: configById,
+        statusScoreByStatus: { pass: 1, warn: 0.5, info: 0.5, fail: 0 },
+        complexityThreshold: 12,
+        complexityMaxCcnThreshold: 20,
+        spectralRulesetSource: "https://static.developer.overheid.nl/adr/ruleset.yaml",
+      },
+    });
+
+    const report = await runChecks("https://github.com/org/repo", { isRegister: false });
+
+    expect(report.endorsement).toEqual({ passed: false, reasons: ["Mandatory criterion fails: Open source licence"] });
   });
 
   it("applies fixed category weights when aggregating mandatory criteria", async () => {
