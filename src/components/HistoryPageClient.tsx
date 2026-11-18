@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import type { RepoSummary } from "@/generated/openapi-client";
+import RatingBadge from "@/components/RatingBadge";
+import { isRating } from "@/lib/ratings";
 
 type SortKey = "date" | "score";
 type SortDirection = "asc" | "desc";
@@ -111,7 +113,7 @@ export default function HistoryPageClient({
         ) : (
           <div className="space-y-3">
             {sortedRepositories.map((repository) => {
-              const latest = repository.latestAnalysis as { checkedAt: string; score: number } | null;
+              const latest = repository.latestAnalysis as { checkedAt: string; score: number; rating?: unknown } | null;
 
               return (
                 <Link
@@ -136,11 +138,12 @@ export default function HistoryPageClient({
                     </div>
                   </div>
                   {latest && (
-                    <div className="mt-2">
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      {isRating(latest.rating) && <RatingBadge rating={latest.rating} />}
                       <span className="inline-flex text-xs font-semibold px-2 py-0.5 rounded-full border border-gray-300 text-gray-700 bg-white">
                         Latest score: {latest.score}
                       </span>
-                      <span className="inline-flex ml-2 text-xs font-semibold px-2 py-0.5 rounded-full border border-purple-200 text-purple-700 bg-purple-50">
+                      <span className="inline-flex text-xs font-semibold px-2 py-0.5 rounded-full border border-purple-200 text-purple-700 bg-purple-50">
                         Version: unknown
                       </span>
                     </div>
