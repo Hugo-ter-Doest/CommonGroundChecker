@@ -199,9 +199,9 @@ export const TOOL_GROUPS: ToolGroup[] = [
       {
         measure: "Duplication",
         track: "estimate",
-        tool: "the vendored estimate script's own clone count, cross-checked with jscpd",
-        version: "jscpd 4.0.5",
-        licence: "script EUPL-1.2, jscpd MIT",
+        tool: "the vendored estimate script's own clone count, cross-checked with Simian 4.2.1 in strict mode",
+        version: "script at ConductionNL/.github cd0fe04",
+        licence: "EUPL-1.2",
         proves:
           "The share of redundant code lines: blocks of at least 6 code lines that are equal apart from whitespace, counted as copies minus one, per language. That is the v18.1 definition.",
         doesNotProve:

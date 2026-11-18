@@ -82,6 +82,17 @@ describe("what the checker reports", () => {
     expect(within(section).getByText(/most components will not reach 4 stars/)).toBeTruthy();
   });
 
+  it("names Simian 4.2.1 as the estimate's duplication cross-check and jscpd 4.0.5 only as replaced", () => {
+    const rows = TOOL_GROUPS.flatMap((group) => group.rows).filter((row) => row.track === "estimate");
+    const duplication = rows.find((row) => row.measure === "Duplication");
+    const crossCheck = rows.find((row) => row.measure === "Duplication cross-check");
+
+    expect(`${duplication?.tool} ${duplication?.version} ${duplication?.licence}`).not.toContain("jscpd");
+    expect(duplication?.tool).toContain("Simian 4.2.1");
+    expect(crossCheck).toMatchObject({ version: "4.2.1", tool: "Simian in strict mode, replacing jscpd 4.0.5" });
+    expect(REJECTED_TOOLS.find((rejected) => rejected.tool === "jscpd 4.0.5")?.reason).toContain("Simian 4.2.1 replaces it");
+  });
+
   it("gives every in-review row its pull request", () => {
     for (const row of TOOL_GROUPS.flatMap((group) => group.rows).filter((candidate) => candidate.inReview)) {
       expect(row.pr, row.measure).toBeGreaterThan(0);
