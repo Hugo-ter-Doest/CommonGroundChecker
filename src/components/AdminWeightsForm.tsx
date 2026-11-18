@@ -133,6 +133,19 @@ const CRITERION_CATEGORIES: CriterionCategory[] = [
           "Clones the analyzed repository and runs Lizard locally. The criterion passes when average cyclomatic complexity (AvgCCN) stays within the configured threshold, and the maximum cyclomatic complexity stays within the configured threshold.",
       },
       {
+        id: "maintainability",
+        label: "Maintainability (ISO 25010)",
+        explanation:
+          "Clones the analyzed repository and rates unit size, unit complexity, unit interfacing, duplication, module coupling and component structure from 1 to 5 stars. The criterion passes at an estimated rating of 4 stars or more and warns at 3 stars.",
+      },
+      {
+        id: "coupling",
+        label: "Coupling (open track)",
+        explanation:
+          "Builds the module dependency graph with pdepend (PHP), grimp (Python) and dependency-cruiser (JavaScript, TypeScript, Vue) and shows module coupling, component independence, component entanglement and dependency cycles per language. This criterion is informative: the raw figures are shown here and rated by \"Maintainability, open track\" when that rating is available.",
+        requirementLevel: "informative",
+      },
+      {
         id: "codemetrics",
         label: "Code metrics",
         explanation:
