@@ -16,6 +16,7 @@ const ids = [
   "changelog",
   "tests",
   "complexity",
+  "maintainability",
   "codemetrics",
   "owaspsecurecoding",
   "adrvalidator",
@@ -49,6 +50,7 @@ const mocks = vi.hoisted(() => ({
   checkSecurity: vi.fn(),
   checkTests: vi.fn(),
   checkComplexity: vi.fn(),
+  checkMaintainability: vi.fn(),
   checkSourceCode: vi.fn(),
   checkSemver: vi.fn(),
   checkFiveLayer: vi.fn(),
@@ -117,6 +119,7 @@ vi.mock("@/lib/checkers/codeofconduct", () => ({ checkCodeOfConduct: mocks.check
 vi.mock("@/lib/checkers/security", () => ({ checkSecurity: mocks.checkSecurity }));
 vi.mock("@/lib/checkers/tests", () => ({ checkTests: mocks.checkTests }));
 vi.mock("@/lib/checkers/complexity", () => ({ checkComplexity: mocks.checkComplexity }));
+vi.mock("@/lib/checkers/maintainability", () => ({ checkMaintainability: mocks.checkMaintainability }));
 vi.mock("@/lib/checkers/codeMetrics", () => ({ checkCodeMetrics: mocks.checkCodeMetrics }));
 vi.mock("@/lib/checkers/owaspSecureCoding", () => ({ checkOwaspSecureCoding: mocks.checkOwaspSecureCoding }));
 vi.mock("@/lib/checkers/eupl", () => ({
@@ -232,6 +235,7 @@ describe("runChecks", () => {
     mocks.checkDocumentation.mockReturnValue(resultFor("documentation", "pass"));
     mocks.checkTests.mockReturnValue(resultFor("tests", "pass"));
     mocks.checkComplexity.mockResolvedValue(resultFor("complexity", "pass"));
+    mocks.checkMaintainability.mockResolvedValue({ ...resultFor("maintainability", "warn"), starRating: 3 });
     mocks.checkCodeMetrics.mockResolvedValue(resultFor("codemetrics", "info"));
     mocks.checkOwaspSecureCoding.mockResolvedValue(resultFor("owaspsecurecoding", "pass"));
     mocks.checkAdrValidator.mockResolvedValue(resultFor("adrvalidator", "pass"));
@@ -269,11 +273,34 @@ describe("runChecks", () => {
     expect(report.scoringConfigId).toBe("cfg-1");
     expect(report.score).toBe(25);
     expect(mocks.checkOpenApi).not.toHaveBeenCalled();
-    expect(report.results).toHaveLength(23);
+    expect(report.results).toHaveLength(24);
+    expect(report.results.find((result) => result.id === "maintainability")?.starRating).toBe(3);
+    expect(report.results.find((result) => result.id === "semver")?.starRating).toBe(1);
+    expect(report.results.find((result) => result.id === "tests")?.starRating).toBe(3);
 
     const openApiResult = report.results.find((result) => result.id === "openapi");
     expect(openApiResult?.status).toBe("pass");
     expect(openApiResult?.message).toContain("not marked as a register");
+  });
+
+  it("gives a result that was not measured no stars unless the check rated it", async () => {
+    mocks.checkSecurity.mockReturnValue(resultFor("security", "info"));
+    mocks.checkMaintainability.mockResolvedValue({ ...resultFor("maintainability", "info"), starRating: 2 });
+    mocks.getActiveScoringConfig.mockResolvedValue({
+      id: "cfg-1",
+      config: {
+        criterionConfigByCheckId: criterionConfig(1),
+        statusScoreByStatus: { pass: 1, warn: 0.5, info: 0.5, fail: 0 },
+        complexityThreshold: 12,
+        complexityMaxCcnThreshold: 20,
+        spectralRulesetSource: "https://static.developer.overheid.nl/adr/ruleset.yaml",
+      },
+    });
+
+    const report = await runChecks("https://github.com/org/repo", { isRegister: false });
+
+    expect(report.results.find((result) => result.id === "security")?.starRating).toBeUndefined();
+    expect(report.results.find((result) => result.id === "maintainability")?.starRating).toBe(2);
   });
 
   it("applies fixed category weights when aggregating mandatory criteria", async () => {
