@@ -3,6 +3,7 @@ import { ASPECT_MODEL, type AspectDefinition } from "@/lib/aspects";
 import {
   STAR_BOUNDARIES,
   aspectComposition,
+  aspectNote,
   aspectsOfCategory,
   categoryDocSlug,
   documentCountText,
@@ -141,5 +142,22 @@ describe("aspectComposition", () => {
         { id: "spdxheaders", title: "spdxheaders title", status: "info", rating: null, hasCard: false },
       ],
     });
+  });
+});
+
+describe("aspectNote", () => {
+  it("says not counted for a rated aspect with weight 0", () => {
+    expect(aspectNote({ id: "layering", title: "Layering", source: { type: "criteria", checkIds: ["fivelayer"] }, weight: 0 })).toBe(
+      "not counted"
+    );
+  });
+
+  it("adds no note to a counted aspect", () => {
+    expect(aspectNote({ id: "api", title: "API", source: { type: "criteria", checkIds: ["openapi"] } })).toBeNull();
+  });
+
+  it("says informative, not rated for an aspect whose source gives no stars", () => {
+    const aspect = { id: "size", title: "Size", source: { type: "size", checkId: "size" }, weight: 0 };
+    expect(aspectNote(aspect as unknown as AspectDefinition)).toBe("informative, not rated");
   });
 });

@@ -165,4 +165,11 @@ describe("CategoryRatings", () => {
     expect(details?.open).toBe(false);
     expect(details?.querySelector("summary")?.textContent).toBe("Show what Licensing is made of");
   });
+
+  it("marks a rated aspect with weight 0 as not counted", () => {
+    renderRatings();
+
+    expect(screen.getByRole("heading", { name: /^Layering\s*\(not counted\)$/ })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "API" })).toBeTruthy();
+  });
 });

@@ -5,6 +5,7 @@ import RatingBadge from "@/components/RatingBadge";
 import type { AspectDefinition } from "@/lib/aspects";
 import {
   aspectComposition,
+  aspectNote,
   aspectsOfCategory,
   categoryDocSlug,
   documentCountText,
@@ -133,6 +134,7 @@ function AspectRow({
   docSlug?: string;
 }) {
   const headingId = `aspect-rating-${aspect.id}`;
+  const note = aspectNote(aspect);
   return (
     <div role="group" aria-labelledby={headingId} className="space-y-2">
       <div className="grid gap-2 sm:grid-cols-[12rem_1fr_11rem] sm:items-center">
@@ -144,7 +146,7 @@ function AspectRow({
           ) : (
             aspect.title
           )}
-          {aspect.weight === 0 && <span className="ml-1 text-xs font-normal text-gray-600">(not counted)</span>}
+          {note && <span className="ml-1 text-xs font-normal text-gray-600">({note})</span>}
         </h5>
         {aspect.source.type === "informative" ? (
           <p className="text-xs text-gray-600">Shown for information, without stars.</p>
