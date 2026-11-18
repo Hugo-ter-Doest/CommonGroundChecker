@@ -2,6 +2,7 @@ import type { RepoContext, RepositoryMeta } from "../providers/types";
 import type { CheckResult, InformativeMetric } from "../types";
 import { fetchGitHubActivity } from "../projectActivity/github";
 import { fetchGitLabActivity } from "../projectActivity/gitlab";
+import { profileLookupLimit } from "../contributorOrganisations";
 import { DAY_MS, type CommitDomains, type Measured, type ProjectActivity, type Releases, type ResponseSet } from "../projectActivity/types";
 
 export const PROJECT_HEALTH_CHECK_ID = "projecthealth";
@@ -12,44 +13,8 @@ function chaossUrl(slug: string): string {
   return `https://chaoss.community/kb/metric-${slug}/`;
 }
 
-/** Mail providers whose addresses say nothing about an organisation. */
-const PERSONAL_MAIL_DOMAINS = new Set([
-  "gmail.com",
-  "googlemail.com",
-  "outlook.com",
-  "hotmail.com",
-  "live.com",
-  "live.nl",
-  "hotmail.nl",
-  "msn.com",
-  "yahoo.com",
-  "icloud.com",
-  "me.com",
-  "mac.com",
-  "proton.me",
-  "protonmail.com",
-  "pm.me",
-  "gmx.com",
-  "gmx.de",
-  "gmx.net",
-  "web.de",
-  "posteo.de",
-  "mailbox.org",
-  "fastmail.com",
-  "ziggo.nl",
-  "kpnmail.nl",
-  "planet.nl",
-  "xs4all.nl",
-  "home.nl",
-  "telfort.nl",
-]);
-
 const numberFormat = new Intl.NumberFormat("en-GB");
 
-/** True for an address that hides its owner, such as GitHub's noreply addresses. */
-function isHiddenDomain(domain: string): boolean {
-  return domain === "localhost" || /(^|\.)noreply\.|^noreply\b|(^|\.)local$|(^|\.)localdomain$/.test(domain);
-}
 
 /**
  * CHAOSS Contributor Absence Factor: the smallest number of contributors that
@@ -68,42 +33,56 @@ export function contributorAbsenceFactor(counts: number[]): number | null {
 }
 
 export interface OrganisationShares {
-  /** Commits whose author domain names an organisation */
+  /** Commits whose author has a known organisation */
   attributed: number;
-  /** Commits from personal or hidden addresses */
+  /** Commits whose author's organisation is unknown */
   unattributed: number;
   organisations: number;
-  /** The largest organisation domain, shown only when it has at least two authors */
+  /** The largest organisation, shown only when it has at least two authors */
   largestDomain: string | null;
   largestShare: number | null;
   largestAuthors: number;
+  /** Distinct authors, and those whose organisation is unknown */
+  authors: number;
+  unknownAuthors: number;
 }
 
-/** Commits per organisation email domain; personal and hidden addresses count apart. */
+/** Commits per organisation; commits by authors of unknown organisation count apart. */
 export function organisationShares(commits: CommitDomains["commits"]): OrganisationShares {
-  const perDomain = new Map<string, { commits: number; authors: Set<number> }>();
+  const perOrganisation = new Map<string, { commits: number; authors: Set<number> }>();
+  const authors = new Set<number>();
+  const unknownAuthors = new Set<number>();
   let unattributed = 0;
-  for (const { domain, author } of commits) {
-    if (PERSONAL_MAIL_DOMAINS.has(domain) || isHiddenDomain(domain)) {
+  for (const { organisation, author } of commits) {
+    authors.add(author);
+    if (organisation === null) {
       unattributed += 1;
+      unknownAuthors.add(author);
       continue;
     }
-    const entry = perDomain.get(domain) ?? { commits: 0, authors: new Set<number>() };
+    const entry = perOrganisation.get(organisation) ?? { commits: 0, authors: new Set<number>() };
     entry.commits += 1;
     entry.authors.add(author);
-    perDomain.set(domain, entry);
+    perOrganisation.set(organisation, entry);
   }
   const attributed = commits.length - unattributed;
-  const ranked = [...perDomain.entries()].sort((a, b) => b[1].commits - a[1].commits);
+  const ranked = [...perOrganisation.entries()].sort((a, b) => b[1].commits - a[1].commits);
   const largest = ranked[0];
   return {
     attributed,
     unattributed,
-    organisations: perDomain.size,
+    organisations: perOrganisation.size,
     largestDomain: largest && largest[1].authors.size >= 2 ? largest[0] : null,
     largestShare: largest && attributed > 0 ? largest[1].commits / attributed : null,
     largestAuthors: largest ? largest[1].authors.size : 0,
+    authors: authors.size,
+    unknownAuthors: unknownAuthors.size,
   };
+}
+
+/** "conduction.nl" for a domain, "the company maykin media" style text for a profile company. */
+function organisationLabel(organisation: string): string {
+  return organisation.startsWith("company:") ? `the profile company ${organisation.slice("company:".length)}` : organisation;
 }
 
 function median(values: number[]): number | null {
@@ -160,17 +139,30 @@ function diversityMetric(data: Measured<CommitDomains>): InformativeMetric {
   const shares = organisationShares(data.value.commits);
   const total = data.value.commits.length;
   if (total === 0) return notMeasuredMetric(base, "no commits by people in the last 12 months");
+  if (shares.unknownAuthors * 2 > shares.authors) {
+    return notMeasuredMetric(
+      base,
+      `organisation unknown for most contributors (${shares.unknownAuthors} of ${shares.authors})${notLookedUpText(data.value)}`
+    );
+  }
   if (shares.attributed === 0 || shares.largestShare === null) {
-    return notMeasuredMetric(base, `all ${total} sampled commits use a personal or hidden email address`);
+    return notMeasuredMetric(base, `the organisation of all ${total} sampled commits is unknown`);
   }
   const largest = shares.largestDomain
-    ? `${shares.largestDomain} (${shares.largestAuthors} authors)`
-    : "a domain with one author";
+    ? `${organisationLabel(shares.largestDomain)} (${shares.largestAuthors} authors)`
+    : "an organisation with one author";
+  const lookups = data.value.lookupAvailable
+    ? "for a personal or hidden address, by the company on the author's public profile"
+    : "the forge does not say which account made a commit, so personal and hidden addresses stay unknown";
   return {
     ...base,
     value: `${shares.organisations} ${shares.organisations === 1 ? "organisation" : "organisations"}; largest ${percent(shares.largestShare)}`,
-    explanation: `Organisations are told apart by the email domain of ${data.value.scope} (${plural(total, "commit")} by people). The largest is ${largest}, with ${percent(shares.largestShare)} of the ${shares.attributed} commits that name an organisation; ${percent(shares.unattributed / total)} of the commits use a personal or hidden address and are not attributed. Only these counts are kept, no names or addresses; a domain is named only when several authors share it.`,
+    explanation: `Organisations are told apart by the email domain of ${data.value.scope} (${plural(total, "commit")} by people, after the .mailmap) and, ${lookups}. The largest is ${largest}, with ${percent(shares.largestShare)} of the ${shares.attributed} commits whose organisation is known; ${percent(shares.unattributed / total)} of the commits come from ${shares.unknownAuthors} of ${shares.authors} authors whose organisation stays unknown.${notLookedUpText(data.value)} Only these counts are kept, no names, addresses or companies; an organisation is named only when several authors share it.`,
   };
+}
+
+function notLookedUpText(value: CommitDomains): string {
+  return value.notLookedUp > 0 ? `; ${value.notLookedUp} not looked up, because a scan looks up at most ${profileLookupLimit()} profiles` : "";
 }
 
 function closureMetric(data: Measured<{ opened: number; closed: number }>): InformativeMetric {

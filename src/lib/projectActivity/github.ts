@@ -4,7 +4,6 @@ import {
   activityWindows,
   authorNumbering,
   earliest,
-  emailDomain,
   errorReason,
   isBotName,
   notMeasured,
@@ -15,6 +14,13 @@ import {
   type Releases,
   type ResponseSet,
 } from "./types";
+
+import {
+  canonicalEmail,
+  parseMailmap,
+  resolveOrganisations,
+  type ContributorIdentity,
+} from "../contributorOrganisations";
 
 const BASE = "https://api.github.com";
 /** Activity changes slowly, so responses may be reused for an hour. */
@@ -82,9 +88,32 @@ async function contributorCommits(fullName: string, since: Date, options: FetchO
   return notMeasured("GitHub was still computing the contributor statistics; run the check again in a minute");
 }
 
+async function readMailmap(fullName: string): Promise<Map<string, string>> {
+  try {
+    const { data } = await ghGet(`/repos/${fullName}/contents/.mailmap`);
+    const content = (data as { content?: string; encoding?: string } | null)?.content;
+    return parseMailmap(typeof content === "string" ? Buffer.from(content, "base64").toString("utf-8") : null);
+  } catch {
+    return new Map();
+  }
+}
+
+async function ownerName(owner: string): Promise<string | null> {
+  try {
+    const { data } = await ghGet(`/orgs/${owner}`);
+    const name = (data as { name?: unknown } | null)?.name;
+    return typeof name === "string" ? name : null;
+  } catch {
+    return null;
+  }
+}
+
 async function commitDomains(fullName: string, since: Date): Promise<Measured<CommitDomains>> {
+  const owner = fullName.split("/")[0];
+  const [mailmap, name] = await Promise.all([readMailmap(fullName), ownerName(owner)]);
   const authorNumber = authorNumbering();
-  const commits: CommitDomains["commits"] = [];
+  const identities: ContributorIdentity[] = [];
+  const sampledAuthors: number[] = [];
   let sampled = 0;
   let complete = false;
   for (let page = 1; page <= COMMIT_PAGES; page += 1) {
@@ -92,19 +121,30 @@ async function commitDomains(fullName: string, since: Date): Promise<Measured<Co
     const items = Array.isArray(data) ? data : [];
     for (const item of items as Array<{ author?: GitHubUser | null; commit?: { author?: { email?: string; name?: string } } }>) {
       sampled += 1;
-      const email = item.commit?.author?.email;
       if (item.author?.type === "Bot" || isBotName(item.author?.login) || isBotName(item.commit?.author?.name)) continue;
-      const domain = emailDomain(email);
-      if (!domain || typeof email !== "string") continue;
-      commits.push({ domain, author: authorNumber(email) });
+      const email = canonicalEmail(item.commit?.author?.email, mailmap);
+      if (!email) continue;
+      const author = authorNumber(email);
+      if (!identities[author]) identities[author] = { email, login: item.author?.login ?? null };
+      else if (!identities[author].login && item.author?.login) identities[author].login = item.author.login;
+      sampledAuthors.push(author);
     }
     if (items.length < 100) {
       complete = true;
       break;
     }
   }
+  const resolution = await resolveOrganisations(identities, {
+    ownerNames: [owner, ...(name ? [name] : [])],
+    lookupCompany: async (login) => {
+      const { data } = await ghGet(`/users/${encodeURIComponent(login)}`);
+      const company = (data as { company?: unknown } | null)?.company;
+      return typeof company === "string" ? company : null;
+    },
+  });
+  const commits = sampledAuthors.map((author) => ({ organisation: resolution.contributors[author].organisation, author }));
   const scope = complete ? "the commits of the last 12 months" : `the latest ${sampled} commits of the last 12 months`;
-  return { measured: true, value: { commits, scope } };
+  return { measured: true, value: { commits, scope, notLookedUp: resolution.notLookedUp, lookupAvailable: true } };
 }
 
 async function firstResponse(

@@ -4,7 +4,6 @@ import {
   activityWindows,
   authorNumbering,
   earliest,
-  emailDomain,
   errorReason,
   isBotName,
   notMeasured,
@@ -15,6 +14,8 @@ import {
   type Releases,
   type ResponseSet,
 } from "./types";
+
+import { canonicalEmail, parseMailmap, resolveOrganisations, type ContributorIdentity } from "../contributorOrganisations";
 
 const BASE = "https://gitlab.com/api/v4";
 const REVALIDATE_SECONDS = 3600;
@@ -46,14 +47,30 @@ async function count(path: string): Promise<number> {
   return total;
 }
 
-/** Counts the human commits of the last 12 months per author, and their email domains. */
+async function readMailmap(project: string): Promise<Map<string, string>> {
+  try {
+    const { data } = await glGet(`/projects/${project}/repository/files/.mailmap?ref=HEAD`);
+    const content = (data as { content?: string } | null)?.content;
+    return parseMailmap(typeof content === "string" ? Buffer.from(content, "base64").toString("utf-8") : null);
+  } catch {
+    return new Map();
+  }
+}
+
+/**
+ * Counts the human commits of the last 12 months per author, after the
+ * .mailmap, and their organisations. GitLab does not say which account made a
+ * commit, so profiles are not looked up.
+ */
 async function commits(
   project: string,
   since: Date
 ): Promise<{ counts: Measured<CommitCounts>; domains: Measured<CommitDomains> }> {
+  const mailmap = await readMailmap(project);
   const authorNumber = authorNumbering();
   const perAuthor = new Map<number, number>();
-  const sampledDomains: CommitDomains["commits"] = [];
+  const identities: ContributorIdentity[] = [];
+  const sampledAuthors: number[] = [];
   let sampled = 0;
   let complete = false;
   for (let page = 1; page <= COMMIT_PAGES; page += 1) {
@@ -63,22 +80,27 @@ async function commits(
     const items = (Array.isArray(data) ? data : []) as Array<{ author_email?: string; author_name?: string }>;
     for (const item of items) {
       sampled += 1;
-      const email = item.author_email;
-      if (typeof email !== "string" || isBotName(item.author_name) || isBotName(email.split("@")[0])) continue;
+      const email = canonicalEmail(item.author_email, mailmap);
+      if (!email || isBotName(item.author_name) || isBotName(email.split("@")[0])) continue;
       const author = authorNumber(email);
       perAuthor.set(author, (perAuthor.get(author) ?? 0) + 1);
-      const domain = emailDomain(email);
-      if (domain) sampledDomains.push({ domain, author });
+      identities[author] ??= { email, login: null };
+      sampledAuthors.push(author);
     }
     if (items.length < 100) {
       complete = true;
       break;
     }
   }
+  const resolution = await resolveOrganisations(identities);
+  const organisations = sampledAuthors.map((author) => ({ organisation: resolution.contributors[author].organisation, author }));
   const scope = complete ? "the commits of the last 12 months" : `the latest ${sampled} commits of the last 12 months`;
   return {
     counts: { measured: true, value: { counts: [...perAuthor.values()], scope } },
-    domains: { measured: true, value: { commits: sampledDomains, scope } },
+    domains: {
+      measured: true,
+      value: { commits: organisations, scope, notLookedUp: 0, lookupAvailable: false },
+    },
   };
 }
 

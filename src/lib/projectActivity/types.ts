@@ -24,10 +24,18 @@ export interface CommitCounts {
   scope: string;
 }
 
-/** The email domain of each sampled human commit; authors are numbered, not named. */
+/**
+ * The organisation of each sampled human commit; authors are numbered, not named.
+ * The organisation is a domain, "company:<name>" from the author's profile, or
+ * null when it is unknown.
+ */
 export interface CommitDomains {
-  commits: Array<{ domain: string; author: number }>;
+  commits: Array<{ organisation: string | null; author: number }>;
   scope: string;
+  /** Authors with a personal or hidden address whose profile was not looked up because of the limit */
+  notLookedUp: number;
+  /** False when the forge does not say which account made a commit, so no profile can be looked up */
+  lookupAvailable: boolean;
 }
 
 /** The releases of a project. */

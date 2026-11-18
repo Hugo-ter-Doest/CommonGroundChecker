@@ -22,12 +22,14 @@ function activity(overrides: Partial<ProjectActivity> = {}): ProjectActivity {
     contributorCommits: measured({ counts: [60, 30, 10], scope: "the last 12 months" }),
     commitDomains: measured({
       commits: [
-        { domain: "example.org", author: 0 },
-        { domain: "example.org", author: 1 },
-        { domain: "other.nl", author: 2 },
-        { domain: "gmail.com", author: 3 },
+        { organisation: "example.org", author: 0 },
+        { organisation: "example.org", author: 1 },
+        { organisation: "other.nl", author: 2 },
+        { organisation: null, author: 3 },
       ],
       scope: "the last 12 months",
+      notLookedUp: 0,
+      lookupAvailable: true,
     }),
     changeRequests: measured({ opened: 40, closed: 30 }),
     changeRequestResponses: measured({
@@ -73,15 +75,15 @@ describe("contributorAbsenceFactor", () => {
 });
 
 describe("organisationShares", () => {
-  it("counts organisation domains apart from personal and hidden addresses", () => {
+  it("counts organisations apart from authors of unknown organisation", () => {
     expect(
       organisationShares([
-        { domain: "example.org", author: 0 },
-        { domain: "example.org", author: 1 },
-        { domain: "example.org", author: 0 },
-        { domain: "other.nl", author: 2 },
-        { domain: "gmail.com", author: 3 },
-        { domain: "users.noreply.github.com", author: 4 },
+        { organisation: "example.org", author: 0 },
+        { organisation: "example.org", author: 1 },
+        { organisation: "example.org", author: 0 },
+        { organisation: "company:studiox", author: 2 },
+        { organisation: null, author: 3 },
+        { organisation: null, author: 4 },
       ])
     ).toEqual({
       attributed: 4,
@@ -90,16 +92,63 @@ describe("organisationShares", () => {
       largestDomain: "example.org",
       largestShare: 0.75,
       largestAuthors: 2,
+      authors: 5,
+      unknownAuthors: 2,
     });
   });
 
-  it("does not name a domain that only one author uses", () => {
+  it("does not name an organisation that only one author has", () => {
     const shares = organisationShares([
-      { domain: "someone.example", author: 0 },
-      { domain: "someone.example", author: 0 },
+      { organisation: "someone.example", author: 0 },
+      { organisation: "someone.example", author: 0 },
     ]);
     expect(shares.largestDomain).toBeNull();
     expect(shares.largestShare).toBe(1);
+  });
+});
+
+describe("organisational diversity when most organisations are unknown", () => {
+  it("is not measured, with the share and the profiles not looked up", () => {
+    const metrics = projectHealthMetrics(
+      activity({
+        commitDomains: measured({
+          commits: [
+            { organisation: "example.org", author: 0 },
+            { organisation: null, author: 1 },
+            { organisation: null, author: 2 },
+          ],
+          scope: "the last 12 months",
+          notLookedUp: 1,
+          lookupAvailable: true,
+        }),
+      }),
+      NOW
+    );
+
+    expect(metric(metrics, "organizational-diversity").value).toBeNull();
+    expect(metric(metrics, "organizational-diversity").explanation).toBe(
+      "Not measured: organisation unknown for most contributors (2 of 3); 1 not looked up, because a scan looks up at most 200 profiles."
+    );
+  });
+
+  it("names a profile company only as an organisation of several authors", () => {
+    const metrics = projectHealthMetrics(
+      activity({
+        commitDomains: measured({
+          commits: [
+            { organisation: "company:studiox", author: 0 },
+            { organisation: "company:studiox", author: 1 },
+            { organisation: "example.org", author: 2 },
+          ],
+          scope: "the last 12 months",
+          notLookedUp: 0,
+          lookupAvailable: true,
+        }),
+      }),
+      NOW
+    );
+
+    expect(metric(metrics, "organizational-diversity").explanation).toContain("the profile company studiox (2 authors)");
   });
 });
 
@@ -252,9 +301,12 @@ describe("checkProjectHealth on GitHub", () => {
           { author: { login: "alice", type: "User" }, commit: { author: { email: "alice@gemeente.example", name: "Alice" } } },
           { author: { login: "bob", type: "User" }, commit: { author: { email: "bob@gemeente.example", name: "Bob" } } },
           { author: { login: "carol", type: "User" }, commit: { author: { email: "carol@gmail.com", name: "Carol" } } },
+          { author: null, commit: { author: { email: "alice@hotmail.com", name: "Alice" } } },
           { author: { login: "renovate[bot]", type: "Bot" }, commit: { author: { email: "bot@renovate.example", name: "renovate[bot]" } } },
         ],
       ],
+      [/\/contents\/\.mailmap$/, { content: Buffer.from("Alice <alice@gemeente.example> <alice@hotmail.com>\n").toString("base64"), encoding: "base64" }],
+      [/\/users\/carol$/, { login: "carol", company: "@Other-Org" }],
       [/search\/issues\?q=[^&]*is%3Apr%20created%3A%3E%3D/, { total_count: 20 }],
       [/search\/issues\?q=[^&]*is%3Apr%20closed%3A%3E%3D/, { total_count: 19 }],
       [
@@ -295,13 +347,16 @@ describe("checkProjectHealth on GitHub", () => {
     const values = Object.fromEntries((result.metrics ?? []).map((entry) => [entry.id, entry.value]));
     expect(values).toEqual({
       "contributor-absence-factor": "1",
-      "organizational-diversity": "1 organisation; largest 100%",
+      "organizational-diversity": "2 organisations; largest 75%",
       "change-request-closure-ratio": "0.95",
       "time-to-first-response": "median 2.0 hours",
       "issue-response-time": "no response",
       "release-frequency": "1 in 12 months",
     });
-    expect(JSON.stringify(result)).not.toMatch(/alice|bob|carol|@/i);
+    expect(JSON.stringify(result)).not.toMatch(/alice|bob|carol|other-?org|@/i);
+    const diversity = (result.metrics ?? []).find((entry) => entry.id === "organizational-diversity");
+    expect(diversity?.explanation).toContain("gemeente.example (2 authors)");
+    expect(diversity?.explanation).toContain("from 0 of 3 authors whose organisation stays unknown");
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes("repo%3AOrg%2FRepo"))).toBe(true);
   });
 
