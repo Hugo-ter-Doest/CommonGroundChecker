@@ -11,6 +11,9 @@ import { readPublicCodeData } from "@/lib/checkers/publiccode";
 import { domainOf, parseMailmap } from "@/lib/contributorOrganisations";
 import type { RepoContext, RepositoryMeta } from "@/lib/providers/types";
 import type { UsageSource } from "@/lib/types";
+import { ASPECT_MODEL, resolveCategory } from "@/lib/aspects";
+import { RESULT_CATEGORY_BY_ID, RESULT_ORDER_BY_ID } from "@/lib/criteria";
+import { USAGE_CHECK_ID } from "@/lib/usage";
 
 const NOW = new Date("2026-11-18T09:00:00Z");
 
@@ -438,5 +441,17 @@ describe("checkUsage", () => {
     expect(result.usage).toEqual({ sources: [] });
     expect(result.message).toBe("No source reports usage of this component.");
     expect(fetchFn).not.toHaveBeenCalled();
+  });
+});
+
+describe("usage result card", () => {
+  it("is listed in the category of its aspect", () => {
+    const category = ASPECT_MODEL.find(({ aspects }) =>
+      aspects.some(({ source }) => source.type === "informative" && source.checkId === USAGE_CHECK_ID)
+    )?.category;
+
+    expect(category).toBe("Governance");
+    expect(RESULT_CATEGORY_BY_ID[USAGE_CHECK_ID]).toBe(resolveCategory(category as string));
+    expect(RESULT_ORDER_BY_ID).toContain(USAGE_CHECK_ID);
   });
 });
