@@ -133,6 +133,19 @@ const CRITERION_CATEGORIES: CriterionCategory[] = [
           "Clones the analyzed repository and runs Lizard locally. The criterion passes when average cyclomatic complexity (AvgCCN) stays within the configured threshold, and the maximum cyclomatic complexity stays within the configured threshold.",
       },
       {
+        id: "maintainability",
+        label: "Maintainability (ISO 25010)",
+        explanation:
+          "Clones the analyzed repository and rates unit size, unit complexity, unit interfacing, duplication, module coupling and component structure from 1 to 5 stars. The criterion passes at an estimated rating of 4 stars or more and warns at 3 stars.",
+      },
+      {
+        id: "sonarqube",
+        label: "External comparison: SonarQube",
+        explanation:
+          "Only shown when SONARQUBE_URL and SONARQUBE_TOKEN are set and that SonarQube already analyses the component. Reads the technical debt ratio and the open issues of four SIG-like rules through the Web API. Information only: never stars, never part of the score.",
+        requirementLevel: "informative",
+      },
+      {
         id: "codemetrics",
         label: "Code metrics",
         explanation:
