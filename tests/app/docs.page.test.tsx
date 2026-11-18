@@ -26,7 +26,7 @@ const EXPECTED_MODEL: Record<string, string[]> = {
     "supply-chain",
   ],
   maintainability: ["analysability", "modifiability", "testability", "modularity", "reusability", "testing"],
-  governance: ["licensing", "ownership", "community-documents"],
+  governance: ["licensing", "ownership", "community-documents", "project-health"],
   "deployment-operations": ["containerisation", "release-management"],
   architecture: ["api", "layering"],
 };
@@ -69,9 +69,9 @@ describe("rating docs data", () => {
     }
   });
 
-  it("only leaves layering out of the rating", () => {
+  it("only leaves project health and layering out of the rating", () => {
     const uncounted = RATING_DOCS.flatMap((category) => category.aspects.filter((a) => !a.counted).map((a) => a.id));
-    expect(uncounted).toEqual(["layering"]);
+    expect(uncounted).toEqual(["project-health", "layering"]);
   });
 
   it("builds the anchor link of an aspect", () => {

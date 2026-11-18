@@ -34,6 +34,22 @@ export interface CheckResult {
   aspectRatings?: Record<string, number | null>;
   /** The measured values behind the check's rating, with the thresholds per star level */
   measurements?: MeasurementGroup[];
+  /** Informative metrics the check reports without rating them */
+  metrics?: InformativeMetric[];
+}
+
+/** A measured value that is shown with its explanation but earns no stars. */
+export interface InformativeMetric {
+  /** Stable kebab-case id, for example "contributor-absence-factor" */
+  id: string;
+  /** Name of the metric in its source model, for example "Contributor Absence Factor" */
+  name: string;
+  /** Definition of the metric */
+  referenceUrl: string;
+  /** The value as shown, or null when it was not measured */
+  value: string | null;
+  /** What the value means, or why it was not measured */
+  explanation: string;
 }
 
 /** A star level that has a threshold of its own; below 2 stars is 1 star. */

@@ -26,6 +26,7 @@ import { checkSemver } from "./semver";
 import { checkCopyrightOwner } from "./copyrightOwner";
 import { checkOwaspSecureCoding } from "./owaspSecureCoding";
 import { checkEuplLicense } from "./eupl";
+import { checkProjectHealth } from "./projectHealth";
 import {
   getActiveScoringConfig,
 } from "./config";
@@ -154,6 +155,7 @@ export async function runChecks(
     checkPublicCode(context, tree),
     checkFiveLayer(context, tree, meta),
     checkHelmChart(context, tree, options?.helmChartLocations ?? []),
+    checkProjectHealth(context, meta),
   ]);
   const complexityPromise = checkComplexity(
     owner,
@@ -195,7 +197,7 @@ export async function runChecks(
 
   // Instant checks done; emit next step while slower checks complete in parallel
   onProgress?.("Analysing API specs, licence & deployment files...", 60);
-  const [[openapi, license, copyrightowner, publiccode, fivelayer, helmchart], complexity, maintainability, codemetrics, owaspsecurecoding, adrvalidator] = await Promise.all([
+  const [[openapi, license, copyrightowner, publiccode, fivelayer, helmchart, projecthealth], complexity, maintainability, codemetrics, owaspsecurecoding, adrvalidator] = await Promise.all([
     networkChecksPromise,
     complexityPromise,
     maintainabilityPromise,
@@ -260,6 +262,7 @@ export async function runChecks(
     semver,
     fivelayer,
     helmchart,
+    projecthealth,
   ];
 
   const categoryAggregates = results.reduce(
@@ -350,6 +353,7 @@ export async function runChecks(
     semver,
     fivelayer,
     helmchart,
+    projecthealth,
   ].map((result) => ({
     ...result,
     requirementLevel:
@@ -359,10 +363,12 @@ export async function runChecks(
   // Rated before the status stars are filled in, so a criterion without a scale is rated from its status.
   const { rating, categoryRatings, aspectRatings } = computeRatings(resultsWithRequirementLevels, scoringConfig);
   const endorsement = computeEndorsement(resultsWithRequirementLevels, rating, scoringConfig);
-  const resultsWithStars = resultsWithRequirementLevels.map((result) => ({
-    ...result,
-    starRating: result.starRating ?? statusToStars(result.status),
-  }));
+  // An informative criterion is shown without stars.
+  const resultsWithStars = resultsWithRequirementLevels.map((result) =>
+    result.requirementLevel === "informative"
+      ? result
+      : { ...result, starRating: result.starRating ?? statusToStars(result.status) }
+  );
 
   return {
     repoUrl,

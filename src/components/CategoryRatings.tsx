@@ -1,5 +1,6 @@
 import AspectBar from "@/components/AspectBar";
 import MeasurementTable, { StarsText } from "@/components/MeasurementTable";
+import MetricTable from "@/components/MetricTable";
 import RatingBadge from "@/components/RatingBadge";
 import type { AspectDefinition } from "@/lib/aspects";
 import {
@@ -95,6 +96,10 @@ function AspectComposition({ aspect, results }: { aspect: AspectDefinition; resu
   if (composition.type === "measurements") {
     return <MeasurementTable caption={caption} groups={composition.groups} />;
   }
+  if (composition.type === "metrics") {
+    if (composition.metrics.length === 0) return <p className="text-xs text-gray-600">It was not measured.</p>;
+    return <MetricTable caption={caption} metrics={composition.metrics} />;
+  }
   if (composition.criteria.length === 0) {
     return <p className="text-xs text-gray-600">None of its criteria were checked.</p>;
   }
@@ -105,6 +110,7 @@ function AspectComposition({ aspect, results }: { aspect: AspectDefinition; resu
 
 function AspectValue({ aspect, aspectRating }: { aspect: AspectDefinition; aspectRating?: AspectRating }) {
   const rating = aspectRating?.rating ?? null;
+  if (aspect.source.type === "informative") return <span className="text-xs text-gray-600">informative, not rated</span>;
   if (rating === null) return <span className="text-xs text-gray-600">not measured</span>;
   const count = documentCountText(aspectRating);
   return (
@@ -140,7 +146,11 @@ function AspectRow({
           )}
           {aspect.weight === 0 && <span className="ml-1 text-xs font-normal text-gray-600">(not counted)</span>}
         </h5>
-        <AspectBar title={aspect.title} rating={aspectRating?.rating ?? null} />
+        {aspect.source.type === "informative" ? (
+          <p className="text-xs text-gray-600">Shown for information, without stars.</p>
+        ) : (
+          <AspectBar title={aspect.title} rating={aspectRating?.rating ?? null} />
+        )}
         <AspectValue aspect={aspect} aspectRating={aspectRating} />
       </div>
       <details className="mt-1">

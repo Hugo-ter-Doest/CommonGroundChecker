@@ -80,6 +80,7 @@ describe("categoryDocSlug", () => {
       "licensing",
       "ownership",
       "community-documents",
+      "project-health",
     ]);
   });
 });
@@ -101,6 +102,22 @@ describe("aspectComposition", () => {
     });
   });
 
+  it("shows the metrics of an informative aspect", () => {
+    const metric = {
+      id: "release-frequency",
+      name: "Release Frequency",
+      referenceUrl: "https://chaoss.community/kb/metric-release-frequency/",
+      value: "4 in 12 months",
+      explanation: "Four releases.",
+    };
+
+    expect(aspectComposition(aspect("project-health"), [result("projecthealth", "info", { metrics: [metric] })])).toEqual({
+      type: "metrics",
+      metrics: [metric],
+    });
+    expect(aspectComposition(aspect("project-health"), [])).toEqual({ type: "metrics", metrics: [] });
+  });
+
   it("lists the documents of a document-count aspect", () => {
     const composition = aspectComposition(aspect("community-documents"), [
       result("documentation", "pass"),
@@ -108,7 +125,7 @@ describe("aspectComposition", () => {
     ]);
 
     expect(composition.type).toBe("documents");
-    expect(composition.type !== "measurements" && composition.criteria.map((entry) => [entry.id, entry.status])).toEqual([
+    expect(composition.type === "documents" && composition.criteria.map((entry) => [entry.id, entry.status])).toEqual([
       ["documentation", "pass"],
       ["contributing", "fail"],
     ]);

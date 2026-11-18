@@ -7,7 +7,9 @@ export type AspectSource =
   /** The share of the criteria that pass, in bands of 20% */
   | { type: "document-count"; checkIds: string[] }
   /** A rating the check reports for this aspect in its `aspectRatings` */
-  | { type: "check-aspect"; checkId: string; key: string };
+  | { type: "check-aspect"; checkId: string; key: string }
+  /** The informative metrics of a check, shown without a rating */
+  | { type: "informative"; checkId: string };
 
 export interface AspectDefinition {
   /** Stable kebab-case id, also the anchor in /docs/<category-slug>#<aspect-id> */
@@ -57,6 +59,12 @@ export const ASPECT_MODEL: CategoryAspects[] = [
           type: "document-count",
           checkIds: ["documentation", "contributing", "codeofconduct", "security", "changelog"],
         },
+      },
+      {
+        id: "project-health",
+        title: "Project health",
+        source: { type: "informative", checkId: "projecthealth" },
+        weight: 0,
       },
     ],
   },

@@ -26,6 +26,7 @@ const ids = [
   "semver",
   "fivelayer",
   "helmchart",
+  "projecthealth",
 ] as const;
 
 const mocks = vi.hoisted(() => ({
@@ -59,6 +60,7 @@ const mocks = vi.hoisted(() => ({
   checkOwaspSecureCoding: vi.fn(),
   checkEuplLicense: vi.fn(),
   checkAdrValidator: vi.fn(),
+  checkProjectHealth: vi.fn(),
   getActiveScoringConfig: vi.fn(),
 }));
 
@@ -130,6 +132,7 @@ vi.mock("@/lib/checkers/sourcecode", () => ({ checkSourceCode: mocks.checkSource
 vi.mock("@/lib/checkers/semver", () => ({ checkSemver: mocks.checkSemver }));
 vi.mock("@/lib/checkers/fiveLayer", () => ({ checkFiveLayer: mocks.checkFiveLayer }));
 vi.mock("@/lib/checkers/helmchart", () => ({ checkHelmChart: mocks.checkHelmChart }));
+vi.mock("@/lib/checkers/projectHealth", () => ({ checkProjectHealth: mocks.checkProjectHealth }));
 vi.mock("@/lib/checkers/config", () => ({ getActiveScoringConfig: mocks.getActiveScoringConfig }));
 
 import { runChecks } from "@/lib/checkers/index";
@@ -247,6 +250,7 @@ describe("runChecks", () => {
     mocks.checkSemver.mockReturnValue(resultFor("semver", "pass"));
     mocks.checkFiveLayer.mockResolvedValue(resultFor("fivelayer", "pass"));
     mocks.checkHelmChart.mockResolvedValue(resultFor("helmchart", "pass"));
+    mocks.checkProjectHealth.mockResolvedValue(resultFor("projecthealth", "info"));
   });
 
   it("applies weighted scoring and non-register OpenAPI bypass", async () => {
@@ -275,7 +279,7 @@ describe("runChecks", () => {
     expect(report.scoringConfigId).toBe("cfg-1");
     expect(report.score).toBe(25);
     expect(mocks.checkOpenApi).not.toHaveBeenCalled();
-    expect(report.results).toHaveLength(24);
+    expect(report.results).toHaveLength(25);
     expect(report.results.find((result) => result.id === "maintainability")?.starRating).toBe(3);
     expect(report.results.find((result) => result.id === "semver")?.starRating).toBe(1);
     expect(report.results.find((result) => result.id === "tests")?.starRating).toBe(3);
@@ -283,6 +287,35 @@ describe("runChecks", () => {
     const openApiResult = report.results.find((result) => result.id === "openapi");
     expect(openApiResult?.status).toBe("pass");
     expect(openApiResult?.message).toContain("not marked as a register");
+  });
+
+  it("shows an informative criterion without stars and leaves it out of the ratings", async () => {
+    const configById = criterionConfig(1, "mandatory");
+    configById.projecthealth = { weight: 0, requirementLevel: "informative" };
+    mocks.checkProjectHealth.mockResolvedValue({
+      ...resultFor("projecthealth", "info"),
+      metrics: [{ id: "release-frequency", name: "Release Frequency", referenceUrl: "https://chaoss.community/", value: "3 in 12 months", explanation: "x" }],
+    });
+    mocks.getActiveScoringConfig.mockResolvedValue({
+      id: "cfg-1",
+      config: {
+        criterionConfigByCheckId: configById,
+        statusScoreByStatus: { pass: 1, warn: 0.5, info: 0.5, fail: 0 },
+        complexityThreshold: 12,
+        complexityMaxCcnThreshold: 20,
+        spectralRulesetSource: "https://static.developer.overheid.nl/adr/ruleset.yaml",
+      },
+    });
+
+    const report = await runChecks("https://github.com/org/repo", { isRegister: false });
+    const health = report.results.find((result) => result.id === "projecthealth");
+
+    expect(mocks.checkProjectHealth).toHaveBeenCalledTimes(1);
+    expect(health?.requirementLevel).toBe("informative");
+    expect(health?.starRating).toBeUndefined();
+    expect(health?.metrics?.[0]?.value).toBe("3 in 12 months");
+    expect(report.aspectRatings["project-health"]).toEqual({ rating: null });
+    expect(report.results.find((result) => result.id === "license")?.starRating).toBe(5);
   });
 
   it("rates the aspects, the categories and the component, and judges the endorsement", async () => {

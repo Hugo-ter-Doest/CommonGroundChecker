@@ -6,7 +6,7 @@ import RatingBadge from "@/components/RatingBadge";
 import RatingSummary from "@/components/RatingSummary";
 import { statusToStars } from "@/lib/stars";
 import { getRepoHistory } from "@/lib/apiClient";
-import { parseMeasurements } from "@/lib/measurements";
+import { parseMeasurements, parseMetrics } from "@/lib/measurements";
 import { isRating } from "@/lib/ratings";
 import { loadStoredRatings } from "@/lib/storedRatings";
 import type { CheckReport, CheckResult, StarRating } from "@/lib/types";
@@ -65,6 +65,7 @@ function normalizeResults(raw: unknown): CheckResult[] {
             : undefined,
         rating: isRating(item.rating) ? item.rating : undefined,
         measurements: parseMeasurements(item.measurements),
+        metrics: parseMetrics(item.metrics),
       } satisfies CheckResult;
     });
 }
@@ -243,7 +244,12 @@ export default async function AnalysisDetailPage({ params }: AnalysisDetailPageP
                         message={result.message}
                         evidence={result.evidence}
                         referenceUrl={result.referenceUrl}
-                        starRating={result.starRating ?? statusToStars(result.status)}
+                        starRating={
+                          result.requirementLevel === "informative"
+                            ? undefined
+                            : (result.starRating ?? statusToStars(result.status))
+                        }
+                        metrics={result.metrics}
                       />
                     ))}
                   </div>

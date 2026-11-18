@@ -3,7 +3,7 @@ import { RESULT_CATEGORY_BY_ID, type CriteriaCategory } from "./criteria";
 import { measurementsForAspect } from "./measurements";
 import { RATING_DOCS } from "./ratingDocs";
 import { MAX_RATING, MIN_RATING, criterionRating } from "./ratings";
-import type { AspectRating, CheckResult, CheckStatus, MeasurementGroup } from "./types";
+import type { AspectRating, CheckResult, CheckStatus, InformativeMetric, MeasurementGroup } from "./types";
 
 /** The ratings where the rounded stars change: 1.5, 2.5, 3.5 and 4.5. */
 export const STAR_BOUNDARIES = [1.5, 2.5, 3.5, 4.5] as const;
@@ -58,6 +58,7 @@ export interface AspectCriterion {
 /** What an aspect is made of: the measurements of its check, or the criteria it is rated from. */
 export type AspectComposition =
   | { type: "measurements"; groups: MeasurementGroup[] }
+  | { type: "metrics"; metrics: InformativeMetric[] }
   | { type: "documents"; criteria: AspectCriterion[] }
   | { type: "criteria"; criteria: AspectCriterion[] };
 
@@ -78,6 +79,10 @@ function aspectCriterion(result: CheckResult): AspectCriterion {
 export function aspectComposition(aspect: AspectDefinition, results: CheckResult[]): AspectComposition {
   const resultsById = new Map(results.map((result) => [result.id, result]));
   const { source } = aspect;
+
+  if (source.type === "informative") {
+    return { type: "metrics", metrics: resultsById.get(source.checkId)?.metrics ?? [] };
+  }
 
   if (source.type === "check-aspect") {
     const result = resultsById.get(source.checkId);
