@@ -43,6 +43,27 @@ describe("mapMaintainabilityReport", () => {
     expect(result.starRating).toBe(stars);
   });
 
+  it("shows Simian's duplication cross-check next to the estimate's own figure", () => {
+    const result = mapMaintainabilityReport({
+      ...report,
+      tools: { simian: "4.2.1" },
+      languages: {
+        php: { duplication: { share: 0.018 }, duplication_simian: { share: 0.0126 } },
+        vue: { duplication: { share: 0.0267 }, duplication_simian: { notMeasured: "Simian has no support for this language" } },
+      },
+    });
+
+    expect(result.evidence).toContain(
+      "Duplication cross-check, Simian 4.2.1 strict against the estimate: php 1.3% against 1.8%, vue not measured (Simian has no support for this language) against 2.7%"
+    );
+  });
+
+  it("leaves the cross-check out of a report without one", () => {
+    const result = mapMaintainabilityReport(report);
+
+    expect(result.evidence?.some((line) => line.startsWith("Duplication cross-check"))).toBe(false);
+  });
+
   it("warns when there is nothing to rate", () => {
     const result = mapMaintainabilityReport({ ...report, rating: { ...report.rating, overall: null } });
 
