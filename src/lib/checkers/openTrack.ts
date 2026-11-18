@@ -59,7 +59,7 @@ interface LanguageMeasures {
 }
 
 /** The JSON the measure script writes. */
-export interface OpenTrackMeasures {
+export interface OpenTrackScriptMeasures {
   schema: number;
   files: number;
   skipped_files?: Array<{ file: string; reason: string }>;
@@ -80,7 +80,7 @@ function info(message: string, evidence: string[] = []): CheckResult {
 }
 
 /** All languages of a repository pooled into one open-track input, as the benchmark pools them. */
-export function openTrackInput(measures: OpenTrackMeasures): OpenTrackInput {
+export function openTrackInput(measures: OpenTrackScriptMeasures): OpenTrackInput {
   const histograms: Record<string, Histogram> = {};
   let lines = 0;
   let duplicatedLines = 0;
@@ -214,14 +214,13 @@ function runScript(args: string[]): Promise<{ code: number; stderr: string }> {
   });
 }
 
-/**
- * Measures the repository with the open-track script and rates it. `extra`
- * holds measures other checks produce (duplication, coupling); a field there
- * replaces the script's own.
- */
-export async function checkOpenTrack(localRepoPath?: string, extra: OpenTrackInput = {}): Promise<CheckResult> {
+/** What the measure script produced for one repository: the input to rate, or the result to show instead. */
+export type OpenTrackMeasurement = { input: OpenTrackInput; skippedFiles: number } | { failure: CheckResult };
+
+/** Runs the open-track measure script on a cloned repository. */
+export async function measureOpenTrack(localRepoPath?: string): Promise<OpenTrackMeasurement> {
   if (!localRepoPath) {
-    return info("The repository could not be cloned, so the open track was not measured.");
+    return { failure: info("The repository could not be cloned, so the open track was not measured.") };
   }
 
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "cgchecker-open-track-"));
@@ -229,27 +228,66 @@ export async function checkOpenTrack(localRepoPath?: string, extra: OpenTrackInp
     const jsonPath = path.join(tempRoot, "measures.json");
     const run = await runScript([localRepoPath, "--json", jsonPath]);
     if (run.code === 124) {
-      return info(`Open-track measurement did not finish within ${TIMEOUT_MS / 1000} seconds.`);
+      return { failure: info(`Open-track measurement did not finish within ${TIMEOUT_MS / 1000} seconds.`) };
     }
     if (run.code === NOTHING_TO_MEASURE) {
-      return info("No source code in a supported language (PHP, JavaScript, TypeScript, Vue, Python) was found to rate.");
+      return {
+        failure: info("No source code in a supported language (PHP, JavaScript, TypeScript, Vue, Python) was found to rate."),
+      };
     }
     if (run.code !== 0) {
-      return info(
-        "Open-track measurement could not run. It needs python3 with lizard 1.24.3.",
-        run.stderr.trim().split(/\r?\n/).slice(-3)
-      );
+      return {
+        failure: info(
+          "Open-track measurement could not run. It needs python3 with lizard 1.24.3.",
+          run.stderr.trim().split(/\r?\n/).slice(-3)
+        ),
+      };
     }
-    const measures = JSON.parse(await readFile(jsonPath, "utf8")) as OpenTrackMeasures;
-    const own = openTrackInput(measures);
-    const input: OpenTrackInput = {
-      histograms: { ...own.histograms, ...extra.histograms },
-      shares: { ...own.shares, ...extra.shares },
-    };
-    return mapOpenTrack(input, OPEN_TRACK_THRESHOLDS, measures.skipped_files?.length ?? 0);
+    const measures = JSON.parse(await readFile(jsonPath, "utf8")) as OpenTrackScriptMeasures;
+    return { input: openTrackInput(measures), skippedFiles: measures.skipped_files?.length ?? 0 };
   } catch (error) {
-    return info(`Open-track measures could not be read: ${(error as Error).message}`);
+    return { failure: info(`Open-track measures could not be read: ${(error as Error).message}`) };
   } finally {
     await rm(tempRoot, { recursive: true, force: true });
   }
+}
+
+/**
+ * The open-track measures other checks put on their results, read by shape:
+ * `openTrack.duplication.percentage` (0 to 100, all languages) becomes the
+ * duplication share.
+ */
+export function openTrackExtras(results: ReadonlyArray<object>): OpenTrackInput {
+  const shares: Record<string, number> = {};
+  for (const result of results) {
+    const percentage = (result as { openTrack?: { duplication?: { percentage?: unknown } } }).openTrack?.duplication
+      ?.percentage;
+    if (typeof percentage === "number" && Number.isFinite(percentage)) shares.duplication = percentage / 100;
+  }
+  return { shares };
+}
+
+/** Rates a measurement; a field in `extra` replaces the script's own. */
+export function rateOpenTrack(measurement: OpenTrackMeasurement, extra: OpenTrackInput = {}): CheckResult {
+  if ("failure" in measurement) return measurement.failure;
+  const { input, skippedFiles } = measurement;
+  return mapOpenTrack(
+    {
+      histograms: { ...input.histograms, ...extra.histograms },
+      shares: { ...input.shares, ...extra.shares },
+    },
+    OPEN_TRACK_THRESHOLDS,
+    skippedFiles
+  );
+}
+
+/** Rates every result with id `opentrack` again, with the open-track measures of the other results. */
+export function withOpenTrackExtras<T extends CheckResult>(results: T[], measurement: OpenTrackMeasurement): T[] {
+  const extra = openTrackExtras(results.filter((result) => result.id !== BASE_RESULT.id));
+  return results.map((result) => (result.id === BASE_RESULT.id ? ({ ...result, ...rateOpenTrack(measurement, extra) } as T) : result));
+}
+
+/** Measures the repository with the open-track script and rates it. */
+export async function checkOpenTrack(localRepoPath?: string, extra: OpenTrackInput = {}): Promise<CheckResult> {
+  return rateOpenTrack(await measureOpenTrack(localRepoPath), extra);
 }

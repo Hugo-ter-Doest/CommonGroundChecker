@@ -8,7 +8,7 @@ import {
   scoreOpenTrack,
   type OpenTrackThresholds,
 } from "@/lib/openModel/score";
-import { openTrackInput, type OpenTrackMeasures } from "@/lib/checkers/openTrack";
+import { openTrackInput, type OpenTrackScriptMeasures } from "@/lib/checkers/openTrack";
 
 const BENCHMARK_DIR = path.join(process.cwd(), "scripts", "open-benchmark");
 
@@ -124,7 +124,7 @@ describe("the published open-track thresholds", () => {
     const measuresDir = path.join(BENCHMARK_DIR, "measures");
     const byName = new Map(
       readdirSync(measuresDir).map((file) => {
-        const measures = JSON.parse(readFileSync(path.join(measuresDir, file), "utf8")) as OpenTrackMeasures & {
+        const measures = JSON.parse(readFileSync(path.join(measuresDir, file), "utf8")) as OpenTrackScriptMeasures & {
           name: string;
         };
         return [measures.name, measures] as const;

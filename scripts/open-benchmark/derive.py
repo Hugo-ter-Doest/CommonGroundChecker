@@ -15,14 +15,15 @@ Method:
      the ones with the most GitHub stars first, then the largest.
   2. Risk thresholds (Alves, Ypma and Visser 2010): per unit metric, every unit
      weighs its LOC as a share of its repository's unit LOC, and every
-     repository weighs the same. The thresholds are the metric values at 70, 80
-     and 90 percent of that weighted distribution. A unit above the first is
+     repository weighs the same (section IV, steps 1 to 6). The thresholds are
+     the metric values at 70, 80 and 90 percent of that weighted distribution,
+     80, 90 and 95 for unit interfacing (Table IV). A unit above the first is
      moderate risk, above the second high, above the third very high.
-  3. Star limits (after Alves, Correia and Visser 2011): the benchmark is spread
-     over 5 to 1 stars as 5/30/30/30/5 percent. For each star level the limits
-     on the three cumulative risk shares are the per-share quantiles at one
-     common level q, the lowest q at which the target share of repositories
-     meets all three limits. Duplication has one share and takes its quantile.
+  3. Star limits (Alves, Correia and Visser 2011, Algorithm 1 in section III-A):
+     the limits per star level on the cumulative risk shares are searched so
+     that the benchmark is spread over 5 to 1 stars as 5/30/30/30/5 percent.
+     A repository's stars follow section III-B1. Duplication is calibrated the
+     same way with one share.
 All languages of a repository are pooled.
 """
 
@@ -37,15 +38,16 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 MIN_CODE_LOC = 2000
 MAX_PER_OWNER = 12
-RISK_QUANTILES = (0.70, 0.80, 0.90)
-# Share of the benchmark rated at this level or better: 5/30/30/30/5 percent per level.
-CUMULATIVE = {5: 0.05, 4: 0.35, 3: 0.65, 2: 0.95}
+# Alves, Ypma and Visser 2010, Table IV: 70/80/90% of the code, and 80/90/95% for unit interfacing.
+RISK_QUANTILES = {"unit_size": (0.70, 0.80, 0.90), "unit_complexity": (0.70, 0.80, 0.90),
+                  "unit_interfacing": (0.80, 0.90, 0.95)}
+# Share of the benchmark per star level, best first: 5/30/30/30/5 percent.
+DISTRIBUTION = {5: 0.05, 4: 0.30, 3: 0.30, 2: 0.30, 1: 0.05}
 RISK_PROPERTIES = {
     "unit_size": "unit size in lines of code (lizard NLOC)",
     "unit_complexity": "McCabe cyclomatic complexity per unit (lizard CCN)",
     "unit_interfacing": "parameters per unit (lizard)",
 }
-Q_STEP = 0.0005
 
 
 def owner(name):
@@ -91,7 +93,7 @@ def select(repos, candidates):
 
 
 def risk_thresholds(repos, prop):
-    """Metric values at the 70/80/90 percent points of the LOC-weighted
+    """Metric values at the RISK_QUANTILES points of the LOC-weighted
     distribution in which every repository weighs the same; each bound at least
     one above the previous one."""
     weights = {}
@@ -100,7 +102,7 @@ def risk_thresholds(repos, prop):
         for value, loc in r["pooled"]["histograms"][prop].items():
             weights[value] = weights.get(value, 0.0) + loc / total / len(repos)
     bounds, cumulative, values = [], 0.0, sorted(weights)
-    targets = list(RISK_QUANTILES)
+    targets = list(RISK_QUANTILES[prop])
     for value in values:
         cumulative += weights[value]
         while targets and cumulative >= targets[0] - 1e-12:
@@ -121,43 +123,53 @@ def profile(pooled_repo, prop, bounds):
     return [sum(loc for value, loc in hist.items() if value > bound) / total for bound in bounds]
 
 
-def nearest_rank(sorted_values, q):
-    index = min(len(sorted_values) - 1, max(0, math.ceil(q * len(sorted_values)) - 1))
-    return sorted_values[index]
-
-
 def ceil4(x):
     return math.ceil(x * 10000 - 1e-9) / 10000
 
 
-def risk_star_limits(profiles):
-    """{level: [limit per bound]}: the per-bound quantiles at the lowest common
-    q at which the target share of repositories meets every limit."""
-    columns = [sorted(p[i] for p in profiles) for i in range(3)]
-    limits = {}
-    for level, target in CUMULATIVE.items():
-        q = target
+def rate(values, limits):
+    """Alves, Correia and Visser 2011, section III-B1: per share the strictest
+    level whose limit it stays within (1 star when it exceeds them all), and the
+    rating is the lowest of those. `limits` is {level: [limit per share]}."""
+    levels = sorted(limits, reverse=True)
+    per_share = [next((lvl for lvl in levels if v <= limits[lvl][i]), 1) for i, v in enumerate(values)]
+    return min(per_share)
+
+
+def calibrate(profiles):
+    """Alves, Correia and Visser 2011, Algorithm 1: for each star level, best
+    first, step through the sorted shares with one common index until enough
+    repositories rate at that level or better, then lower each share's limit as
+    far as that still holds. "Enough" is the cumulative partition: the number of
+    repositories DISTRIBUTION puts at this level or better. Profiles are tuples
+    of cumulative shares; returns {level: [limit per share]}."""
+    n, width = len(profiles), len(profiles[0])
+    ordered = [sorted(ceil4(p[k]) for p in profiles) for k in range(width)]
+    levels = [lvl for lvl in sorted(DISTRIBUTION, reverse=True) if lvl > 1]
+    limits, cumulative = {}, 0.0
+
+    def enough(trial, needed):
+        return sum(1 for p in profiles if rate(p, trial) >= level) >= needed
+
+    for level in levels:
+        cumulative += DISTRIBUTION[level]
+        needed = round(cumulative * n)
+        i = -1
         while True:
-            caps = [ceil4(nearest_rank(col, q)) for col in columns]
-            meets = sum(all(p[i] <= caps[i] for i in range(3)) for p in profiles) / len(profiles)
-            if meets >= target - 1e-12 or q >= 1:
+            i += 1
+            limits[level] = [ordered[k][i] for k in range(width)]
+            if enough(limits, needed) or i >= n - 1:
                 break
-            q = min(1.0, q + Q_STEP)
-        limits[level] = caps
+        for k in range(width):
+            j = i
+            while j > 0:
+                trial = {**limits, level: [*limits[level]]}
+                trial[level][k] = ordered[k][j - 1]
+                if not enough(trial, needed):
+                    break
+                limits[level] = trial[level]
+                j -= 1
     return limits
-
-
-def share_star_limits(shares):
-    values = sorted(shares)
-    return {level: ceil4(nearest_rank(values, target)) for level, target in CUMULATIVE.items()}
-
-
-def stars_risk(shares, limits):
-    return next((lvl for lvl in (5, 4, 3, 2) if all(s <= c for s, c in zip(shares, limits[lvl]))), 1)
-
-
-def stars_share(share, limits):
-    return next((lvl for lvl in (5, 4, 3, 2) if share <= limits[lvl]), 1)
 
 
 def spread(stars):
@@ -200,8 +212,8 @@ def main(argv=None):
     for prop, metric in RISK_PROPERTIES.items():
         bounds = risk_thresholds(bench, prop)
         profiles = [profile(r["pooled"], prop, bounds) for r in bench]
-        limits = risk_star_limits(profiles)
-        stars = [stars_risk(p, limits) for p in profiles]
+        limits = calibrate(profiles)
+        stars = [rate(p, limits) for p in profiles]
         for r, p, s in zip(bench, profiles, stars):
             measured[r["name"]][prop] = {"shares": [round(x, 4) for x in p], "stars": s}
         properties[prop] = {
@@ -213,8 +225,8 @@ def main(argv=None):
         }
     dup = [r for r in bench if r["pooled"]["duplication"] is not None]
     if len(dup) >= 10:
-        limits = share_star_limits([r["pooled"]["duplication"] for r in dup])
-        stars = [stars_share(r["pooled"]["duplication"], limits) for r in dup]
+        limits = {lvl: caps[0] for lvl, caps in calibrate([(r["pooled"]["duplication"],) for r in dup]).items()}
+        stars = [rate((r["pooled"]["duplication"],), {lvl: [cap] for lvl, cap in limits.items()}) for r in dup]
         for r, s in zip(dup, stars):
             measured[r["name"]]["duplication"] = {"share": round(r["pooled"]["duplication"], 4), "stars": s}
         properties["duplication"] = {
@@ -231,11 +243,11 @@ def main(argv=None):
         "description": "Open-track maintainability thresholds, derived from a public benchmark of Common Ground and "
                        "Developer Overheid repositories with the benchmark method of Alves et al. Not a SIG rating.",
         "method": {
-            "risk_thresholds": "Alves, Ypma and Visser 2010: metric values at 70/80/90% of the LOC-weighted unit "
-                               "distribution, every repository weighing the same",
-            "star_limits": "after Alves, Correia and Visser 2011: 5/30/30/30/5% of the benchmark per star level; the "
-                           "limits of a level are the per-share quantiles at the lowest common level that rates the "
-                           "target share of repositories at that level or better",
+            "risk_thresholds": "Alves, Ypma and Visser 2010, section IV and Table IV: metric values at 70/80/90% "
+                               "(unit interfacing 80/90/95%) of the LOC-weighted unit distribution, every repository "
+                               "weighing the same",
+            "star_limits": "Alves, Correia and Visser 2011, Algorithm 1 (section III-A), partition 5/30/30/30/5%; "
+                           "stars per section III-B1: the lowest of the per-share levels",
             "pooling": "all languages of a repository are pooled",
             "rounding": "star limits are rounded up to 4 decimals",
             "regenerate": "scripts/open-benchmark/README.md",

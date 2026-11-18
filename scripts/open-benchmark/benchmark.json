@@ -286,7 +286,7 @@
       0.2491,
       0.0862
      ],
-     "stars": 3
+     "stars": 2
     },
     "unit_complexity": {
      "shares": [
@@ -472,7 +472,7 @@
       0.2025,
       0.0532
      ],
-     "stars": 3
+     "stars": 2
     },
     "unit_interfacing": {
      "shares": [
@@ -606,7 +606,7 @@
       0.2908,
       0.1226
      ],
-     "stars": 2
+     "stars": 1
     },
     "unit_interfacing": {
      "shares": [
@@ -733,7 +733,7 @@
       0.2821,
       0.1072
      ],
-     "stars": 2
+     "stars": 1
     },
     "unit_interfacing": {
      "shares": [
@@ -1084,7 +1084,7 @@
       0.0747,
       0.0483
      ],
-     "stars": 3
+     "stars": 2
     },
     "duplication": {
      "share": 0.0862,
@@ -1541,7 +1541,7 @@
       0.0,
       0.0
      ],
-     "stars": 5
+     "stars": 4
     },
     "unit_complexity": {
      "shares": [

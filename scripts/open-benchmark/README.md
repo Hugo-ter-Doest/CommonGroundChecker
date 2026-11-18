@@ -17,12 +17,12 @@ The open track rates maintainability against thresholds that anyone can check an
 
 | property | moderate / high / very high risk | 5 stars | 4 stars | 3 stars | 2 stars |
 |---|---|---|---|---|---|
-| unit size | more than 29 / 42 / 71 lines | 13.4 / 3.3 / 0.0% | 26.1 / 15.0 / 5.7% | 38.8 / 25.1 / 11.1% | 60.2 / 46.7 / 33.4% |
-| unit complexity | McCabe above 5 / 7 / 10 | 8.6 / 3.2 / 0.4% | 25.6 / 16.3 / 6.2% | 37.3 / 24.0 / 13.1% | 49.7 / 38.1 / 32.2% |
-| unit interfacing | more than 2 / 3 / 4 parameters | 0.7 / 0.0 / 0.0% | 15.4 / 6.1 / 1.9% | 22.0 / 10.8 / 6.6% | 37.7 / 19.4 / 12.3% |
+| unit size | more than 29 / 42 / 71 lines | 4.9 / 3.3 / 0.0% | 26.1 / 14.3 / 5.3% | 37.0 / 24.3 / 11.1% | 60.2 / 46.7 / 33.4% |
+| unit complexity | McCabe above 5 / 7 / 10 | 8.2 / 1.9 / 0.4% | 24.9 / 14.6 / 6.2% | 34.4 / 23.9 / 13.1% | 45.1 / 38.1 / 32.2% |
+| unit interfacing | more than 2 / 3 / 4 parameters (80/90/95%) | 0.7 / 0.0 / 0.0% | 13.2 / 3.9 / 1.9% | 21.6 / 10.4 / 6.6% | 31.4 / 19.2 / 12.2% |
 | duplication | duplicated lines (jscpd) | 1.1% | 4.2% | 8.6% | 34.8% |
 
-A star level allows at most the listed share of unit code above each bound; below the 2-star limits is 1 star. Module coupling and the component properties are not calibrated yet: the coupling tools are not in the checker image, so there are no benchmark measures for them.
+The benchmark rates exactly 3 / 18 / 18 / 18 / 3 repositories at 5 to 1 stars on every property. A star level allows at most the listed share of unit code above each bound; below the 2-star limits is 1 star. Module coupling and the component properties are not calibrated yet: the coupling tools are not in the checker image, so there are no benchmark measures for them.
 
 ## Sources of the candidates
 
@@ -43,9 +43,22 @@ A star level allows at most the listed share of unit code above each bound; belo
 
 **Measurement** (`scripts/open-track/measure.py`, which the checker runs too): the production scope and lizard reader of the maintainability estimate, so tests, generated and third-party code stay out. Per language the script writes a histogram of unit LOC per metric value. Duplication is one jscpd 5 run per language over that language's files, with 6 lines, 30 tokens and weak mode, using jscpd's own duplicated and total line counts. All languages of a repository are pooled.
 
-**Risk thresholds** (Alves, Ypma and Visser 2010, [doi:10.1109/ICSM.2010.5609747](https://doi.org/10.1109/ICSM.2010.5609747)): every unit weighs its LOC as a share of its repository's unit LOC, and every repository weighs the same. The thresholds are the metric values at 70, 80 and 90% of that weighted distribution. Each bound is at least one above the previous one.
+**Risk thresholds** (Alves, Ypma and Visser 2010, [doi:10.1109/ICSM.2010.5609747](https://doi.org/10.1109/ICSM.2010.5609747)): section IV, steps 1 to 6 (Fig. 2). Every unit weighs its LOC as a share of its repository's unit LOC (step 2), the weights are summed per metric value (step 3), every repository weighs the same (step 4), and the thresholds are the metric values at 70, 80 and 90% of that weighted distribution (steps 5 and 6). Unit interfacing takes 80, 90 and 95%, as in section VIII and Table IV, because its values hardly vary below 80%. Two choices are ours: the weight is divided by the repository's unit LOC (the paper's worked example divides by the system's total LOC, while step 2 requires the ratios to sum to 100%), and each bound is at least one above the previous one, which the paper does not need.
 
-**Star limits** (after Alves, Correia and Visser 2011, [doi:10.1109/IWSM-MENSURA.2011.15](https://doi.org/10.1109/IWSM-MENSURA.2011.15)): the benchmark is spread over 5 to 1 stars as 5/30/30/30/5%. For each star level the limits on the three cumulative risk shares are the per-share quantiles (nearest rank) at one common level q, the lowest q at which the target share of repositories meets all three. Limits are rounded up to 4 decimals. This is our reading of the 2011 calibration, not a copy of SIG's algorithm, which has not been checked against the paper's text.
+**Star limits** (Alves, Correia and Visser 2011, [doi:10.1109/IWSM-MENSURA.2011.15](https://doi.org/10.1109/IWSM-MENSURA.2011.15)), `calibrate()` in `derive.py`:
+- Profiles are cumulative: the share of code above each risk bound (section II-A2).
+- Limits come from Algorithm 1 (section III-A), for each star level, best first:
+  - Step through the sorted shares with one common index until enough repositories rate at that level or better (lines 7 to 12).
+  - Then lower each share's limit as far as that still holds (lines 13 to 26).
+- The partition is 5/30/30/30/5%, which section IV-B names as an option after Baggen et al. The paper's own example is uniform, 20/20/20/20/20.
+- A repository's stars follow section III-B1: per share the strictest level whose limit it stays within, and the lowest of those. The continuous interpolation of section III-B2 is not used.
+- Duplication is calibrated the same way, with one share.
+
+The paper does not define the `distribution()` function of Algorithm 1. We read it as the number of repositories rated at that level or better, compared with the cumulative partition count, so that the per-level counts come out as the partition. Neither the paper nor the thesis (Alves 2012, section 3.3.1) mentions a tolerance, and none is used. Limits are taken from the observed shares rounded up to 4 decimals.
+
+Sources read: the 2010 paper (author copy), the 2011 paper (`mensura11-alves.pdf` on Tiago Alves's University of Minho page, read through the Internet Archive) and the thesis "Benchmark-based Software Product Quality Evaluation" (2012, same page).
+
+The previous derivation of this version used the common index alone, without the optimisation of lines 13 to 26, and 70/80/90% for unit interfacing. It spread the benchmark as 6.7/28.3/31.7/28.3/5% on unit size and 5/30/31.7/31.7/1.7% on complexity. The bounds and the duplication limits did not change, and neither did the stars of OpenRegister and Open Zaak.
 
 ## Regenerate
 

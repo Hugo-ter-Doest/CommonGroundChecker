@@ -109,6 +109,34 @@ describe.skipIf(!hasPython)("scripts/open-benchmark/derive.py", () => {
     expect(benchmark.repositories[0].measured.duplication).toEqual({ share: 0.01, stars: 5 });
   });
 
+  it("calibrates star limits with Algorithm 1 of Alves et al. 2011: exact partition, no limit can be lowered", () => {
+    const script = [
+      "import json, random, sys",
+      `sys.path.insert(0, ${JSON.stringify(path.dirname(DERIVE))})`,
+      "import derive",
+      "random.seed(3)",
+      "profiles = [(round(random.random(), 3), round(random.random() * 0.5, 3), round(random.random() * 0.2, 3)) for _ in range(20)]",
+      "limits = derive.calibrate(profiles)",
+      "counts = [sum(1 for p in profiles if derive.rate(p, limits) == level) for level in (5, 4, 3, 2, 1)]",
+      "needed = {5: 1, 4: 7, 3: 13, 2: 19}",
+      "lowerable = []",
+      "for level, caps in limits.items():",
+      "    for k in range(3):",
+      "        below = [p[k] for p in profiles if p[k] < caps[k]]",
+      "        if below:",
+      "            trial = {**limits, level: [*caps]}",
+      "            trial[level][k] = max(below)",
+      "            if sum(1 for p in profiles if derive.rate(p, trial) >= level) >= needed[level]:",
+      "                lowerable.append([level, k])",
+      "print(json.dumps({'counts': counts, 'lowerable': lowerable}))",
+    ].join("\n");
+
+    const run = spawnSync("python3", ["-B", "-c", script], { encoding: "utf8" });
+
+    expect(run.stderr).toBe("");
+    expect(JSON.parse(run.stdout)).toEqual({ counts: [1, 6, 6, 6, 1], lowerable: [] });
+  });
+
   it("leaves out repositories below the size limit", () => {
     const work = workDir(twenty.map(() => ({ unitSize: { "1": 100 }, duplication: 0 })));
     const file = path.join(work, "measures", "0.json");

@@ -18,7 +18,7 @@ import { checkSecurity } from "./security";
 import { checkTests } from "./tests";
 import { checkComplexity } from "./complexity";
 import { checkMaintainability } from "./maintainability";
-import { checkOpenTrack } from "./openTrack";
+import { measureOpenTrack, rateOpenTrack, withOpenTrackExtras } from "./openTrack";
 import { checkCodeMetrics } from "./codeMetrics";
 import { checkCoverage } from "./coverage";
 import { checkAdrValidator } from "./adrValidator";
@@ -165,7 +165,7 @@ export async function runChecks(
     cloneUrl
   );
   const maintainabilityPromise = checkMaintainability(localRepoPath);
-  const openTrackPromise = checkOpenTrack(localRepoPath);
+  const openTrackPromise = measureOpenTrack(localRepoPath);
   const codeMetricsPromise = checkCodeMetrics(owner, repo, localRepoPath, cloneUrl);
   const owaspSecureCodingPromise = checkOwaspSecureCoding(context, tree, localRepoPath);
   const adrValidatorPromise = checkAdrValidator(
@@ -197,7 +197,7 @@ export async function runChecks(
 
   // Instant checks done; emit next step while slower checks complete in parallel
   onProgress?.("Analysing API specs, licence & deployment files...", 60);
-  const [[openapi, license, copyrightowner, publiccode, fivelayer, helmchart], complexity, maintainability, opentrack, codemetrics, owaspsecurecoding, adrvalidator] = await Promise.all([
+  const [[openapi, license, copyrightowner, publiccode, fivelayer, helmchart], complexity, maintainability, openTrackMeasurement, codemetrics, owaspsecurecoding, adrvalidator] = await Promise.all([
     networkChecksPromise,
     complexityPromise,
     maintainabilityPromise,
@@ -237,7 +237,9 @@ export async function runChecks(
 
   onProgress?.("Calculating compliance score...", 90);
 
-  const results = [
+  const opentrack = rateOpenTrack(openTrackMeasurement);
+  // The open track is rated again with the measures other checks report, such as duplication.
+  const results = withOpenTrackExtras([
     sourcecode,
     openapi,
     license,
@@ -264,7 +266,7 @@ export async function runChecks(
     semver,
     fivelayer,
     helmchart,
-  ];
+  ], openTrackMeasurement);
 
   const categoryAggregates = results.reduce(
     (acc, result) => {
@@ -328,34 +330,7 @@ export async function runChecks(
     : 0;
   const score = Math.min(100, baseScore);
 
-  const resultsWithRequirementLevels = [
-    sourcecode,
-    openapi,
-    license,
-    eupllicense,
-    copyrightowner,
-    publiccode,
-    docker,
-    dockerimage,
-    cicd,
-    sbom,
-    documentation,
-    changelog,
-    tests,
-    coverage,
-    complexity,
-    maintainability,
-    opentrack,
-    // codemetrics is now merged into sourcecode, so do not include separately
-    owaspsecurecoding,
-    adrvalidator,
-    contributing,
-    codeofconduct,
-    security,
-    semver,
-    fivelayer,
-    helmchart,
-  ].map((result) => ({
+  const resultsWithRequirementLevels = results.map((result) => ({
     ...result,
     requirementLevel:
       scoringConfig.criterionConfigByCheckId[result.id]?.requirementLevel ??

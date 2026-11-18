@@ -1,14 +1,22 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { checkOpenTrack, mapOpenTrack, openTrackInput, type OpenTrackMeasures } from "@/lib/checkers/openTrack";
+import {
+  checkOpenTrack,
+  mapOpenTrack,
+  openTrackExtras,
+  openTrackInput,
+  rateOpenTrack,
+  withOpenTrackExtras,
+  type OpenTrackScriptMeasures,
+} from "@/lib/checkers/openTrack";
 import { OPEN_TRACK_THRESHOLDS } from "@/lib/openModel/score";
 import { DEFAULT_CRITERION_CONFIG_BY_CHECK_ID } from "@/lib/checkers/config";
 import { RESULT_CATEGORY_BY_ID, RESULT_ORDER_BY_ID } from "@/lib/criteria";
 
-function benchmarkMeasures(slug: string): OpenTrackMeasures {
+function benchmarkMeasures(slug: string): OpenTrackScriptMeasures {
   const file = path.join(process.cwd(), "scripts", "open-benchmark", "measures", `${slug}.json`);
-  return JSON.parse(readFileSync(file, "utf8")) as OpenTrackMeasures;
+  return JSON.parse(readFileSync(file, "utf8")) as OpenTrackScriptMeasures;
 }
 
 const openZaak = benchmarkMeasures("open-zaak__open-zaak");
@@ -45,7 +53,7 @@ describe("openTrackInput", () => {
   });
 
   it("leaves duplication out when it was not measured", () => {
-    const withoutDuplication: OpenTrackMeasures = {
+    const withoutDuplication: OpenTrackScriptMeasures = {
       ...openZaak,
       languages: Object.fromEntries(
         Object.entries(openZaak.languages).map(([language, measures]) => [language, { ...measures, duplication: undefined }])
@@ -107,5 +115,37 @@ describe("checkOpenTrack", () => {
     expect(DEFAULT_CRITERION_CONFIG_BY_CHECK_ID.opentrack).toEqual({ weight: 0, requirementLevel: "informative" });
     expect(RESULT_CATEGORY_BY_ID.opentrack).toBe(RESULT_CATEGORY_BY_ID.maintainability);
     expect(RESULT_ORDER_BY_ID.indexOf("opentrack")).toBe(RESULT_ORDER_BY_ID.indexOf("maintainability") + 1);
+  });
+});
+
+describe("openTrackExtras", () => {
+  const duplicationResult = {
+    id: "duplication",
+    title: "Duplication, open track",
+    description: "",
+    status: "info" as const,
+    message: "",
+    evidence: [] as string[],
+    openTrack: {
+      duplication: { tool: "jscpd 5.4.2", percentage: 5.75, languages: { python: 5.76, javascript: null }, largestClones: [] },
+    },
+  };
+
+  it("reads the duplication check's percentage as a share", () => {
+    expect(openTrackExtras([duplicationResult]).shares?.duplication).toBeCloseTo(0.0575, 10);
+  });
+
+  it("ignores a duplication that was not measured, and results without open-track measures", () => {
+    const notMeasured = { ...duplicationResult, openTrack: { duplication: { ...duplicationResult.openTrack.duplication, percentage: null } } };
+
+    expect(openTrackExtras([notMeasured, { id: "license" }])).toEqual({ shares: {} });
+  });
+
+  it("rates the open-track result again with them", () => {
+    const measurement = { input: openTrackInput(openZaak), skippedFiles: 0 };
+    const results = withOpenTrackExtras([rateOpenTrack({ input: { histograms: {} }, skippedFiles: 0 }), duplicationResult], measurement);
+
+    expect(results[0].evidence).toContain("Duplication: ★★★☆☆ 5.8% duplicated lines");
+    expect(results[1]).toBe(duplicationResult);
   });
 });

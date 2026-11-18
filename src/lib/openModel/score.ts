@@ -92,9 +92,9 @@ function limitsOf<T>(stars: Record<string, T>): Partial<Record<StarLevel, T>> {
   return limits;
 }
 
-/** The highest level whose limits the measured shares all stay within, else 1. */
-function starsFor(fits: (level: StarLevel) => boolean): StarRating {
-  return STAR_LEVELS.find(fits) ?? 1;
+/** The strictest level whose limit a share stays within, else 1. */
+function levelOf(share: number, limitAt: (level: StarLevel) => number | undefined): StarRating {
+  return STAR_LEVELS.find((level) => share <= (limitAt(level) ?? -Infinity)) ?? 1;
 }
 
 function scoreProperty(property: string, input: OpenTrackInput, thresholds: OpenTrackThresholds): PropertyScore {
@@ -110,7 +110,7 @@ function scoreProperty(property: string, input: OpenTrackInput, thresholds: Open
     const share = input.shares?.[property];
     if (typeof share !== "number" || !Number.isFinite(share)) return { property, stars: null, reason: "not measured" };
     const limits = limitsOf(threshold.stars);
-    return { property, share, limits, stars: starsFor((level) => share <= (limits[level] ?? -Infinity)) };
+    return { property, share, limits, stars: levelOf(share, (level) => limits[level]) };
   }
   const histogram = input.histograms?.[property];
   const shares = histogram ? riskProfile(histogram, threshold.bounds) : null;
@@ -121,7 +121,8 @@ function scoreProperty(property: string, input: OpenTrackInput, thresholds: Open
     shares,
     bounds: threshold.bounds,
     limits,
-    stars: starsFor((level) => shares.every((share, index) => share <= (limits[level]?.[index] ?? -Infinity))),
+    // Alves, Correia and Visser 2011, section III-B1: the lowest of the levels per share.
+    stars: Math.min(...shares.map((share, index) => levelOf(share, (level) => limits[level]?.[index]))) as StarRating,
   };
 }
 
