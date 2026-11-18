@@ -111,7 +111,7 @@ function AspectComposition({ aspect, results }: { aspect: AspectDefinition; resu
 
 function AspectValue({ aspect, aspectRating }: { aspect: AspectDefinition; aspectRating?: AspectRating }) {
   const rating = aspectRating?.rating ?? null;
-  if (aspect.source.type === "informative") return <span className="text-xs text-gray-600">informative, not rated</span>;
+  if (aspect.source.type === "informative") return null;
   if (rating === null) return <span className="text-xs text-gray-600">not measured</span>;
   const count = documentCountText(aspectRating);
   return (

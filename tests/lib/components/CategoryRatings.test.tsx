@@ -143,7 +143,8 @@ describe("CategoryRatings", () => {
 
     const group = screen.getByRole("group", { name: /^Project health/ });
     expect(within(group).queryByRole("meter")).toBeNull();
-    expect(within(group).getByText("informative, not rated")).toBeTruthy();
+    expect(within(group).getByRole("heading", { name: /^Project health\s*\(informative, not rated\)$/ })).toBeTruthy();
+    expect(within(group).getAllByText(/informative, not rated/)).toHaveLength(1);
     const table = within(group).getByRole("table", { name: "What Project health is made of" });
     const absence = within(table).getByRole("row", { name: /Contributor Absence Factor/ });
     expect(within(absence).getAllByRole("cell").map((cell) => cell.textContent)).toEqual([
