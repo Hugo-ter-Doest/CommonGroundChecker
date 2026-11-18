@@ -143,7 +143,7 @@ describe("CategoryRatings", () => {
 
     const group = screen.getByRole("group", { name: /^Size/ });
     expect(within(group).queryByRole("meter")).toBeNull();
-    expect(within(group).getByText("(not counted)")).toBeTruthy();
+    expect(within(group).getByText("(informative, not rated)")).toBeTruthy();
     expect(within(group).getByText("42,010 lines of code, not rated")).toBeTruthy();
     const table = within(group).getByRole("table", { name: /What Size is made of: production code, counted with scc 4.1.0/ });
     const python = within(table).getByRole("row", { name: /^Python/ });
@@ -160,5 +160,12 @@ describe("CategoryRatings", () => {
     const group = screen.getByRole("group", { name: /^Size/ });
     expect(within(group).getByText("not measured")).toBeTruthy();
     expect(within(group).getByText("Not measured: scc 4.1.0 could not run.")).toBeTruthy();
+  });
+
+  it("marks a rated aspect with weight 0 as not counted", () => {
+    renderRatings();
+
+    expect(screen.getByRole("heading", { name: /^Layering\s*\(not counted\)$/ })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "API" })).toBeTruthy();
   });
 });
