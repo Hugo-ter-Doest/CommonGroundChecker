@@ -137,6 +137,43 @@ describe.skipIf(!hasPython)("scripts/open-benchmark/derive.py", () => {
     expect(JSON.parse(run.stdout)).toEqual({ counts: [1, 6, 6, 6, 1], lowerable: [] });
   });
 
+  it("calibrates coupling from the coupling measures, higher independence rating better", () => {
+    const work = workDir(twenty.map(() => ({ unitSize: { "1": 100 }, duplication: 0 })));
+    mkdirSync(path.join(work, "coupling"));
+    twenty.forEach((index) => {
+      const coupling =
+        index === 0
+          ? { error: "clone failed" }
+          : {
+              version: 1,
+              languages: {
+                php: {
+                  measured: true,
+                  tool: "pdepend 3.0.0",
+                  loc: 100,
+                  componentIndependence: index / 20,
+                  componentEntanglement: { violationDegree: index / 100 },
+                  moduleCoupling: { fanInHistogram: { "0": 70, "5": 10, "10": 10, "30": 10 } },
+                },
+              },
+            };
+      writeFileSync(path.join(work, "coupling", `${index}.json`), JSON.stringify(coupling));
+    });
+
+    const { thresholds, benchmark } = derive(work);
+
+    expect(thresholds.properties.module_coupling.bounds).toEqual([0, 5, 10]);
+    expect(thresholds.properties.component_independence.kind).toBe("share-min");
+    expect(thresholds.properties.component_independence.stars["5"]).toBe(0.95);
+    expect(thresholds.properties.component_entanglement.stars["5"]).toBe(0.01);
+    expect(thresholds.properties.component_independence.repositories).toBe(19);
+    expect(thresholds.not_calibrated).toEqual({});
+    expect(thresholds.tools.coupling).toEqual(["pdepend 3.0.0"]);
+    expect(benchmark.left_out.coupling_not_measured).toEqual({ "owner0/repo": "clone failed" });
+    const best = benchmark.repositories.find((repository: { name: string }) => repository.name === "owner19/repo");
+    expect(best.measured.component_independence).toEqual({ share: 0.95, stars: 5 });
+  });
+
   it("leaves out repositories below the size limit", () => {
     const work = workDir(twenty.map(() => ({ unitSize: { "1": 100 }, duplication: 0 })));
     const file = path.join(work, "measures", "0.json");

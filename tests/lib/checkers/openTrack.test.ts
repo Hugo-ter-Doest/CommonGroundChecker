@@ -72,7 +72,7 @@ describe("mapOpenTrack", () => {
     expect(result.message).toContain("not a SIG rating");
     expect(result.evidence?.[0]).toMatch(/^Unit size: ★★★☆☆ 36\.0% \/ 22\.3% \/ 7\.9% of the code above \d+ \/ \d+ \/ \d+ lines$/);
     expect(result.evidence).toContain("Duplication: ★★★☆☆ 5.8% duplicated lines");
-    expect(result.evidence?.some((line) => line.startsWith("Module coupling: not calibrated"))).toBe(true);
+    expect(result.evidence).toContain("Module coupling: not measured");
     expect(result.evidence?.at(-1)).toContain(`derived from ${OPEN_TRACK_THRESHOLDS.benchmark.repositories} benchmark repositories`);
   });
 
@@ -147,5 +147,70 @@ describe("openTrackExtras", () => {
 
     expect(results[0].evidence).toContain("Duplication: ★★★☆☆ 5.8% duplicated lines");
     expect(results[1]).toBe(duplicationResult);
+  });
+});
+
+describe("openTrackExtras with coupling", () => {
+  function language(loc: number, independence: number, violationDegree: number, fanInHistogram?: Record<string, number>) {
+    return {
+      measured: true,
+      tool: "pdepend 3.0.0",
+      modules: 3,
+      edges: 2,
+      loc,
+      componentDefinition: "directories below lib/",
+      components: 2,
+      componentIndependence: independence,
+      componentEntanglement: { violationDegree, density: 1, communicationLines: 1, violations: {} },
+      moduleCoupling: {
+        bounds: [10, 20, 50],
+        riskProfile: { low: 1, moderate: 0, high: 0, veryHigh: 0 },
+        above: [0, 0, 0],
+        highestFanIn: [],
+        ...(fanInHistogram ? { fanInHistogram } : {}),
+      },
+      cycles: { moduleCycles: 0, modulesInCycles: 0, locShareInCycles: 0, largestModuleCycle: 0, componentCycles: 0, largestComponentCycle: 0 },
+    };
+  }
+  const coupling = (languages: Record<string, unknown>) => [{ id: "coupling", openTrack: { coupling: { version: 1, languages } } }];
+
+  it("pools the coupling check's languages as the benchmark does", () => {
+    const extra = openTrackExtras(
+      coupling({ php: language(300, 0.9, 0.1, { "0": 200, "12": 100 }), javascript: language(100, 0.5, 0.3, { "0": 100 }) })
+    );
+
+    expect(extra.histograms?.module_coupling).toEqual({ "0": 300, "12": 100 });
+    expect(extra.shares?.component_independence).toBeCloseTo(0.8, 10);
+    expect(extra.shares?.component_entanglement).toBeCloseTo(0.15, 10);
+  });
+
+  it("rates no coupling when a language was not measured", () => {
+    const extra = openTrackExtras(
+      coupling({ php: language(300, 0.9, 0.1, { "0": 300 }), python: { measured: false, reason: "grimp failed", files: 3 } })
+    );
+
+    expect(extra).toEqual({ shares: {} });
+  });
+
+  it("rates independence and entanglement but not module coupling without a fan-in histogram", () => {
+    const extra = openTrackExtras(coupling({ php: language(300, 0.9, 0.1) }));
+
+    expect(extra.histograms).toBeUndefined();
+    expect(extra.shares).toEqual({ component_independence: 0.9, component_entanglement: 0.1 });
+  });
+});
+
+describe("the open track with every property", () => {
+  it("rates Open Zaak on all seven properties with its benchmark coupling measures", () => {
+    const file = path.join(process.cwd(), "scripts", "open-benchmark", "coupling", "open-zaak__open-zaak.json");
+    const coupling = JSON.parse(readFileSync(file, "utf8"));
+    const extra = openTrackExtras([{ openTrack: { coupling } }]);
+    const result = rateOpenTrack({ input: openTrackInput(openZaak), skippedFiles: 0 }, extra);
+
+    expect(result.message).toContain("the mean of 7 rated properties");
+    expect(result.rating).toBeCloseTo(20 / 7, 10);
+    expect(result.evidence).toContain("Component independence: ★★★☆☆ 81.4% of the code hidden from other components");
+    expect(result.evidence).toContain("Component entanglement: ★★★☆☆ 0.048 violation degree");
+    expect(result.evidence?.find((line) => line.startsWith("Module coupling"))).toMatch(/^Module coupling: ★★☆☆☆ /);
   });
 });

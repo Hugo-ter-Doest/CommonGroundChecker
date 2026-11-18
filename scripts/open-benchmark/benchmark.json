@@ -1,5 +1,5 @@
 {
- "version": "2026-11-18",
+ "version": "2026-11-18.2",
  "repositories": [
   {
    "name": "Amsterdam/brede-welvaart",
@@ -42,6 +42,22 @@
     "duplication": {
      "share": 0.0583,
      "stars": 3
+    },
+    "module_coupling": {
+     "shares": [
+      0.2207,
+      0.1213,
+      0.0651
+     ],
+     "stars": 3
+    },
+    "component_independence": {
+     "share": 0.892,
+     "stars": 4
+    },
+    "component_entanglement": {
+     "share": 0.0,
+     "stars": 5
     }
    }
   },
@@ -85,6 +101,22 @@
     "duplication": {
      "share": 0.0874,
      "stars": 2
+    },
+    "module_coupling": {
+     "shares": [
+      0.0524,
+      0.0238,
+      0.0066
+     ],
+     "stars": 4
+    },
+    "component_independence": {
+     "share": 0.9823,
+     "stars": 4
+    },
+    "component_entanglement": {
+     "share": 0.0317,
+     "stars": 3
     }
    }
   },
@@ -130,6 +162,22 @@
     "duplication": {
      "share": 0.0817,
      "stars": 3
+    },
+    "module_coupling": {
+     "shares": [
+      0.0733,
+      0.0581,
+      0.0459
+     ],
+     "stars": 4
+    },
+    "component_independence": {
+     "share": 0.3591,
+     "stars": 2
+    },
+    "component_entanglement": {
+     "share": 0.0785,
+     "stars": 3
     }
    }
   },
@@ -174,6 +222,22 @@
     "duplication": {
      "share": 0.1173,
      "stars": 2
+    },
+    "module_coupling": {
+     "shares": [
+      0.103,
+      0.0622,
+      0.0306
+     ],
+     "stars": 4
+    },
+    "component_independence": {
+     "share": 0.3776,
+     "stars": 2
+    },
+    "component_entanglement": {
+     "share": 0.0726,
+     "stars": 3
     }
    }
   },
@@ -217,6 +281,22 @@
     },
     "duplication": {
      "share": 0.1398,
+     "stars": 2
+    },
+    "module_coupling": {
+     "shares": [
+      0.0957,
+      0.0597,
+      0.0312
+     ],
+     "stars": 4
+    },
+    "component_independence": {
+     "share": 0.5632,
+     "stars": 2
+    },
+    "component_entanglement": {
+     "share": 0.1409,
      "stars": 2
     }
    }
@@ -263,6 +343,22 @@
     "duplication": {
      "share": 0.0848,
      "stars": 3
+    },
+    "module_coupling": {
+     "shares": [
+      0.1004,
+      0.0621,
+      0.0284
+     ],
+     "stars": 4
+    },
+    "component_independence": {
+     "share": 0.6199,
+     "stars": 2
+    },
+    "component_entanglement": {
+     "share": 0.0535,
+     "stars": 3
     }
    }
   },
@@ -307,6 +403,22 @@
     "duplication": {
      "share": 0.1241,
      "stars": 2
+    },
+    "module_coupling": {
+     "shares": [
+      0.2107,
+      0.1691,
+      0.089
+     ],
+     "stars": 3
+    },
+    "component_independence": {
+     "share": 0.3548,
+     "stars": 2
+    },
+    "component_entanglement": {
+     "share": 0.0937,
+     "stars": 3
     }
    }
   },
@@ -351,6 +463,22 @@
     "duplication": {
      "share": 0.1075,
      "stars": 2
+    },
+    "module_coupling": {
+     "shares": [
+      0.244,
+      0.2189,
+      0.1473
+     ],
+     "stars": 2
+    },
+    "component_independence": {
+     "share": 0.4161,
+     "stars": 2
+    },
+    "component_entanglement": {
+     "share": 0.0823,
+     "stars": 3
     }
    }
   },
@@ -395,6 +523,22 @@
     "duplication": {
      "share": 0.0288,
      "stars": 4
+    },
+    "module_coupling": {
+     "shares": [
+      0.0549,
+      0.0405,
+      0.0131
+     ],
+     "stars": 4
+    },
+    "component_independence": {
+     "share": 0.5957,
+     "stars": 2
+    },
+    "component_entanglement": {
+     "share": 0.1841,
+     "stars": 2
     }
    }
   },
@@ -439,6 +583,22 @@
     },
     "duplication": {
      "share": 0.074,
+     "stars": 3
+    },
+    "module_coupling": {
+     "shares": [
+      0.1998,
+      0.1307,
+      0.0605
+     ],
+     "stars": 4
+    },
+    "component_independence": {
+     "share": 0.8064,
+     "stars": 3
+    },
+    "component_entanglement": {
+     "share": 0.0606,
      "stars": 3
     }
    }
@@ -529,6 +689,22 @@
     "duplication": {
      "share": 0.0363,
      "stars": 4
+    },
+    "module_coupling": {
+     "shares": [
+      0.1416,
+      0.1165,
+      0.0983
+     ],
+     "stars": 3
+    },
+    "component_independence": {
+     "share": 0.3229,
+     "stars": 2
+    },
+    "component_entanglement": {
+     "share": 0.0354,
+     "stars": 3
     }
    }
   },
@@ -572,6 +748,22 @@
     },
     "duplication": {
      "share": 0.0805,
+     "stars": 3
+    },
+    "module_coupling": {
+     "shares": [
+      0.1809,
+      0.1208,
+      0.0733
+     ],
+     "stars": 3
+    },
+    "component_independence": {
+     "share": 0.7591,
+     "stars": 3
+    },
+    "component_entanglement": {
+     "share": 0.034,
      "stars": 3
     }
    }
@@ -619,6 +811,22 @@
     "duplication": {
      "share": 0.2019,
      "stars": 2
+    },
+    "module_coupling": {
+     "shares": [
+      0.0694,
+      0.0483,
+      0.0264
+     ],
+     "stars": 4
+    },
+    "component_independence": {
+     "share": 0.5042,
+     "stars": 2
+    },
+    "component_entanglement": {
+     "share": 0.1584,
+     "stars": 2
     }
    }
   },
@@ -662,6 +870,22 @@
     "duplication": {
      "share": 0.2306,
      "stars": 2
+    },
+    "module_coupling": {
+     "shares": [
+      0.1102,
+      0.0473,
+      0.0068
+     ],
+     "stars": 4
+    },
+    "component_independence": {
+     "share": 0.9987,
+     "stars": 5
+    },
+    "component_entanglement": {
+     "share": 0.0,
+     "stars": 5
     }
    }
   },
@@ -704,6 +928,22 @@
     "duplication": {
      "share": 0.3861,
      "stars": 1
+    },
+    "module_coupling": {
+     "shares": [
+      0.0461,
+      0.0422,
+      0.0
+     ],
+     "stars": 4
+    },
+    "component_independence": {
+     "share": 1.0,
+     "stars": 5
+    },
+    "component_entanglement": {
+     "share": 0.0,
+     "stars": 5
     }
    }
   },
@@ -745,6 +985,22 @@
     },
     "duplication": {
      "share": 0.1301,
+     "stars": 2
+    },
+    "module_coupling": {
+     "shares": [
+      0.2221,
+      0.1639,
+      0.1639
+     ],
+     "stars": 2
+    },
+    "component_independence": {
+     "share": 0.9376,
+     "stars": 4
+    },
+    "component_entanglement": {
+     "share": 0.1,
      "stars": 2
     }
    }
@@ -788,6 +1044,22 @@
     "duplication": {
      "share": 0.004,
      "stars": 5
+    },
+    "module_coupling": {
+     "shares": [
+      0.1525,
+      0.1463,
+      0.1012
+     ],
+     "stars": 3
+    },
+    "component_independence": {
+     "share": 0.7318,
+     "stars": 3
+    },
+    "component_entanglement": {
+     "share": 0.1304,
+     "stars": 2
     }
    }
   },
@@ -832,6 +1104,22 @@
     "duplication": {
      "share": 0.0267,
      "stars": 4
+    },
+    "module_coupling": {
+     "shares": [
+      0.2388,
+      0.1997,
+      0.1264
+     ],
+     "stars": 3
+    },
+    "component_independence": {
+     "share": 0.7325,
+     "stars": 3
+    },
+    "component_entanglement": {
+     "share": 0.0204,
+     "stars": 4
     }
    }
   },
@@ -874,6 +1162,22 @@
     "duplication": {
      "share": 0.0007,
      "stars": 5
+    },
+    "module_coupling": {
+     "shares": [
+      0.5843,
+      0.4725,
+      0.3606
+     ],
+     "stars": 1
+    },
+    "component_independence": {
+     "share": 0.2994,
+     "stars": 2
+    },
+    "component_entanglement": {
+     "share": 0.0142,
+     "stars": 4
     }
    }
   },
@@ -916,6 +1220,22 @@
     "duplication": {
      "share": 0.3477,
      "stars": 2
+    },
+    "module_coupling": {
+     "shares": [
+      0.3246,
+      0.1343,
+      0.0921
+     ],
+     "stars": 2
+    },
+    "component_independence": {
+     "share": 0.9012,
+     "stars": 4
+    },
+    "component_entanglement": {
+     "share": 0.0109,
+     "stars": 4
     }
    }
   },
@@ -959,6 +1279,22 @@
     "duplication": {
      "share": 0.2747,
      "stars": 2
+    },
+    "module_coupling": {
+     "shares": [
+      0.3059,
+      0.2591,
+      0.2363
+     ],
+     "stars": 2
+    },
+    "component_independence": {
+     "share": 0.7023,
+     "stars": 3
+    },
+    "component_entanglement": {
+     "share": 0.0668,
+     "stars": 3
     }
    }
   },
@@ -1002,6 +1338,22 @@
     "duplication": {
      "share": 0.1505,
      "stars": 2
+    },
+    "module_coupling": {
+     "shares": [
+      0.1527,
+      0.1341,
+      0.0393
+     ],
+     "stars": 3
+    },
+    "component_independence": {
+     "share": 0.8151,
+     "stars": 4
+    },
+    "component_entanglement": {
+     "share": 0.0395,
+     "stars": 3
     }
    }
   },
@@ -1046,6 +1398,22 @@
     "duplication": {
      "share": 0.052,
      "stars": 3
+    },
+    "module_coupling": {
+     "shares": [
+      0.3166,
+      0.2273,
+      0.1735
+     ],
+     "stars": 2
+    },
+    "component_independence": {
+     "share": 0.6769,
+     "stars": 3
+    },
+    "component_entanglement": {
+     "share": 0.2222,
+     "stars": 2
     }
    }
   },
@@ -1089,6 +1457,22 @@
     "duplication": {
      "share": 0.0862,
      "stars": 3
+    },
+    "module_coupling": {
+     "shares": [
+      0.4175,
+      0.3537,
+      0.171
+     ],
+     "stars": 2
+    },
+    "component_independence": {
+     "share": 0.8751,
+     "stars": 4
+    },
+    "component_entanglement": {
+     "share": 0.1493,
+     "stars": 2
     }
    }
   },
@@ -1132,6 +1516,22 @@
     "duplication": {
      "share": 0.0174,
      "stars": 4
+    },
+    "module_coupling": {
+     "shares": [
+      0.228,
+      0.111,
+      0.0779
+     ],
+     "stars": 3
+    },
+    "component_independence": {
+     "share": 0.7136,
+     "stars": 3
+    },
+    "component_entanglement": {
+     "share": 0.1841,
+     "stars": 2
     }
    }
   },
@@ -1175,6 +1575,22 @@
     "duplication": {
      "share": 0.0479,
      "stars": 3
+    },
+    "module_coupling": {
+     "shares": [
+      0.2852,
+      0.1517,
+      0.1358
+     ],
+     "stars": 3
+    },
+    "component_independence": {
+     "share": 0.9696,
+     "stars": 4
+    },
+    "component_entanglement": {
+     "share": 0.0,
+     "stars": 5
     }
    }
   },
@@ -1218,6 +1634,22 @@
     "duplication": {
      "share": 0.1107,
      "stars": 2
+    },
+    "module_coupling": {
+     "shares": [
+      0.2869,
+      0.237,
+      0.1601
+     ],
+     "stars": 2
+    },
+    "component_independence": {
+     "share": 0.9345,
+     "stars": 4
+    },
+    "component_entanglement": {
+     "share": 0.0,
+     "stars": 5
     }
    }
   },
@@ -1261,6 +1693,22 @@
     "duplication": {
      "share": 0.0652,
      "stars": 3
+    },
+    "module_coupling": {
+     "shares": [
+      0.3335,
+      0.2252,
+      0.1241
+     ],
+     "stars": 2
+    },
+    "component_independence": {
+     "share": 0.7082,
+     "stars": 3
+    },
+    "component_entanglement": {
+     "share": 0.0285,
+     "stars": 4
     }
    }
   },
@@ -1303,6 +1751,22 @@
     },
     "duplication": {
      "share": 0.0445,
+     "stars": 3
+    },
+    "module_coupling": {
+     "shares": [
+      0.3429,
+      0.3118,
+      0.1287
+     ],
+     "stars": 2
+    },
+    "component_independence": {
+     "share": 0.9204,
+     "stars": 4
+    },
+    "component_entanglement": {
+     "share": 0.0353,
      "stars": 3
     }
    }
@@ -1347,6 +1811,22 @@
     "duplication": {
      "share": 0.032,
      "stars": 4
+    },
+    "module_coupling": {
+     "shares": [
+      0.2909,
+      0.2061,
+      0.0553
+     ],
+     "stars": 3
+    },
+    "component_independence": {
+     "share": 0.7704,
+     "stars": 3
+    },
+    "component_entanglement": {
+     "share": 0.1812,
+     "stars": 2
     }
    }
   },
@@ -1391,6 +1871,22 @@
     "duplication": {
      "share": 0.3211,
      "stars": 2
+    },
+    "module_coupling": {
+     "shares": [
+      0.5467,
+      0.2766,
+      0.1025
+     ],
+     "stars": 1
+    },
+    "component_independence": {
+     "share": 0.7233,
+     "stars": 3
+    },
+    "component_entanglement": {
+     "share": 0.0775,
+     "stars": 3
     }
    }
   },
@@ -1478,6 +1974,22 @@
     "duplication": {
      "share": 0.0128,
      "stars": 4
+    },
+    "module_coupling": {
+     "shares": [
+      0.4997,
+      0.2662,
+      0.1271
+     ],
+     "stars": 2
+    },
+    "component_independence": {
+     "share": 0.4108,
+     "stars": 2
+    },
+    "component_entanglement": {
+     "share": 0.1237,
+     "stars": 2
     }
    }
   },
@@ -1520,6 +2032,22 @@
     "duplication": {
      "share": 0.0581,
      "stars": 3
+    },
+    "module_coupling": {
+     "shares": [
+      0.3683,
+      0.2979,
+      0.2228
+     ],
+     "stars": 2
+    },
+    "component_independence": {
+     "share": 0.4087,
+     "stars": 2
+    },
+    "component_entanglement": {
+     "share": 0.1389,
+     "stars": 2
     }
    }
   },
@@ -1562,6 +2090,22 @@
     "duplication": {
      "share": 0.0271,
      "stars": 4
+    },
+    "module_coupling": {
+     "shares": [
+      0.3485,
+      0.2286,
+      0.1454
+     ],
+     "stars": 2
+    },
+    "component_independence": {
+     "share": 0.3815,
+     "stars": 2
+    },
+    "component_entanglement": {
+     "share": 0.1698,
+     "stars": 2
     }
    }
   },
@@ -1604,6 +2148,22 @@
     "duplication": {
      "share": 0.0652,
      "stars": 3
+    },
+    "module_coupling": {
+     "shares": [
+      0.5403,
+      0.4393,
+      0.3038
+     ],
+     "stars": 2
+    },
+    "component_independence": {
+     "share": 0.3724,
+     "stars": 2
+    },
+    "component_entanglement": {
+     "share": 0.0978,
+     "stars": 2
     }
    }
   },
@@ -1647,6 +2207,22 @@
     "duplication": {
      "share": 0.1801,
      "stars": 2
+    },
+    "module_coupling": {
+     "shares": [
+      0.1962,
+      0.1609,
+      0.1028
+     ],
+     "stars": 3
+    },
+    "component_independence": {
+     "share": 0.9296,
+     "stars": 4
+    },
+    "component_entanglement": {
+     "share": 0.0,
+     "stars": 5
     }
    }
   },
@@ -1692,6 +2268,22 @@
     "duplication": {
      "share": 0.233,
      "stars": 2
+    },
+    "module_coupling": {
+     "shares": [
+      0.2589,
+      0.2136,
+      0.1659
+     ],
+     "stars": 2
+    },
+    "component_independence": {
+     "share": 0.8689,
+     "stars": 4
+    },
+    "component_entanglement": {
+     "share": 0.0,
+     "stars": 5
     }
    }
   },
@@ -1735,6 +2327,22 @@
     "duplication": {
      "share": 0.6311,
      "stars": 1
+    },
+    "module_coupling": {
+     "shares": [
+      0.073,
+      0.073,
+      0.067
+     ],
+     "stars": 4
+    },
+    "component_independence": {
+     "share": 0.8247,
+     "stars": 4
+    },
+    "component_entanglement": {
+     "share": 0.0,
+     "stars": 5
     }
    }
   },
@@ -1779,6 +2387,22 @@
     "duplication": {
      "share": 0.0727,
      "stars": 3
+    },
+    "module_coupling": {
+     "shares": [
+      0.2461,
+      0.1657,
+      0.109
+     ],
+     "stars": 3
+    },
+    "component_independence": {
+     "share": 0.7502,
+     "stars": 3
+    },
+    "component_entanglement": {
+     "share": 0.236,
+     "stars": 1
     }
    }
   },
@@ -1866,6 +2490,22 @@
     "duplication": {
      "share": 0.0173,
      "stars": 4
+    },
+    "module_coupling": {
+     "shares": [
+      0.2243,
+      0.1321,
+      0.1019
+     ],
+     "stars": 3
+    },
+    "component_independence": {
+     "share": 0.8301,
+     "stars": 4
+    },
+    "component_entanglement": {
+     "share": 0.2688,
+     "stars": 1
     }
    }
   },
@@ -1908,6 +2548,22 @@
     },
     "duplication": {
      "share": 0.0575,
+     "stars": 3
+    },
+    "module_coupling": {
+     "shares": [
+      0.3772,
+      0.276,
+      0.1571
+     ],
+     "stars": 2
+    },
+    "component_independence": {
+     "share": 0.8142,
+     "stars": 3
+    },
+    "component_entanglement": {
+     "share": 0.0483,
      "stars": 3
     }
    }
@@ -1952,6 +2608,22 @@
     "duplication": {
      "share": 0.0193,
      "stars": 4
+    },
+    "module_coupling": {
+     "shares": [
+      0.214,
+      0.1579,
+      0.0816
+     ],
+     "stars": 3
+    },
+    "component_independence": {
+     "share": 0.1896,
+     "stars": 1
+    },
+    "component_entanglement": {
+     "share": 0.2744,
+     "stars": 1
     }
    }
   },
@@ -1995,6 +2667,22 @@
     "duplication": {
      "share": 0.0396,
      "stars": 4
+    },
+    "module_coupling": {
+     "shares": [
+      0.0661,
+      0.0661,
+      0.0661
+     ],
+     "stars": 4
+    },
+    "component_independence": {
+     "share": 0.6293,
+     "stars": 2
+    },
+    "component_entanglement": {
+     "share": 0.2267,
+     "stars": 2
     }
    }
   },
@@ -2037,6 +2725,22 @@
     },
     "duplication": {
      "share": 0.0849,
+     "stars": 3
+    },
+    "module_coupling": {
+     "shares": [
+      0.1891,
+      0.0,
+      0.0
+     ],
+     "stars": 4
+    },
+    "component_independence": {
+     "share": 0.0626,
+     "stars": 1
+    },
+    "component_entanglement": {
+     "share": 0.0682,
      "stars": 3
     }
    }
@@ -2081,6 +2785,22 @@
     "duplication": {
      "share": 0.0424,
      "stars": 4
+    },
+    "module_coupling": {
+     "shares": [
+      0.4279,
+      0.0878,
+      0.0
+     ],
+     "stars": 2
+    },
+    "component_independence": {
+     "share": 0.1638,
+     "stars": 1
+    },
+    "component_entanglement": {
+     "share": 0.157,
+     "stars": 2
     }
    }
   },
@@ -2125,6 +2845,22 @@
     "duplication": {
      "share": 0.0108,
      "stars": 5
+    },
+    "module_coupling": {
+     "shares": [
+      0.0437,
+      0.0,
+      0.0
+     ],
+     "stars": 5
+    },
+    "component_independence": {
+     "share": 0.755,
+     "stars": 3
+    },
+    "component_entanglement": {
+     "share": 0.0,
+     "stars": 5
     }
    }
   },
@@ -2166,6 +2902,22 @@
     },
     "duplication": {
      "share": 0.0482,
+     "stars": 3
+    },
+    "module_coupling": {
+     "shares": [
+      0.2337,
+      0.1679,
+      0.1022
+     ],
+     "stars": 3
+    },
+    "component_independence": {
+     "share": 0.7735,
+     "stars": 3
+    },
+    "component_entanglement": {
+     "share": 0.0426,
      "stars": 3
     }
    }
@@ -2210,6 +2962,22 @@
     "duplication": {
      "share": 0.0326,
      "stars": 4
+    },
+    "module_coupling": {
+     "shares": [
+      0.1391,
+      0.0333,
+      0.0
+     ],
+     "stars": 4
+    },
+    "component_independence": {
+     "share": 0.8475,
+     "stars": 4
+    },
+    "component_entanglement": {
+     "share": 0.0,
+     "stars": 5
     }
    }
   },
@@ -2253,6 +3021,22 @@
     "duplication": {
      "share": 0.0411,
      "stars": 4
+    },
+    "module_coupling": {
+     "shares": [
+      0.1082,
+      0.0655,
+      0.0045
+     ],
+     "stars": 4
+    },
+    "component_independence": {
+     "share": 0.7538,
+     "stars": 3
+    },
+    "component_entanglement": {
+     "share": 0.0,
+     "stars": 5
     }
    }
   },
@@ -2296,6 +3080,22 @@
     "duplication": {
      "share": 0.1264,
      "stars": 2
+    },
+    "module_coupling": {
+     "shares": [
+      0.1639,
+      0.0583,
+      0.0221
+     ],
+     "stars": 4
+    },
+    "component_independence": {
+     "share": 0.273,
+     "stars": 2
+    },
+    "component_entanglement": {
+     "share": 0.2358,
+     "stars": 2
     }
    }
   },
@@ -2337,6 +3137,22 @@
     },
     "duplication": {
      "share": 0.065,
+     "stars": 3
+    },
+    "module_coupling": {
+     "shares": [
+      0.2576,
+      0.2272,
+      0.1384
+     ],
+     "stars": 3
+    },
+    "component_independence": {
+     "share": 0.8015,
+     "stars": 3
+    },
+    "component_entanglement": {
+     "share": 0.0741,
      "stars": 3
     }
    }
@@ -2380,6 +3196,22 @@
     },
     "duplication": {
      "share": 0.2167,
+     "stars": 2
+    },
+    "module_coupling": {
+     "shares": [
+      0.1848,
+      0.1518,
+      0.0101
+     ],
+     "stars": 3
+    },
+    "component_independence": {
+     "share": 0.6382,
+     "stars": 3
+    },
+    "component_entanglement": {
+     "share": 0.2035,
      "stars": 2
     }
    }
@@ -2425,6 +3257,22 @@
     "duplication": {
      "share": 0.0261,
      "stars": 4
+    },
+    "module_coupling": {
+     "shares": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "stars": 5
+    },
+    "component_independence": {
+     "share": 0.9958,
+     "stars": 4
+    },
+    "component_entanglement": {
+     "share": 0.0,
+     "stars": 5
     }
    }
   },
@@ -2468,6 +3316,22 @@
     "duplication": {
      "share": 0.4031,
      "stars": 1
+    },
+    "module_coupling": {
+     "shares": [
+      0.4484,
+      0.4407,
+      0.4307
+     ],
+     "stars": 1
+    },
+    "component_independence": {
+     "share": 0.5303,
+     "stars": 2
+    },
+    "component_entanglement": {
+     "share": 0.0232,
+     "stars": 4
     }
    }
   },
@@ -2510,6 +3374,22 @@
     "duplication": {
      "share": 0.042,
      "stars": 4
+    },
+    "module_coupling": {
+     "shares": [
+      0.0433,
+      0.019,
+      0.0
+     ],
+     "stars": 5
+    },
+    "component_independence": {
+     "share": 0.957,
+     "stars": 4
+    },
+    "component_entanglement": {
+     "share": 0.0,
+     "stars": 5
     }
    }
   },
@@ -2554,6 +3434,22 @@
     "duplication": {
      "share": 0.0361,
      "stars": 4
+    },
+    "module_coupling": {
+     "shares": [
+      0.1493,
+      0.1039,
+      0.0536
+     ],
+     "stars": 4
+    },
+    "component_independence": {
+     "share": 1.0,
+     "stars": 5
+    },
+    "component_entanglement": {
+     "share": 0.0,
+     "stars": 5
     }
    }
   },
@@ -2597,6 +3493,22 @@
     "duplication": {
      "share": 0.0411,
      "stars": 4
+    },
+    "module_coupling": {
+     "shares": [
+      0.4082,
+      0.3324,
+      0.0706
+     ],
+     "stars": 2
+    },
+    "component_independence": {
+     "share": 0.9107,
+     "stars": 4
+    },
+    "component_entanglement": {
+     "share": 0.0,
+     "stars": 5
     }
    }
   }
@@ -2636,6 +3548,11 @@
    "OpenWebconcept/operaton-dmn-evaluator",
    "OpenWebconcept/kiss-frontend",
    "OpenWebconcept/plugin-owc-mijn-services"
-  ]
+  ],
+  "coupling_not_measured": {
+   "ConductionNL/pipelinq": "python: no Python file sits in a package (a directory with __init__.py)",
+   "MinBZK/par-dpia-form": "python: no Python file sits in a package (a directory with __init__.py)",
+   "open-formulieren/open-forms-sdk": "python: no Python file sits in a package (a directory with __init__.py)"
+  }
  }
 }

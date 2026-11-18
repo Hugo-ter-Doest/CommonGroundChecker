@@ -10,6 +10,28 @@ The open track rates maintainability against thresholds that anyone can check an
 | `../../src/lib/openModel/thresholds-<date>.json` | the thresholds the checker rates with |
 | `run.py` | clones and measures the candidates |
 | `derive.py` | selects the benchmark and derives the thresholds |
+| `coupling/` | the coupling measures of every benchmark repository, written by `run.py --coupling-image` |
+| `check_coupling.py`, `coupling.py`, `Dockerfile.coupling` | the coupling check's measure script (a copy of `scripts/coupling/check_coupling.py`, feat/open-track-coupling db1cde2), a wrapper that adds the fan-in histogram, and the image with its tools |
+
+## Version 2026-11-18.2 (in use)
+
+This version keeps the unit, duplication and benchmark figures of 2026-11-18 and adds coupling. Both files are in `src/lib/openModel/`, and `benchmark.json` belongs to the newer one.
+
+Coupling was measured with the coupling check's tools: pdepend 3.0.0 (batches of at most 1,000 files, 1,536 MB each), grimp 3.18 with import-linter 2.15, and dependency-cruiser 17.4.3. Three repositories are left out of the three coupling properties because a language was not measured: ConductionNL/pipelinq, MinBZK/par-dpia-form and open-formulieren/open-forms-sdk. In each, the coupling check reports "no Python file sits in a package". That leaves 57 repositories.
+
+| property | better | bounds | 5 stars | 4 stars | 3 stars | 2 stars |
+|---|---|---|---|---|---|---|
+| module coupling | lower | fan-in above 2 / 3 / 5 | 4.4 / 1.9 / 0.0% | 20.0 / 13.1 / 6.7% | 29.1 / 22.7 / 13.8% | 54.0 / 43.9 / 30.4% |
+| component independence | higher | | at least 99.9% | 81.5% | 63.8% | 27.3% |
+| component entanglement | lower | | at most 0.000 | 0.029 | 0.094 | 0.236 |
+
+**Module coupling** is a risk profile. Its bounds come from the LOC-weighted fan-in distribution, at the 70, 80 and 90% points (Alves 2010 section IV and Table IV), and its star limits from Algorithm 1 (Alves 2011). Fan-in counts the distinct modules that depend on a module, and each module weighs its code lines. The bounds are far below SIG's 10 / 20 / 50, because in this benchmark at least 70% of the code sits in modules with at most two dependants.
+
+**Component independence and entanglement** are one value per repository. Each is averaged over the languages, weighted by code lines, and calibrated with Algorithm 1 on that single value. For independence the value is negated first, so the limits are minimums.
+
+**Ties in entanglement.** 15 of the 57 repositories have a violation degree of 0, so they cannot be split. 26% of the benchmark gets 5 stars there, against the 5% target; the other levels hold 9 / 30 / 30 / 5%.
+
+**Coupling in the app.** The checker takes coupling from the coupling check's `openTrack.coupling` result, reading it by shape. Module coupling also needs a `moduleCoupling.fanInHistogram` per language, which the coupling check does not report yet; `coupling.py` shows the five lines that add it. Until then the app rates independence and entanglement, and reports module coupling as not measured.
 
 ## Version 2026-11-18
 
@@ -22,7 +44,7 @@ The open track rates maintainability against thresholds that anyone can check an
 | unit interfacing | more than 2 / 3 / 4 parameters (80/90/95%) | 0.7 / 0.0 / 0.0% | 13.2 / 3.9 / 1.9% | 21.6 / 10.4 / 6.6% | 31.4 / 19.2 / 12.2% |
 | duplication | duplicated lines (jscpd) | 1.1% | 4.2% | 8.6% | 34.8% |
 
-The benchmark rates exactly 3 / 18 / 18 / 18 / 3 repositories at 5 to 1 stars on every property. A star level allows at most the listed share of unit code above each bound; below the 2-star limits is 1 star. Module coupling and the component properties are not calibrated yet: the coupling tools are not in the checker image, so there are no benchmark measures for them.
+The benchmark rates exactly 3 / 18 / 18 / 18 / 3 repositories at 5 to 1 stars on every property. A star level allows at most the listed share of unit code above each bound; below the 2-star limits is 1 star. This version did not calibrate module coupling or the component properties; 2026-11-18.2 adds them.
 
 ## Sources of the candidates
 
@@ -80,4 +102,11 @@ python3 scripts/open-benchmark/run.py <work dir> --jscpd <path to jscpd>
 python3 scripts/open-benchmark/derive.py <work dir> --date <today>
 ```
 
-Then point `src/lib/openModel/score.ts` at the new thresholds file. Every clone is shallow and blobless and is deleted after measuring.
+Coupling is measured at the pinned commits in containers of the coupling image:
+
+```bash
+docker build -t open-benchmark-coupling -f scripts/open-benchmark/Dockerfile.coupling scripts/open-benchmark
+python3 scripts/open-benchmark/run.py <work dir> --pinned scripts/open-benchmark/benchmark.json --coupling-image open-benchmark-coupling --jobs 3
+```
+
+`derive.py` reads `<work dir>/coupling/` when it exists. Then point `src/lib/openModel/score.ts` at the new thresholds file and keep the old one. Every clone is shallow and blobless and is deleted after measuring.

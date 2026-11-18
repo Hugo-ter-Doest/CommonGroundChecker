@@ -24,6 +24,11 @@ Method:
      that the benchmark is spread over 5 to 1 stars as 5/30/30/30/5 percent.
      A repository's stars follow section III-B1. Duplication is calibrated the
      same way with one share.
+  4. Coupling, from <work dir>/coupling/*.json (run.py --coupling-image): module
+     coupling as a risk profile over the fan-in histogram (steps 2 and 3),
+     component independence (higher is better) and entanglement (lower is
+     better) as single shares (step 3). A repository with a language its
+     coupling tool did not measure is left out of these three properties.
 All languages of a repository are pooled.
 """
 
@@ -40,7 +45,7 @@ MIN_CODE_LOC = 2000
 MAX_PER_OWNER = 12
 # Alves, Ypma and Visser 2010, Table IV: 70/80/90% of the code, and 80/90/95% for unit interfacing.
 RISK_QUANTILES = {"unit_size": (0.70, 0.80, 0.90), "unit_complexity": (0.70, 0.80, 0.90),
-                  "unit_interfacing": (0.80, 0.90, 0.95)}
+                  "unit_interfacing": (0.80, 0.90, 0.95), "module_coupling": (0.70, 0.80, 0.90)}
 # Share of the benchmark per star level, best first: 5/30/30/30/5 percent.
 DISTRIBUTION = {5: 0.05, 4: 0.30, 3: 0.30, 2: 0.30, 1: 0.05}
 RISK_PROPERTIES = {
@@ -92,17 +97,17 @@ def select(repos, candidates):
     return sorted(kept, key=lambda r: r["name"].lower()), small, capped
 
 
-def risk_thresholds(repos, prop):
-    """Metric values at the RISK_QUANTILES points of the LOC-weighted
-    distribution in which every repository weighs the same; each bound at least
-    one above the previous one."""
+def risk_thresholds(histograms, quantiles):
+    """Metric values at the `quantiles` points of the LOC-weighted distribution
+    of {metric value: LOC} histograms, one per repository, in which every
+    repository weighs the same; each bound at least one above the previous one."""
     weights = {}
-    for r in repos:
-        total = r["pooled"]["unit_loc"]
-        for value, loc in r["pooled"]["histograms"][prop].items():
-            weights[value] = weights.get(value, 0.0) + loc / total / len(repos)
+    for hist in histograms:
+        total = sum(hist.values())
+        for value, loc in hist.items():
+            weights[value] = weights.get(value, 0.0) + loc / total / len(histograms)
     bounds, cumulative, values = [], 0.0, sorted(weights)
-    targets = list(RISK_QUANTILES[prop])
+    targets = list(quantiles)
     for value in values:
         cumulative += weights[value]
         while targets and cumulative >= targets[0] - 1e-12:
@@ -116,11 +121,38 @@ def risk_thresholds(repos, prop):
     return bounds
 
 
-def profile(pooled_repo, prop, bounds):
-    """Share of unit LOC strictly above each bound."""
-    hist = pooled_repo["histograms"][prop]
-    total = pooled_repo["unit_loc"]
+def profile(hist, bounds):
+    """Share of the histogram's LOC strictly above each bound."""
+    total = sum(hist.values())
     return [sum(loc for value, loc in hist.items() if value > bound) / total for bound in bounds]
+
+
+def pooled_coupling(c):
+    """One repository's coupling over its languages, or (None, reason) when a
+    language was not measured: the fan-in histogram added up, and component
+    independence and entanglement averaged with each language's code lines."""
+    if c is None:
+        return None, "no coupling measures"
+    if c.get("error"):
+        return None, c["error"]
+    langs = c.get("languages") or {}
+    failed = {lang: e.get("reason") for lang, e in langs.items() if not e.get("measured")}
+    if failed:
+        return None, "; ".join(f"{lang}: {reason}" for lang, reason in sorted(failed.items()))
+    if not langs:
+        return None, "no language with a coupling tool in scope"
+    hist, loc, independence, entanglement = {}, 0, 0.0, 0.0
+    for e in langs.values():
+        for value, lines in e["moduleCoupling"]["fanInHistogram"].items():
+            hist[int(value)] = hist.get(int(value), 0) + lines
+        loc += e["loc"]
+        independence += e["componentIndependence"] * e["loc"]
+        entanglement += e["componentEntanglement"]["violationDegree"] * e["loc"]
+    if loc <= 0:
+        return None, "no code lines in the measured modules"
+    tools = sorted({e["tool"] for e in langs.values()})
+    return {"histogram": hist, "independence": independence / loc, "entanglement": entanglement / loc,
+            "tools": tools}, None
 
 
 def ceil4(x):
@@ -198,7 +230,13 @@ def main(argv=None):
     for path in sorted(glob.glob(os.path.join(args.work, "measures", "*.json"))):
         with open(path) as fh:
             m = json.load(fh)
-        repos.append({"name": m["name"], "url": m["url"], "commit": m["head"], "tools": m["tools"], "pooled": pooled(m)})
+        coupling_path = os.path.join(args.work, "coupling", os.path.basename(path))
+        coupling = None
+        if os.path.isfile(coupling_path):
+            with open(coupling_path) as fh:
+                coupling = json.load(fh)
+        repos.append({"name": m["name"], "url": m["url"], "commit": m["head"], "tools": m["tools"], "pooled": pooled(m),
+                      "coupling": pooled_coupling(coupling)})
     bench, small, capped = select(repos, candidates)
     if len(bench) < 10:
         print(f"only {len(bench)} repositories qualify; need at least 10", file=sys.stderr)
@@ -210,8 +248,8 @@ def main(argv=None):
 
     properties, measured = {}, {r["name"]: {} for r in bench}
     for prop, metric in RISK_PROPERTIES.items():
-        bounds = risk_thresholds(bench, prop)
-        profiles = [profile(r["pooled"], prop, bounds) for r in bench]
+        bounds = risk_thresholds([r["pooled"]["histograms"][prop] for r in bench], RISK_QUANTILES[prop])
+        profiles = [profile(r["pooled"]["histograms"][prop], bounds) for r in bench]
         limits = calibrate(profiles)
         stars = [rate(p, limits) for p in profiles]
         for r, p, s in zip(bench, profiles, stars):
@@ -237,6 +275,56 @@ def main(argv=None):
             "repositories": len(dup),
         }
 
+    coupled = [r for r in bench if r["coupling"][0] is not None]
+    not_coupled = {r["name"]: r["coupling"][1] for r in bench if r["coupling"][0] is None}
+    not_calibrated = {}
+    coupling_tools = sorted({t for r in coupled for t in r["coupling"][0]["tools"]})
+    if len(coupled) >= 10:
+        hists = [r["coupling"][0]["histogram"] for r in coupled]
+        bounds = risk_thresholds(hists, RISK_QUANTILES["module_coupling"])
+        profiles = [profile(h, bounds) for h in hists]
+        limits = calibrate(profiles)
+        stars = [rate(p, limits) for p in profiles]
+        for r, p, st in zip(coupled, profiles, stars):
+            measured[r["name"]]["module_coupling"] = {"shares": [round(x, 4) for x in p], "stars": st}
+        properties["module_coupling"] = {
+            "kind": "risk-profile",
+            "metric": "fan-in per module: distinct depending modules (pdepend, grimp, dependency-cruiser)",
+            "bounds": bounds,
+            "stars": {str(level): caps for level, caps in limits.items()},
+            "benchmark_spread": spread(stars),
+            "repositories": len(coupled),
+        }
+        # Higher independence is better: calibrated on the negated share, published as a minimum.
+        values = [r["coupling"][0]["independence"] for r in coupled]
+        limits = {lvl: -caps[0] for lvl, caps in calibrate([(-v,) for v in values]).items()}
+        stars = [rate((-v,), {lvl: [-cap] for lvl, cap in limits.items()}) for v in values]
+        for r, v, st in zip(coupled, values, stars):
+            measured[r["name"]]["component_independence"] = {"share": round(v, 4), "stars": st}
+        properties["component_independence"] = {
+            "kind": "share-min",
+            "metric": "share of code in modules no other component depends on, code-line weighted over languages; "
+                      "higher is better",
+            "stars": {str(level): cap for level, cap in limits.items()},
+            "benchmark_spread": spread(stars),
+            "repositories": len(coupled),
+        }
+        values = [r["coupling"][0]["entanglement"] for r in coupled]
+        limits = {lvl: caps[0] for lvl, caps in calibrate([(v,) for v in values]).items()}
+        stars = [rate((v,), {lvl: [cap] for lvl, cap in limits.items()}) for v in values]
+        for r, v, st in zip(coupled, values, stars):
+            measured[r["name"]]["component_entanglement"] = {"share": round(v, 4), "stars": st}
+        properties["component_entanglement"] = {
+            "kind": "share",
+            "metric": "violation degree of the component graph, code-line weighted over languages; lower is better",
+            "stars": {str(level): cap for level, cap in limits.items()},
+            "benchmark_spread": spread(stars),
+            "repositories": len(coupled),
+        }
+    else:
+        for prop in ("module_coupling", "component_independence", "component_entanglement"):
+            not_calibrated[prop] = "no benchmark measures yet, because the coupling tools are not in the checker image"
+
     thresholds = {
         "version": args.date,
         "track": "open",
@@ -253,15 +341,11 @@ def main(argv=None):
             "regenerate": "scripts/open-benchmark/README.md",
         },
         "distribution": {"5": 0.05, "4": 0.30, "3": 0.30, "2": 0.30, "1": 0.05},
-        "tools": json.loads(tools[0]),
+        "tools": {**json.loads(tools[0]), **({"coupling": coupling_tools} if coupling_tools else {})},
         "benchmark": {"repositories": len(bench), "list": "scripts/open-benchmark/benchmark.json",
                       "min_code_loc": MIN_CODE_LOC, "max_per_owner": MAX_PER_OWNER},
         "properties": properties,
-        "not_calibrated": {
-            "module_coupling": "no benchmark measures yet, because the coupling tools are not in the checker image",
-            "component_independence": "no benchmark measures yet, because the coupling tools are not in the checker image",
-            "component_entanglement": "no benchmark measures yet, because the coupling tools are not in the checker image",
-        },
+        "not_calibrated": not_calibrated,
     }
     os.makedirs(args.thresholds_dir, exist_ok=True)
     with open(os.path.join(args.thresholds_dir, f"thresholds-{args.date}.json"), "w") as fh:
@@ -278,7 +362,8 @@ def main(argv=None):
             "reason": reason(r, c), "measured": measured[r["name"]],
         })
     benchmark = {"version": args.date, "repositories": rows,
-                 "left_out": {"below_min_code_loc": small, "over_owner_cap": capped}}
+                 "left_out": {"below_min_code_loc": small, "over_owner_cap": capped,
+                              **({"coupling_not_measured": not_coupled} if coupled else {})}}
     with open(os.path.join(args.out_dir, "benchmark.json"), "w") as fh:
         json.dump(benchmark, fh, indent=1)
         fh.write("\n")

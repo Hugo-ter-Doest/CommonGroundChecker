@@ -1,6 +1,6 @@
 import type { StarLevel, StarRating } from "../types";
 import { STAR_LEVELS } from "../types";
-import thresholds20261118 from "./thresholds-2026-11-18.json";
+import thresholds from "./thresholds-2026-11-18.2.json";
 
 /** LOC per metric value, for example `{ "12": 340 }`: 340 lines in units of 12 lines. */
 export type Histogram = Record<string, number>;
@@ -26,9 +26,10 @@ export interface RiskProfileThreshold {
 }
 
 export interface ShareThreshold {
-  kind: "share";
+  /** "share": at most the limit; "share-min": at least the limit, where a higher share is better */
+  kind: "share" | "share-min";
   metric: string;
-  /** Per star level, the maximum share */
+  /** Per star level, the maximum share (the minimum for "share-min") */
   stars: Record<string, number>;
 }
 
@@ -37,7 +38,7 @@ export interface OpenTrackThresholds {
   properties: Record<string, RiskProfileThreshold | ShareThreshold>;
   not_calibrated?: Record<string, string>;
   benchmark: { repositories: number; list: string };
-  tools: Record<string, string | null>;
+  tools: Record<string, unknown>;
 }
 
 export interface PropertyScore {
@@ -51,6 +52,8 @@ export interface PropertyScore {
   bounds?: number[];
   /** Share property: the measured share */
   share?: number;
+  /** Share property: the limits are minimums, a higher share is better */
+  atLeast?: boolean;
   /** The limits per star level, as in the thresholds file */
   limits?: Partial<Record<StarLevel, number | number[]>>;
 }
@@ -63,7 +66,7 @@ export interface OpenTrackScore {
 }
 
 /** The thresholds the checker rates with: the newest published file. */
-export const OPEN_TRACK_THRESHOLDS = thresholds20261118 as unknown as OpenTrackThresholds;
+export const OPEN_TRACK_THRESHOLDS = thresholds as unknown as OpenTrackThresholds;
 
 /** Properties rated on the open track, in display order. */
 export const OPEN_TRACK_PROPERTIES = [
@@ -106,10 +109,14 @@ function scoreProperty(property: string, input: OpenTrackInput, thresholds: Open
       reason: `not calibrated: ${thresholds.not_calibrated?.[property] ?? "no thresholds in this version"}`,
     };
   }
-  if (threshold.kind === "share") {
+  if (threshold.kind !== "risk-profile") {
     const share = input.shares?.[property];
     if (typeof share !== "number" || !Number.isFinite(share)) return { property, stars: null, reason: "not measured" };
     const limits = limitsOf(threshold.stars);
+    if (threshold.kind === "share-min") {
+      const level = STAR_LEVELS.find((candidate) => share >= (limits[candidate] ?? Infinity)) ?? 1;
+      return { property, share, limits, atLeast: true, stars: level };
+    }
     return { property, share, limits, stars: levelOf(share, (level) => limits[level]) };
   }
   const histogram = input.histograms?.[property];

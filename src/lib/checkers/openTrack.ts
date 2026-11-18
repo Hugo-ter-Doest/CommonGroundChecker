@@ -112,24 +112,28 @@ function rowStars(fits: (level: StarLevel) => boolean): StarRating {
   return STAR_LEVELS.find(fits) ?? 1;
 }
 
+/** How a share property's value reads: the formatted value and what it is. */
+const SHARE_FORMATS: Record<string, { value: (share: number) => string; what: string }> = {
+  duplication: { value: percent, what: "duplicated lines" },
+  component_independence: { value: percent, what: "of the code hidden from other components" },
+  component_entanglement: { value: (share) => share.toFixed(3), what: "violation degree" },
+};
+
+function shareFormat(property: string) {
+  return SHARE_FORMATS[property] ?? { value: percent, what: "" };
+}
+
 function measurementRows(score: PropertyScore): MeasurementRow[] {
   const { limits } = score;
   if (!limits) return [];
   if (score.share !== undefined) {
-    const share = score.share;
+    const format = shareFormat(score.property).value;
     const thresholds: MeasurementRow["thresholds"] = {};
     for (const level of STAR_LEVELS) {
       const cap = limits[level];
-      if (typeof cap === "number") thresholds[level] = `≤ ${percent(cap)}`;
+      if (typeof cap === "number") thresholds[level] = `${score.atLeast ? "≥" : "≤"} ${format(cap)}`;
     }
-    return [
-      {
-        label: "All languages",
-        value: percent(share),
-        thresholds,
-        stars: rowStars((level) => share <= ((limits[level] as number | undefined) ?? -Infinity)),
-      },
-    ];
+    return [{ label: "All languages", value: format(score.share), thresholds, stars: score.stars ?? 1 }];
   }
   return (score.shares ?? []).map((share, index) => {
     const thresholds: MeasurementRow["thresholds"] = {};
@@ -153,7 +157,10 @@ function measurementRows(score: PropertyScore): MeasurementRow[] {
 function evidenceLine(score: PropertyScore): string {
   const label = PROPERTY_LABELS[score.property] ?? score.property;
   if (score.stars === null) return `${label}: ${score.reason}`;
-  if (score.share !== undefined) return `${label}: ${formatStars(score.stars)} ${percent(score.share)} duplicated lines`;
+  if (score.share !== undefined) {
+    const format = shareFormat(score.property);
+    return `${label}: ${formatStars(score.stars)} ${format.value(score.share)} ${format.what}`.trimEnd();
+  }
   const shares = (score.shares ?? []).map(percent).join(" / ");
   const bounds = (score.bounds ?? []).join(" / ");
   const unit = BOUND_UNITS[score.property];
@@ -259,12 +266,59 @@ export async function measureOpenTrack(localRepoPath?: string): Promise<OpenTrac
  */
 export function openTrackExtras(results: ReadonlyArray<object>): OpenTrackInput {
   const shares: Record<string, number> = {};
+  const histograms: Record<string, Histogram> = {};
   for (const result of results) {
-    const percentage = (result as { openTrack?: { duplication?: { percentage?: unknown } } }).openTrack?.duplication
-      ?.percentage;
+    const openTrack = (result as { openTrack?: { duplication?: { percentage?: unknown }; coupling?: unknown } }).openTrack;
+    const percentage = openTrack?.duplication?.percentage;
     if (typeof percentage === "number" && Number.isFinite(percentage)) shares.duplication = percentage / 100;
+    const coupling = pooledCoupling(openTrack?.coupling);
+    if (coupling?.histogram) histograms.module_coupling = coupling.histogram;
+    if (coupling) {
+      shares.component_independence = coupling.independence;
+      shares.component_entanglement = coupling.entanglement;
+    }
   }
-  return { shares };
+  return Object.keys(histograms).length > 0 ? { shares, histograms } : { shares };
+}
+
+interface CouplingLanguage {
+  measured?: boolean;
+  loc?: number;
+  componentIndependence?: number;
+  componentEntanglement?: { violationDegree?: number };
+  moduleCoupling?: { fanInHistogram?: Histogram };
+}
+
+/**
+ * The coupling check's languages pooled as the benchmark pools them: the
+ * fan-in histograms added up, independence and entanglement averaged with each
+ * language's code lines. Null when a language was not measured; no histogram
+ * when a language reports none.
+ */
+function pooledCoupling(raw: unknown): { histogram?: Histogram; independence: number; entanglement: number } | null {
+  const languages = Object.values((raw as { languages?: Record<string, CouplingLanguage> } | undefined)?.languages ?? {});
+  if (languages.length === 0 || languages.some((language) => language.measured !== true)) return null;
+  let loc = 0;
+  let independence = 0;
+  let entanglement = 0;
+  let histogram: Histogram | undefined = {};
+  for (const language of languages) {
+    const lines = language.loc;
+    const hidden = language.componentIndependence;
+    const degree = language.componentEntanglement?.violationDegree;
+    if (typeof lines !== "number" || typeof hidden !== "number" || typeof degree !== "number") return null;
+    loc += lines;
+    independence += hidden * lines;
+    entanglement += degree * lines;
+    const fanIn = language.moduleCoupling?.fanInHistogram;
+    if (!fanIn || !histogram) {
+      histogram = undefined;
+      continue;
+    }
+    for (const [value, moduleLoc] of Object.entries(fanIn)) histogram[value] = (histogram[value] ?? 0) + moduleLoc;
+  }
+  if (loc <= 0) return null;
+  return { histogram, independence: independence / loc, entanglement: entanglement / loc };
 }
 
 /** Rates a measurement; a field in `extra` replaces the script's own. */
