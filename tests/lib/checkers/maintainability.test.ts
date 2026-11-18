@@ -1,10 +1,17 @@
-import { describe, expect, it } from "vitest";
+import { EventEmitter } from "node:events";
+import { describe, expect, it, vi } from "vitest";
 import {
   checkMaintainability,
   mapMaintainabilityReport,
   type MaintainabilityReport,
 } from "@/lib/checkers/maintainability";
 import fixture from "../../fixtures/maintainability-report.json";
+
+const spawn = vi.hoisted(() => vi.fn());
+vi.mock("node:child_process", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("node:child_process")>()),
+  spawn,
+}));
 
 const report = fixture as unknown as MaintainabilityReport;
 
@@ -78,5 +85,20 @@ describe("checkMaintainability", () => {
 
     expect(result.status).toBe("warn");
     expect(result.message).toContain("could not be cloned");
+  });
+
+  it("runs estimate_report.py with the repository as its first argument", async () => {
+    spawn.mockImplementation(() => {
+      const child = Object.assign(new EventEmitter(), { stderr: new EventEmitter(), kill: vi.fn() });
+      setImmediate(() => child.emit("close", 2, null));
+      return child;
+    });
+
+    await checkMaintainability("/tmp/repo");
+
+    const [command, args] = spawn.mock.calls[0];
+    expect(command).toBe("python3");
+    expect(args[0]).toMatch(/estimate_report\.py$/);
+    expect(args.slice(1, 3)).toEqual(["/tmp/repo", "--json"]);
   });
 });

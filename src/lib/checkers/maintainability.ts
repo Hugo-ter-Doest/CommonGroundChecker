@@ -164,7 +164,7 @@ export async function checkMaintainability(localRepoPath?: string): Promise<Chec
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "cgchecker-maintainability-"));
   try {
     const jsonPath = path.join(tempRoot, "report.json");
-    const run = await runScript(["report", localRepoPath, "--json", jsonPath]);
+    const run = await runScript([localRepoPath, "--json", jsonPath]);
     if (run.code === 124) {
       return warn(`Maintainability analysis did not finish within ${TIMEOUT_MS / 1000} seconds.`);
     }
