@@ -31,7 +31,7 @@ export interface RepoVersionResult {
   };
 }
 
-export function githubApiHeaders(): Record<string, string> {
+export function githubHeaders() {
   const h: Record<string, string> = {
     Accept: "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
@@ -44,7 +44,7 @@ export function githubApiHeaders(): Record<string, string> {
 
 async function ghFetch(path: string) {
   const res = await fetch(`${BASE}${path}`, {
-    headers: githubApiHeaders(),
+    headers: githubHeaders(),
     next: { revalidate: 60 },
   });
   if (!res.ok) {

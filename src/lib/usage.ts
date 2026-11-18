@@ -37,6 +37,7 @@ function readSource(value: unknown): UsageSource | null {
     ? value.names.filter((name): name is string => typeof name === "string")
     : undefined;
   const notMeasured = stringOrNull(value.notMeasured);
+  const summary = stringOrNull(value.summary);
   return {
     id,
     kind: kind as UsageSourceKind,
@@ -49,6 +50,7 @@ function readSource(value: unknown): UsageSource | null {
       ? value.figures.map(readFigure).filter((figure): figure is UsageFigure => figure !== null)
       : [],
     ...(names ? { names } : {}),
+    ...(summary ? { summary } : {}),
     ...(notMeasured ? { notMeasured } : {}),
   };
 }
@@ -72,5 +74,6 @@ export function formatCount(value: number): string {
 /** "645,727 pulls (all time)", or "not measured: <reason>" */
 export function describeUsageSource(source: UsageSource): string {
   if (source.notMeasured) return `not measured: ${source.notMeasured}`;
+  if (source.summary) return source.summary;
   return source.figures.map((figure) => `${formatCount(figure.value)} ${figure.label}`).join(", ");
 }

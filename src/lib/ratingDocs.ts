@@ -624,7 +624,7 @@ export const RATING_DOCS: RatingCategoryDoc[] = [
           {
             checkId: "usage",
             name: "GitHub repository and contributors",
-            tool: "stars, forks and watchers, and the authors of the commits of the last 12 months, told apart by email domain: from the owning organisation (the most common organisation domain, plus the domains of the maintenance contacts, contractors and organisation in publiccode.yml), from other organisations, or unknown (personal mail providers, hidden addresses such as GitHub's noreply, and noreply addresses of tools). Only the counts are kept: no names, logins, addresses or the domain of one person; a domain is named only when at least two authors share it",
+            tool: "stars, forks and watchers, and the authors of the commits of the last 12 months, after the repository's .mailmap. An author's organisation is the domain of their email address; for a personal, hidden or noreply address it is the company on their public GitHub profile, looked up while counting (at most 200 profiles per scan, set with CGC_PROFILE_LOOKUP_LIMIT; the rest stay unknown and the row says how many). Authors count as from the owning organisation (the most common organisation domain, the domains and names in publiccode.yml, and the owner account and its name), from other organisations, or unknown. When the organisation of more than half is unknown, the row only says so. Only counts are kept: no names, logins, addresses, companies or domains of one person; an organisation is named only when at least two authors share it",
           },
         ],
         rating: [

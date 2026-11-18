@@ -71,6 +71,8 @@ export interface UsageSource {
   figures: UsageFigure[];
   /** For declared users: the organisations named */
   names?: string[];
+  /** Shown in place of the figures, when they would suggest more than they say */
+  summary?: string;
   /** Why the source applies but could not be measured */
   notMeasured?: string;
 }

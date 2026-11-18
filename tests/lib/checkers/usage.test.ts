@@ -4,11 +4,11 @@ import {
   classifyContributors,
   detectImages,
   detectPackages,
-  domainOf,
   normaliseRepositoryUrl,
   ownerDomainsFromPublicCode,
 } from "@/lib/checkers/usage";
 import { readPublicCodeData } from "@/lib/checkers/publiccode";
+import { domainOf, parseMailmap } from "@/lib/contributorOrganisations";
 import type { RepoContext, RepositoryMeta } from "@/lib/providers/types";
 import type { UsageSource } from "@/lib/types";
 
@@ -81,36 +81,94 @@ const COMMITS = [
   commit("49699333+dependabot[bot]@users.noreply.github.com", "dependabot[bot]", "Bot"),
 ];
 
-describe("classifyContributors", () => {
-  it("takes the organisation domain with the most authors as the owner's", () => {
-    const counts = classifyContributors(
-      [
-        { email: "a@conduction.nl", bot: false },
-        { email: "B@Conduction.nl", bot: false },
-        { email: "c@gemeente.nl", bot: false },
-        { email: "d@hotmail.com", bot: false },
-        { email: "noreply@agent.example", bot: false },
-        { email: "root@t", bot: false },
-        { email: null, bot: false },
-        { email: "ci@conduction.nl", bot: true },
-      ],
-      []
-    );
+function author(email: string | null, login: string | null = null, bot = false) {
+  return { email, login, bot };
+}
 
-    expect(counts).toEqual({ total: 6, inside: 2, other: 1, unknown: 3, insideDomains: ["conduction.nl"] });
+describe("classifyContributors", () => {
+  it("takes the organisation domain with the most authors as the owner's", async () => {
+    const counts = await classifyContributors([
+      author("a@conduction.nl"),
+      author("B@Conduction.nl"),
+      author("c@gemeente.nl"),
+      author("noreply@agent.example"),
+      author(null),
+      author("ci@conduction.nl", null, true),
+    ]);
+
+    expect(counts).toEqual({
+      total: 4,
+      inside: 2,
+      other: 1,
+      unknown: 1,
+      notLookedUp: 0,
+      mostlyUnknown: false,
+      insideDomains: ["conduction.nl"],
+    });
   });
 
-  it("counts the publiccode.yml domains and their subdomains as inside, and names no domain of a single author", () => {
-    const counts = classifyContributors(
-      [
-        { email: "a@big.org", bot: false },
-        { email: "b@big.org", bot: false },
-        { email: "c@mail.small.nl", bot: false },
-      ],
-      ["small.nl"]
+  it("counts the publiccode.yml domains and their subdomains as inside, and names no domain of a single author", async () => {
+    const counts = await classifyContributors(
+      [author("a@big.org"), author("b@big.org"), author("c@mail.small.nl")],
+      { ownerDomains: ["small.nl"] }
     );
 
-    expect(counts).toEqual({ total: 3, inside: 3, other: 0, unknown: 0, insideDomains: ["big.org"] });
+    expect(counts).toMatchObject({ total: 3, inside: 3, other: 0, unknown: 0, insideDomains: ["big.org"] });
+  });
+
+  it("counts two addresses the .mailmap joins as one author", async () => {
+    const mailmap = parseMailmap("Jane <jane@conduction.nl> <jane@gmail.com>\n# comment\nJoe <joe@x.nl>\n");
+
+    const counts = await classifyContributors(
+      [author("jane@conduction.nl"), author("JANE@gmail.com"), author("joe@conduction.nl")],
+      { mailmap }
+    );
+
+    expect(counts).toMatchObject({ total: 2, inside: 2, unknown: 0 });
+  });
+
+  it("looks up the profile company of unknown addresses, within the limit", async () => {
+    const companies: Record<string, string | null> = {
+      ana: "@ConductionNL",
+      ben: "Maykin Media B.V.",
+      cas: "Gemeente Delft",
+      dirk: "",
+      eva: "Acme",
+    };
+    const lookupCompany = vi.fn(async (login: string) => {
+      if (login === "fail") throw new Error("HTTP 500");
+      return companies[login] ?? null;
+    });
+
+    const counts = await classifyContributors(
+      [
+        author("a@conduction.nl"),
+        author("b@conduction.nl"),
+        author("m@maykinmedia.nl"),
+        author("ana@gmail.com", "ana"),
+        author("1+ben@users.noreply.github.com", "ben"),
+        author("cas@hotmail.com", "cas"),
+        author("dirk@gmail.com", "dirk"),
+        author("x@gmail.com", "fail"),
+        author("nologin@gmail.com"),
+        author("eva@gmail.com", "eva"),
+      ],
+      { ownerNames: ["ConductionNL", "Conduction"], lookupCompany, lookupLimit: 5 }
+    );
+
+    expect(lookupCompany).toHaveBeenCalledTimes(5);
+    expect(lookupCompany).not.toHaveBeenCalledWith("eva");
+    // Inside: 2 by domain + ana by company. Other: maykin by domain, ben (matches maykinmedia.nl), cas.
+    expect(counts).toMatchObject({ total: 10, inside: 3, other: 3, unknown: 4, notLookedUp: 1, mostlyUnknown: false });
+  });
+
+  it("says when the organisation of most authors stays unknown", async () => {
+    const counts = await classifyContributors(
+      [author("a@conduction.nl"), author("b@gmail.com", "b"), author("c@gmail.com")],
+      { lookupCompany: async () => null }
+    );
+
+    expect(counts).toMatchObject({ total: 3, unknown: 2, mostlyUnknown: true });
   });
 });
 
@@ -217,6 +275,7 @@ describe("checkUsage", () => {
       "https://api.deps.dev/v3alpha/systems/npm/packages/openzaak/versions/1.2.0:dependents": { body: { dependentCount: 7, directDependentCount: 3 } },
       [`${GH}/releases`]: { body: [{ assets: [{ download_count: 10 }, { download_count: 5 }] }, { assets: [] }] },
       [`${GH}/commits`]: { body: COMMITS },
+      "https://api.github.com/users/dave": { body: { login: "dave", company: "@maykinmedia" } },
     });
 
     const result = await checkUsage(contextWith(FILES), META, TREE, PUBLICCODE, {
@@ -259,9 +318,9 @@ describe("checkUsage", () => {
     ]);
     expect(byId(sources, "contributors")?.figures).toEqual([
       { label: "contributors", value: 5 },
-      { label: "from the owning organisation", value: 2 },
+      { label: "from the owning organisation", value: 3 },
       { label: "from other organisations", value: 1 },
-      { label: "unknown", value: 2 },
+      { label: "unknown", value: 1 },
     ]);
     expect(byId(sources, "depsdev:npm")).toMatchObject({
       subject: "openzaak@1.2.0",
@@ -270,11 +329,43 @@ describe("checkUsage", () => {
         { label: "of which depend on it directly", value: 3 },
       ],
     });
-    expect(byId(sources, "contributors")?.caveat).toMatch(/^Authors of the commits of the last 12 months, told apart by email domain\. The owning organisation \(maykinmedia\.nl\) is/);
-    expect(JSON.stringify(result)).not.toMatch(/alice|bob|carol|dave|erin|dependabot|example\.org|gmail|users\.noreply/i);
+    expect(byId(sources, "contributors")?.caveat).toMatch(/^Authors of the commits of the last 12 months, told apart by address after the repository's \.mailmap\..*The owning organisation \(maykinmedia\.nl\) is/);
+    expect(JSON.stringify(result)).not.toMatch(/alice|bob|carol|dave|erin|dependabot|example\.org|gmail|users\.noreply|@maykinmedia"/i);
     const commitsUrl = vi.mocked(fetchFn).mock.calls.map(([url]) => String(url)).find((url) => url.includes("/commits"));
     expect(commitsUrl).toContain("since=2025-11-18T09:00:00.000Z");
     expect(result.evidence).toContain("npm openzaak: 1,234 downloads in the last month (2026-11-18)");
+  });
+
+  it("says the organisation of most contributors is unknown, and how many profiles were not looked up", async () => {
+    const fetchFn = fakeFetch({
+      [`${GH}/commits`]: {
+        body: [commit("a@maykinmedia.nl", "a"), commit("b@gmail.com", "b"), commit("c@gmail.com", "c"), commit("d@gmail.com", "d")],
+      },
+    });
+
+    const result = await checkUsage(contextWith({}), META, [], undefined, { fetchFn, now: NOW, profileLookupLimit: 1 });
+
+    const contributors = byId(result.usage?.sources, "contributors");
+    expect(contributors?.summary).toBe("4 contributors; organisation unknown for most (3 of 4)");
+    expect(contributors?.figures).toEqual([
+      { label: "contributors", value: 4 },
+      { label: "with organisation unknown", value: 3 },
+    ]);
+    expect(contributors?.caveat).toMatch(/2 not looked up, because a scan looks up at most 1 profiles\.$/);
+    expect(result.evidence).toContain(
+      "GitHub commits open-zaak/open-zaak: 4 contributors; organisation unknown for most (3 of 4) (2026-11-18)"
+    );
+  });
+
+  it("applies the repository's .mailmap", async () => {
+    const files = { ".mailmap": "A <a@maykinmedia.nl> <a@gmail.com>\n" };
+    const fetchFn = fakeFetch({
+      [`${GH}/commits`]: { body: [commit("a@maykinmedia.nl", "a"), commit("a@gmail.com", "a")] },
+    });
+
+    const result = await checkUsage(contextWith(files), META, Object.keys(files), undefined, { fetchFn, now: NOW });
+
+    expect(byId(result.usage?.sources, "contributors")?.figures[0]).toEqual({ label: "contributors", value: 1 });
   });
 
   it("leaves out a package another repository publishes under the same name", async () => {

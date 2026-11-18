@@ -53,5 +53,9 @@ describe("describeUsageSource", () => {
   it("joins the figures, or says why the source was not measured", () => {
     expect(describeUsageSource(SOURCE)).toBe("1,234,567 downloads in the last month");
     expect(describeUsageSource({ ...SOURCE, figures: [], notMeasured: "HTTP 503" })).toBe("not measured: HTTP 503");
+    expect(describeUsageSource({ ...SOURCE, summary: "4 contributors; organisation unknown for most (3 of 4)" })).toBe(
+      "4 contributors; organisation unknown for most (3 of 4)"
+    );
+    expect(readUsageData({ sources: [{ ...SOURCE, summary: "kept" }] })?.sources[0].summary).toBe("kept");
   });
 });
