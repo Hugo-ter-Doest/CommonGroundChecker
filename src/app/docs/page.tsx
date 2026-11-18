@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { RATING_DOCS } from "@/lib/ratingDocs";
+import { TOOLS_DOC_HREF } from "@/lib/toolsDocs";
 
 export const metadata: Metadata = {
   title: "Rating guide | Common Ground Component Checker",
@@ -39,6 +40,19 @@ export default function RatingGuidePage() {
             </li>
           ))}
         </ul>
+      </section>
+
+      <section aria-labelledby="tools-and-models" className="space-y-3">
+        <h2 id="tools-and-models" className="text-2xl font-bold text-cg-blue">
+          Tools and models
+        </h2>
+        <p className="text-gray-700">
+          <Link href={TOOLS_DOC_HREF} className="text-cg-lightblue hover:underline">
+            Tools and models
+          </Link>{" "}
+          names the tools behind each measure, where the checker deviates from the SIG/TÜV NORD model and why, and
+          the tools that were tested and rejected.
+        </p>
       </section>
 
       <section aria-labelledby="how-ratings-work" className="space-y-3">
