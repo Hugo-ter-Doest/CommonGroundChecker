@@ -341,7 +341,7 @@ const CRITERIA_OVERVIEW = [
     category: "Software Quality" as CriteriaCategory,
     desc: "Module and component structure",
     tooltip:
-      "Builds the module dependency graph with pdepend (PHP), grimp (Python) and dependency-cruiser (JavaScript, TypeScript, Vue) and shows module coupling, component independence, entanglement and cycles. Informative, not rated yet.",
+      "Builds the module dependency graph with pdepend (PHP), grimp (Python) and dependency-cruiser (JavaScript, TypeScript, Vue) and shows module coupling, component independence, entanglement and cycles. Informative: the raw figures are shown here and rated by \"Maintainability, open track\" when that rating is available.",
   },
   {
     icon: "🛡️",

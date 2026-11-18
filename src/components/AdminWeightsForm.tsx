@@ -142,7 +142,7 @@ const CRITERION_CATEGORIES: CriterionCategory[] = [
         id: "coupling",
         label: "Coupling (open track)",
         explanation:
-          "Builds the module dependency graph with pdepend (PHP), grimp (Python) and dependency-cruiser (JavaScript, TypeScript, Vue) and shows module coupling, component independence, component entanglement and dependency cycles per language. This criterion is informative and is not rated yet.",
+          "Builds the module dependency graph with pdepend (PHP), grimp (Python) and dependency-cruiser (JavaScript, TypeScript, Vue) and shows module coupling, component independence, component entanglement and dependency cycles per language. This criterion is informative: the raw figures are shown here and rated by \"Maintainability, open track\" when that rating is available.",
         requirementLevel: "informative",
       },
       {

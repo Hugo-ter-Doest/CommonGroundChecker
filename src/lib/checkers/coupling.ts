@@ -87,7 +87,7 @@ export function mapCouplingReport(report: CouplingMeasures): CheckResult {
   const parts = [];
   if (measured.length) parts.push(`Measured the module structure of ${measured.join(", ")}.`);
   if (unmeasured.length) parts.push(`Not measured: ${unmeasured.join(", ")}.`);
-  parts.push("Shown for information and not rated yet.");
+  parts.push('The raw figures are shown here and rated by "Maintainability, open track" when that rating is available.');
   return info(parts.join(" "), evidence, report);
 }
 

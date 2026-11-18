@@ -14,7 +14,7 @@ describe("mapCouplingReport", () => {
     expect(result.starRating).toBeUndefined();
     expect(result.openTrack?.coupling).toEqual(report);
     expect(result.message).toBe(
-      "Measured the module structure of Python, JavaScript, TypeScript and Vue. Shown for information and not rated yet."
+      "Measured the module structure of Python, JavaScript, TypeScript and Vue. The raw figures are shown here and rated by \"Maintainability, open track\" when that rating is available."
     );
   });
 
