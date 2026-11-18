@@ -340,7 +340,7 @@ Each category consists of aspects, defined in `src/lib/aspects.ts`:
 - **Category rating:** the mean of its rated aspects.
 - **Overall rating:** the weighted mean of the rated categories with the category weights. Categories with weight 0 don't count.
 
-Ratings are rounded to one decimal; stars round x.5 up. A component **passes** when no mandatory criterion fails and its overall rating is at least 2.5. Analyses stored before ratings existed are rated from their stored results with the active scoring config.
+Ratings are rounded to one decimal; stars round x.5 up. A component is **suitable for Common Ground** (it passes) when no mandatory criterion fails, its overall rating is at least 2.5, publiccode.yml declares a valid maintenance contract, and the rating of the maintainability estimate is at least 3.5, which is 4 stars: the level at which SIG and TÜViT certify maintainability. A scan without a maintainability rating does not pass ("Maintainability not measured"); a lower one gives the reason "Maintainability below 4 stars" with the measured value. The overall rating itself is unchanged by this condition. Analyses stored before ratings existed are rated from their stored results with the active scoring config.
 
 The live report and the stored analysis page show the rating of one component from top to bottom: the overall rating with whether it passes (and why not) and the compliance score, the errors and warnings blocks, and then one section per category. Each category and aspect title links to its page in the rating guide. Every aspect has a bar from 0.5 to 5.5 with marks where the stars change (1.5, 2.5, 3.5 and 4.5), and under it a table of what the aspect is made of:
 
