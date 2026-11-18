@@ -566,4 +566,35 @@ describe("runChecks", () => {
     expect(progressSteps.length).toBeGreaterThan(0);
     expect(progressSteps[0].step).toContain("Fetching repository metadata");
   });
+
+  it("passes an image the README names and the registry confirms to the Docker image check", async () => {
+    mocks.getActiveScoringConfig.mockResolvedValue({
+      id: "cfg-readme-image",
+      config: {
+        criterionConfigByCheckId: criterionConfig(0),
+        statusScoreByStatus: { pass: 1, warn: 0.5, info: 0.5, fail: 0 },
+        complexityThreshold: 12,
+        complexityMaxCcnThreshold: 20,
+        spectralRulesetSource: "https://static.developer.overheid.nl/adr/ruleset.yaml",
+      },
+    });
+    mocks.getFileContent.mockImplementation(async (_context: unknown, filePath: string) =>
+      filePath === "README.md" ? "Run `docker pull org/repo:latest`." : null
+    );
+    const fetchMock = vi.fn(async () => new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    try {
+      await runChecks("https://github.com/org/repo", {});
+    } finally {
+      vi.unstubAllGlobals();
+    }
+
+    expect(fetchMock).toHaveBeenCalledWith("https://hub.docker.com/v2/repositories/org/repo/", expect.anything());
+    expect(mocks.checkDockerImage).toHaveBeenCalledWith(
+      [],
+      [],
+      ["org/repo on Docker Hub (named in README.md, found on the registry)"]
+    );
+  });
 });

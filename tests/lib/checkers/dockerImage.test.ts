@@ -54,8 +54,20 @@ describe("checkDockerImage", () => {
     expect(result.evidence).toEqual(["ghcr.io/org/repo:1 (declared in docker-compose.yml)"]);
   });
 
-  it("still fails without a location or a declared image", () => {
-    expect(checkDockerImage([], []).status).toBe("fail");
+  it("passes on an image the registry confirmed", () => {
+    const confirmed = ["openzaak/open-zaak on Docker Hub (named in README.rst, found on the registry)"];
+    const result = checkDockerImage([], [], confirmed);
+
+    expect(result.status).toBe("pass");
+    expect(result.message).toContain("registry confirmed");
+    expect(result.evidence).toEqual(confirmed);
+  });
+
+  it("still fails without a location, a declared image or a confirmed one", () => {
+    const result = checkDockerImage([], [], []);
+
+    expect(result.status).toBe("fail");
+    expect(result.message).toContain("README");
   });
 
   it("keeps passing on a provided location", () => {

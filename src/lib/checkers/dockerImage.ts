@@ -32,18 +32,29 @@ export function findDeclaredImages(
   return Array.from(found);
 }
 
-export function checkDockerImage(dockerLocations: string[] = [], declaredImages: string[] = []): CheckResult {
+/**
+ * `declaredImages` come from compose files and Helm values; `confirmedImages` are images the
+ * README or docs name and the registry confirmed (see containerImages.ts).
+ */
+export function checkDockerImage(
+  dockerLocations: string[] = [],
+  declaredImages: string[] = [],
+  confirmedImages: string[] = []
+): CheckResult {
   const locations = normalizeDockerLocations(dockerLocations);
 
-  if (locations.length === 0 && declaredImages.length > 0) {
+  if (locations.length === 0 && (declaredImages.length > 0 || confirmedImages.length > 0)) {
     return {
       id: "dockerimage",
       title: "Available Docker image",
       description:
         "A published Docker image location should be available so deployments can pull a ready-to-run container image.",
       status: "pass",
-      message: "The repository declares a published image of this component.",
-      evidence: declaredImages,
+      message:
+        declaredImages.length > 0
+          ? "The repository declares a published image of this component."
+          : "The repository names a published image of this component, and the registry confirmed it.",
+      evidence: [...declaredImages, ...confirmedImages],
       referenceUrl: "https://commonground.nl/cms/view/54476272/haven",
     };
   }
@@ -56,7 +67,7 @@ export function checkDockerImage(dockerLocations: string[] = [], declaredImages:
         "A published Docker image location should be available so deployments can pull a ready-to-run container image.",
       status: "fail",
       message:
-        "No Docker image location was provided, and no compose file or Helm values in the repository reference an image of this repository. Add a registry/repository URL for the published image.",
+        "No Docker image location was provided, no compose file or Helm values in the repository reference an image of this repository, and the README and docs name no image of it that the registry confirms. Add a registry/repository URL for the published image.",
       evidence: [],
       referenceUrl: "https://commonground.nl/cms/view/54476272/haven",
     };
