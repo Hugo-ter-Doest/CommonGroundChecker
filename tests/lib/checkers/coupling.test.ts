@@ -18,6 +18,18 @@ describe("mapCouplingReport", () => {
     );
   });
 
+  it("keeps the code lines per fan-in of every measured language", () => {
+    const coupling = mapCouplingReport(report).openTrack?.coupling;
+
+    for (const language of Object.values(coupling?.languages ?? {})) {
+      if (!language.measured) continue;
+      const histogram = language.moduleCoupling.fanInHistogram;
+      expect(Object.values(histogram).reduce((sum, lines) => sum + lines, 0)).toBe(language.loc);
+    }
+    const python = coupling?.languages.python;
+    expect(python?.measured && python.moduleCoupling.fanInHistogram["0"]).toBe(4392);
+  });
+
   it("lists the measurements per language", () => {
     const evidence = mapCouplingReport(report).evidence ?? [];
 

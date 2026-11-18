@@ -65,11 +65,17 @@ describe("coupling scorer", () => {
     const fans = Array.from({ length: 12 }, (_, i) => `("m${i}.js", "hub.js")`).join(", ");
     const loc = Array.from({ length: 12 }, (_, i) => `"m${i}.js": 5`).join(", ");
     const result = python(`c.score({${loc}, "hub.js": 40}, {${fans}})`) as {
-      moduleCoupling: { riskProfile: Record<string, number>; above: number[]; highestFanIn: { module: string; fanIn: number }[] };
+      moduleCoupling: {
+        riskProfile: Record<string, number>;
+        above: number[];
+        fanInHistogram: Record<string, number>;
+        highestFanIn: { module: string; fanIn: number }[];
+      };
     };
 
     expect(result.moduleCoupling.riskProfile).toEqual({ low: 0.6, moderate: 0.4, high: 0, veryHigh: 0 });
     expect(result.moduleCoupling.above).toEqual([0.4, 0, 0]);
+    expect(result.moduleCoupling.fanInHistogram).toEqual({ "0": 60, "12": 40 });
     expect(result.moduleCoupling.highestFanIn[0]).toEqual({ module: "hub.js", fanIn: 12 });
   });
 

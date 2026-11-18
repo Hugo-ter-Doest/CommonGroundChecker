@@ -62,6 +62,8 @@ export interface MeasuredCoupling {
     riskProfile: Record<FanInBand, number>;
     /** Share of code above each bound, 0 to 1 */
     above: number[];
+    /** Code lines per exact fan-in, keyed by the fan-in as a string, in ascending order */
+    fanInHistogram: Record<string, number>;
     highestFanIn: { module: string; fanIn: number }[];
   };
   cycles: {

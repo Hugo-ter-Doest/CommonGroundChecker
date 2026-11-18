@@ -137,8 +137,10 @@ def score(loc, edges):
 
     bounds = sig.BOUNDS["module_coupling"]
     band_loc = collections.Counter({band: 0 for band in FAN_IN_BANDS})
+    histogram = collections.Counter()
     for m in modules:
         band_loc[fan_in_band(len(incoming[m]), bounds)] += loc[m]
+        histogram[len(incoming[m])] += loc[m]
     above = [round(sum(loc[m] for m in modules if len(incoming[m]) > b) / total, 4) for b in bounds]
 
     root, comp = sig.component_of_factory(modules)
@@ -178,6 +180,7 @@ def score(loc, edges):
             "bounds": list(bounds),
             "riskProfile": {band: round(band_loc[band] / total, 4) for band in FAN_IN_BANDS},
             "above": above,
+            "fanInHistogram": {str(k): histogram[k] for k in sorted(histogram)},
             "highestFanIn": [{"module": m, "fanIn": len(incoming[m])}
                              for m in sorted(modules, key=lambda m: (-len(incoming[m]), m))[:5]],
         },
