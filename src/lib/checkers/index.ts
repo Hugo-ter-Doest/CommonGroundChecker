@@ -349,13 +349,12 @@ export async function runChecks(
     semver,
     fivelayer,
     helmchart,
-  ].map((result) => ({
-    ...result,
-    requirementLevel:
+  ].map((result) => {
+    const requirementLevel =
       scoringConfig.criterionConfigByCheckId[result.id]?.requirementLevel ??
-      "recommended",
-    starRating: derivedStarRating(result),
-  }));
+      "recommended";
+    return { ...result, requirementLevel, starRating: derivedStarRating({ ...result, requirementLevel }) };
+  });
 
   return {
     repoUrl,

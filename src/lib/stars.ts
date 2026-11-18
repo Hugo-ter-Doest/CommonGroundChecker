@@ -19,11 +19,13 @@ export function statusToStars(status: CheckStatus): StarRating {
 /**
  * Stars shown for a check result: its own rating when the check set one,
  * otherwise derived from the status. A result that was not measured
- * (status `info`) gets no stars.
+ * (status `info`) and an informative criterion get no stars.
  */
-export function derivedStarRating(result: Pick<CheckResult, "status" | "starRating">): StarRating | undefined {
+export function derivedStarRating(
+  result: Pick<CheckResult, "status" | "starRating" | "requirementLevel">
+): StarRating | undefined {
   if (result.starRating !== undefined) return result.starRating;
-  if (result.status === "info") return undefined;
+  if (result.status === "info" || result.requirementLevel === "informative") return undefined;
   return statusToStars(result.status);
 }
 

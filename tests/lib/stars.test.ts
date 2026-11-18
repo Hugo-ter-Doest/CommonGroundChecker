@@ -39,6 +39,13 @@ describe("stars", () => {
     expect(derivedStarRating({ status: "fail", starRating: 4 })).toBe(4);
   });
 
+  it("derives no stars for an informative criterion, unless it has its own scale", () => {
+    expect(derivedStarRating({ status: "fail", requirementLevel: "informative" })).toBeUndefined();
+    expect(derivedStarRating({ status: "pass", requirementLevel: "informative" })).toBeUndefined();
+    expect(derivedStarRating({ status: "info", requirementLevel: "informative", starRating: 3 })).toBe(3);
+    expect(derivedStarRating({ status: "fail", requirementLevel: "recommended" })).toBe(1);
+  });
+
   it("formats filled and empty stars", () => {
     expect(formatStars(3)).toBe("★★★☆☆");
   });
