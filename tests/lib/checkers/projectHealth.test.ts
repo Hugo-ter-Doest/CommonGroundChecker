@@ -239,12 +239,14 @@ describe("projectHealthMetrics", () => {
 
 type Route = [pattern: RegExp, body: unknown, init?: { status?: number; headers?: Record<string, string> }];
 
+/** A route body may be a function of the request, for GraphQL calls that share one URL. */
 function mockFetch(routes: Route[]) {
-  const fetchMock = vi.fn(async (input: string | URL) => {
+  const fetchMock = vi.fn(async (input: string | URL, request?: RequestInit) => {
     const url = String(input);
     const route = routes.find(([pattern]) => pattern.test(url));
     if (!route) return { ok: false, status: 404, text: async () => "not found", json: async () => ({}), headers: new Headers() };
-    const [, body, init] = route;
+    const [, answer, init] = route;
+    const body = typeof answer === "function" ? answer(JSON.parse(String(request?.body ?? "{}"))) : answer;
     const status = init?.status ?? 200;
     return {
       ok: status < 400,
@@ -266,6 +268,37 @@ function githubContext(): RepoContext {
     provider: GitHubRepositoryProvider,
     repoUrl: "https://github.com/org/repo",
   };
+}
+
+interface GraphqlRequest {
+  query: string;
+  variables: { after?: string | null };
+}
+
+interface ReleaseNode {
+  isDraft?: boolean;
+  isPrerelease?: boolean;
+  publishedAt: string | null;
+  createdAt?: string;
+}
+
+function releasesAnswer(nodes: ReleaseNode[], hasNextPage: boolean, endCursor: string | null = null) {
+  return {
+    data: {
+      repository: {
+        releases: {
+          pageInfo: { hasNextPage, endCursor },
+          nodes: nodes.map((node) => ({ isDraft: false, isPrerelease: false, createdAt: node.publishedAt, ...node })),
+        },
+      },
+    },
+  };
+}
+
+function graphqlCalls(fetchMock: ReturnType<typeof mockFetch>): GraphqlRequest[] {
+  return fetchMock.mock.calls
+    .filter(([url]) => String(url).endsWith("/graphql"))
+    .map(([, request]) => JSON.parse(String(request?.body)) as GraphqlRequest);
 }
 
 const WEEK = Date.parse("2026-11-08T00:00:00Z") / 1000;
@@ -365,7 +398,7 @@ describe("checkProjectHealth on GitHub", () => {
       [/\/releases\?/, []],
       [
         /\/graphql$/,
-        {
+        (request: GraphqlRequest) => request.query.includes("releases(") ? releasesAnswer([], false) : {
           data: {
             repository: {
               refs: {
@@ -408,6 +441,98 @@ describe("checkProjectHealth on GitHub", () => {
     expect(fetchMock.mock.calls.filter(([url]) => String(url).endsWith("/stats/contributors"))).toHaveLength(3);
     expect(fetchMock.mock.calls.some(([url]) => /\/comments|\/reviews/.test(String(url)))).toBe(false);
   }, 15000);
+});
+
+describe("release frequency on GitHub", () => {
+  const token = process.env.GITHUB_TOKEN;
+
+  beforeEach(() => {
+    process.env.GITHUB_TOKEN = "test-token";
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    if (token === undefined) delete process.env.GITHUB_TOKEN;
+    else process.env.GITHUB_TOKEN = token;
+  });
+
+  async function releaseMetric() {
+    const result = await checkProjectHealth(githubContext(), { full_name: "org/repo", has_issues: false }, NOW);
+    return result.metrics?.find((entry) => entry.id === "release-frequency");
+  }
+
+  it("pages through GraphQL with the cursor and leaves out drafts and pre-releases", async () => {
+    const fetchMock = mockFetch([
+      [
+        /\/graphql$/,
+        (request: GraphqlRequest) =>
+          request.variables.after === "page-2"
+            ? releasesAnswer([{ publishedAt: "2026-03-01T00:00:00Z" }, { publishedAt: "2025-06-01T00:00:00Z" }], false)
+            : releasesAnswer(
+                [
+                  { isDraft: true, publishedAt: null, createdAt: "2026-11-15T00:00:00Z" },
+                  { isPrerelease: true, publishedAt: "2026-11-10T00:00:00Z" },
+                  { publishedAt: "2026-10-01T00:00:00Z" },
+                ],
+                true,
+                "page-2"
+              ),
+      ],
+    ]);
+
+    const release = await releaseMetric();
+
+    expect(release?.value).toBe("2 in 12 months");
+    expect(release?.explanation).toContain("about one every 183 days, counted from the GitHub releases");
+    expect(release?.explanation).toContain("Besides these, 1 pre-releases were published");
+    expect(graphqlCalls(fetchMock).map((request) => request.variables.after)).toEqual([null, "page-2"]);
+    expect(graphqlCalls(fetchMock)[0].query).not.toMatch(/releaseAssets|description/);
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/releases?"))).toBe(false);
+  });
+
+  it("stops at 20 pages and reports a lower bound", async () => {
+    let page = 0;
+    const fetchMock = mockFetch([
+      [
+        /\/graphql$/,
+        () => {
+          page += 1;
+          return releasesAnswer([{ publishedAt: "2026-10-01T00:00:00Z" }], true, `page-${page + 1}`);
+        },
+      ],
+    ]);
+
+    const release = await releaseMetric();
+
+    expect(release?.value).toBe("at least 20 in 12 months");
+    expect(release?.explanation).toContain("so the count is a lower bound");
+    expect(graphqlCalls(fetchMock)).toHaveLength(20);
+  });
+
+  it("falls back to REST when GraphQL answers with an error", async () => {
+    const fetchMock = mockFetch([
+      [/\/graphql$/, { errors: [{ message: "Something went wrong" }] }],
+      [/\/releases\?per_page=100&page=1$/, [{ draft: false, prerelease: false, published_at: "2026-10-01T00:00:00Z" }]],
+    ]);
+
+    const release = await releaseMetric();
+
+    expect(release?.value).toBe("1 in 12 months");
+    expect(graphqlCalls(fetchMock)).toHaveLength(1);
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/releases?per_page=100&page=1"))).toBe(true);
+  });
+
+  it("reads REST without a token, as GraphQL needs one", async () => {
+    delete process.env.GITHUB_TOKEN;
+    const fetchMock = mockFetch([
+      [/\/releases\?per_page=100&page=1$/, [{ draft: false, prerelease: false, published_at: "2026-10-01T00:00:00Z" }]],
+    ]);
+
+    const release = await releaseMetric();
+
+    expect(release?.value).toBe("1 in 12 months");
+    expect(graphqlCalls(fetchMock)).toHaveLength(0);
+  });
 });
 
 describe("checkProjectHealth on GitLab", () => {

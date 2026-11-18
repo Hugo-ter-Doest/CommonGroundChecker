@@ -198,20 +198,91 @@ const RELEASE_PAGES_WITHOUT_TOKEN = 3;
 /** A tag that names a final release, such as 1.31.2 or v2.0. */
 const RELEASE_TAG = /^v?\d+\.\d+(\.\d+)?$/;
 
-/** The published releases back to the start of the window, newest first. */
-async function releasesFromApi(fullName: string, since: Date): Promise<Releases> {
+interface ReleaseEntry {
+  draft?: boolean;
+  prerelease?: boolean;
+  published_at?: string | null;
+  created_at?: string;
+}
+
+interface ReleasePage {
+  list: ReleaseEntry[];
+  /** The GraphQL cursor of the next page; null on the last page */
+  next: string | null;
+}
+
+/** Posts a GraphQL query; GraphQL reports query errors in the body with status 200. */
+async function ghGraphql<T>(
+  query: string,
+  variables: Record<string, unknown>
+): Promise<{ data?: T; errors?: Array<{ message?: string }> }> {
+  const res = await fetch(`${BASE}/graphql`, {
+    method: "POST",
+    headers: { ...githubHeaders(), "Content-Type": "application/json" },
+    body: JSON.stringify({ query, variables }),
+    next: { revalidate: REVALIDATE_SECONDS },
+  } as RequestInit);
+  if (!res.ok) throw new Error(`GitHub API ${res.status}`);
+  return (await res.json()) as { data?: T; errors?: Array<{ message?: string }> };
+}
+
+const RELEASES_QUERY = `query($owner: String!, $name: String!, $after: String) {
+  repository(owner: $owner, name: $name) {
+    releases(first: 100, after: $after, orderBy: { field: CREATED_AT, direction: DESC }) {
+      pageInfo { hasNextPage endCursor }
+      nodes { isDraft isPrerelease publishedAt createdAt }
+    }
+  }
+}`;
+
+/** A page of releases through GraphQL, which returns only the four fields read instead of every asset and body. */
+async function graphqlReleasePage(fullName: string, after: string | null): Promise<ReleasePage> {
+  const [owner, name] = fullName.split("/");
+  const { data, errors } = await ghGraphql<{
+    repository?: {
+      releases?: {
+        pageInfo: { hasNextPage: boolean; endCursor: string | null };
+        nodes: Array<{ isDraft: boolean; isPrerelease: boolean; publishedAt: string | null; createdAt: string }>;
+      };
+    } | null;
+  }>(RELEASES_QUERY, { owner, name, after });
+  const connection = data?.repository?.releases;
+  if (errors?.length || !connection) throw new Error(`GitHub GraphQL: ${String(errors?.[0]?.message ?? "no releases").slice(0, 80)}`);
+  return {
+    list: connection.nodes.map((release) => ({
+      draft: release.isDraft,
+      prerelease: release.isPrerelease,
+      published_at: release.publishedAt,
+      created_at: release.createdAt,
+    })),
+    next: connection.pageInfo.hasNextPage ? connection.pageInfo.endCursor : null,
+  };
+}
+
+/**
+ * The published releases back to the start of the window, newest first. With
+ * a token the pages come from GraphQL; a REST page carries every asset and
+ * body, several MB on a repository with nightly builds.
+ */
+async function releasesFromApi(fullName: string, since: Date, useGraphql: boolean): Promise<Releases> {
   const finals: string[] = [];
   const prereleases: string[] = [];
   const pages = process.env.GITHUB_TOKEN ? RELEASE_PAGES_WITH_TOKEN : RELEASE_PAGES_WITHOUT_TOKEN;
   let complete = false;
+  let cursor: string | null = null;
   for (let page = 1; page <= pages; page += 1) {
-    const { data } = await ghGet(`/repos/${fullName}/releases?per_page=100&page=${page}`);
-    const list = (Array.isArray(data) ? data : []) as Array<{
-      draft?: boolean;
-      prerelease?: boolean;
-      published_at?: string | null;
-      created_at?: string;
-    }>;
+    let list: ReleaseEntry[];
+    let more: boolean;
+    if (useGraphql) {
+      const result = await graphqlReleasePage(fullName, cursor);
+      list = result.list;
+      cursor = result.next;
+      more = cursor !== null;
+    } else {
+      const { data } = await ghGet(`/repos/${fullName}/releases?per_page=100&page=${page}`);
+      list = (Array.isArray(data) ? data : []) as ReleaseEntry[];
+      more = list.length === 100;
+    }
     let reachedStart = false;
     for (const release of list) {
       const date = release.published_at ?? release.created_at;
@@ -219,12 +290,24 @@ async function releasesFromApi(fullName: string, since: Date): Promise<Releases>
       (release.prerelease ? prereleases : finals).push(date);
       if (Date.parse(date) < since.getTime()) reachedStart = true;
     }
-    if (list.length < 100 || reachedStart) {
+    if (!more || reachedStart) {
       complete = true;
       break;
     }
   }
   return { dates: finals.sort().reverse(), prereleases, complete, source: "GitHub releases" };
+}
+
+/** Releases through GraphQL when a token allows it, through REST when there is none or GraphQL fails. */
+async function publishedReleases(fullName: string, since: Date): Promise<Releases> {
+  if (process.env.GITHUB_TOKEN) {
+    try {
+      return await releasesFromApi(fullName, since, true);
+    } catch {
+      // REST answers the same question, at a higher transfer cost.
+    }
+  }
+  return releasesFromApi(fullName, since, false);
 }
 
 /** Dates of the latest release tags, in one GraphQL call; tags have no date in the REST API. */
@@ -236,23 +319,17 @@ async function releaseTags(owner: string, name: string): Promise<string[]> {
       }
     }
   }`;
-  const res = await fetch(`${BASE}/graphql`, {
-    method: "POST",
-    headers: { ...githubHeaders(), "Content-Type": "application/json" },
-    body: JSON.stringify({ query, variables: { owner, name } }),
-  });
-  if (!res.ok) throw new Error(`GitHub API ${res.status}`);
-  const body = (await res.json()) as {
-    data?: { repository?: { refs?: { nodes?: Array<{ name: string; target?: { committedDate?: string; tagger?: { date?: string } } }> } } };
-  };
-  return (body.data?.repository?.refs?.nodes ?? []).flatMap((tag) => {
+  const { data } = await ghGraphql<{
+    repository?: { refs?: { nodes?: Array<{ name: string; target?: { committedDate?: string; tagger?: { date?: string } } }> } };
+  }>(query, { owner, name });
+  return (data?.repository?.refs?.nodes ?? []).flatMap((tag) => {
     const date = tag.target?.tagger?.date ?? tag.target?.committedDate;
     return RELEASE_TAG.test(tag.name) && date ? [new Date(date).toISOString()] : [];
   });
 }
 
 async function releases(fullName: string, since: Date): Promise<Measured<Releases>> {
-  const published = await releasesFromApi(fullName, since);
+  const published = await publishedReleases(fullName, since);
   if (published.dates.length > 0 || published.prereleases.length > 0) return { measured: true, value: published };
   if (!process.env.GITHUB_TOKEN) {
     return notMeasured("the repository publishes no GitHub releases, and dating its tags needs a GITHUB_TOKEN");
