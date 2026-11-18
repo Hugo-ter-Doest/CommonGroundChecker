@@ -1,6 +1,7 @@
 import AspectBar from "@/components/AspectBar";
 import MeasurementTable, { StarsText } from "@/components/MeasurementTable";
 import RatingBadge from "@/components/RatingBadge";
+import UsageTable from "@/components/UsageTable";
 import type { AspectDefinition } from "@/lib/aspects";
 import {
   aspectComposition,
@@ -12,7 +13,7 @@ import {
 import { CATEGORY_ORDER, criterionAnchorId, type CriteriaCategory } from "@/lib/criteria";
 import { aspectDocHref } from "@/lib/ratingDocs";
 import { ratingToStars } from "@/lib/stars";
-import type { AspectRating, CheckResult, CheckStatus } from "@/lib/types";
+import type { AspectRating, CheckResult, CheckStatus, UsageSource } from "@/lib/types";
 
 const LINK_CLASS =
   "text-cg-lightblue underline hover:text-cg-blue rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cg-blue";
@@ -95,6 +96,9 @@ function AspectComposition({ aspect, results }: { aspect: AspectDefinition; resu
   if (composition.type === "measurements") {
     return <MeasurementTable caption={caption} groups={composition.groups} />;
   }
+  if (composition.type === "usage") {
+    return <UsageTable caption={caption} sources={composition.sources} />;
+  }
   if (composition.criteria.length === 0) {
     return <p className="text-xs text-gray-600">None of its criteria were checked.</p>;
   }
@@ -130,16 +134,12 @@ function AspectRow({
   return (
     <div role="group" aria-labelledby={headingId} className="space-y-2">
       <div className="grid gap-2 sm:grid-cols-[12rem_1fr_11rem] sm:items-center">
-        <h5 id={headingId} className="text-sm font-semibold text-gray-800">
-          {docSlug ? (
-            <a href={aspectDocHref(docSlug, aspect.id)} className={LINK_CLASS}>
-              {aspect.title}
-            </a>
-          ) : (
-            aspect.title
-          )}
-          {aspect.weight === 0 && <span className="ml-1 text-xs font-normal text-gray-600">(not counted)</span>}
-        </h5>
+        <AspectHeading
+          aspect={aspect}
+          docSlug={docSlug}
+          headingId={headingId}
+          note={aspect.weight === 0 ? "not counted" : null}
+        />
         <AspectBar title={aspect.title} rating={aspectRating?.rating ?? null} />
         <AspectValue aspect={aspect} aspectRating={aspectRating} />
       </div>
@@ -151,6 +151,44 @@ function AspectRow({
           <AspectComposition aspect={aspect} results={results} />
         </div>
       </details>
+    </div>
+  );
+}
+
+function AspectHeading({ aspect, docSlug, headingId, note }: { aspect: AspectDefinition; docSlug?: string; headingId: string; note: string | null }) {
+  return (
+    <h5 id={headingId} className="text-sm font-semibold text-gray-800">
+      {docSlug ? (
+        <a href={aspectDocHref(docSlug, aspect.id)} className={LINK_CLASS}>
+          {aspect.title}
+        </a>
+      ) : (
+        aspect.title
+      )}
+      {note && <span className="ml-1 text-xs font-normal text-gray-600">({note})</span>}
+    </h5>
+  );
+}
+
+/** An aspect that is shown but never rated: no bar and no stars, only what each source measured. */
+function InformativeAspectRow({
+  aspect,
+  sources,
+  docSlug,
+}: {
+  aspect: AspectDefinition;
+  sources: UsageSource[];
+  docSlug?: string;
+}) {
+  const headingId = `aspect-rating-${aspect.id}`;
+  return (
+    <div role="group" aria-labelledby={headingId} className="space-y-2">
+      <AspectHeading aspect={aspect} docSlug={docSlug} headingId={headingId} note="informative, not rated" />
+      <p className="text-xs text-gray-600">
+        Each source is shown on its own, with its date and caveat. The figures are not added up, rated or compared
+        with other components.
+      </p>
+      <UsageTable caption={`What the sources say about ${aspect.title}`} sources={sources} />
     </div>
   );
 }
@@ -184,15 +222,24 @@ function CategorySection({
         </h4>
         <RatingBadge rating={rating} label={`${category} rating`} />
       </div>
-      {aspects.map((aspect) => (
-        <AspectRow
-          key={aspect.id}
-          aspect={aspect}
-          aspectRating={aspectRatings[aspect.id]}
-          results={results}
-          docSlug={docSlug}
-        />
-      ))}
+      {aspects.map((aspect) => {
+        if (aspect.source.type === "informative") {
+          const composition = aspectComposition(aspect, results);
+          const sources = composition.type === "usage" ? composition.sources : [];
+          return sources.length > 0 ? (
+            <InformativeAspectRow key={aspect.id} aspect={aspect} sources={sources} docSlug={docSlug} />
+          ) : null;
+        }
+        return (
+          <AspectRow
+            key={aspect.id}
+            aspect={aspect}
+            aspectRating={aspectRatings[aspect.id]}
+            results={results}
+            docSlug={docSlug}
+          />
+        );
+      })}
     </section>
   );
 }

@@ -40,6 +40,7 @@ export interface RepositoryMeta {
   owner?: {
     name?: string;
     login?: string;
+    type?: string;
   };
   [key: string]: unknown;
 }

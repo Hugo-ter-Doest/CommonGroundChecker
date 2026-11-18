@@ -57,6 +57,7 @@ const mocks = vi.hoisted(() => ({
   checkSemver: vi.fn(),
   checkFiveLayer: vi.fn(),
   checkHelmChart: vi.fn(),
+  checkUsage: vi.fn(),
   checkCodeMetrics: vi.fn(),
   checkOwaspSecureCoding: vi.fn(),
   checkEuplLicense: vi.fn(),
@@ -133,6 +134,7 @@ vi.mock("@/lib/checkers/sourcecode", () => ({ checkSourceCode: mocks.checkSource
 vi.mock("@/lib/checkers/semver", () => ({ checkSemver: mocks.checkSemver }));
 vi.mock("@/lib/checkers/fiveLayer", () => ({ checkFiveLayer: mocks.checkFiveLayer }));
 vi.mock("@/lib/checkers/helmchart", () => ({ checkHelmChart: mocks.checkHelmChart }));
+vi.mock("@/lib/checkers/usage", () => ({ checkUsage: mocks.checkUsage }));
 vi.mock("@/lib/checkers/config", () => ({ getActiveScoringConfig: mocks.getActiveScoringConfig }));
 
 import { runChecks } from "@/lib/checkers/index";
@@ -261,6 +263,7 @@ describe("runChecks", () => {
     mocks.checkSemver.mockReturnValue(resultFor("semver", "pass"));
     mocks.checkFiveLayer.mockResolvedValue(resultFor("fivelayer", "pass"));
     mocks.checkHelmChart.mockResolvedValue(resultFor("helmchart", "pass"));
+    mocks.checkUsage.mockResolvedValue({ ...resultFor("usage", "info"), usage: { sources: [] } });
   });
 
   it("applies weighted scoring and non-register OpenAPI bypass", async () => {
@@ -289,7 +292,7 @@ describe("runChecks", () => {
     expect(report.scoringConfigId).toBe("cfg-1");
     expect(report.score).toBe(25);
     expect(mocks.checkOpenApi).not.toHaveBeenCalled();
-    expect(report.results).toHaveLength(25);
+    expect(report.results).toHaveLength(26);
     expect(report.results.find((result) => result.id === "maintainability")?.starRating).toBe(3);
     expect(report.results.find((result) => result.id === "semver")?.starRating).toBe(1);
     expect(report.results.find((result) => result.id === "tests")?.starRating).toBe(3);
@@ -423,6 +426,27 @@ describe("runChecks", () => {
     });
 
     expect(report.score).toBe(50);
+  });
+
+  it("passes the declared users to the usage check and gives its result no stars", async () => {
+    mocks.analysePublicCode.mockResolvedValue({
+      result: { ...resultFor("publiccode", "pass"), publiccode: { usedBy: ["Gemeente Utrecht"] } },
+      details: {},
+    });
+
+    const report = await runChecks("https://github.com/org/repo", { dockerLocations: ["org/image"] });
+
+    expect(mocks.checkUsage).toHaveBeenCalledWith(
+      expect.objectContaining({ owner: "org", repo: "repo" }),
+      expect.anything(),
+      expect.any(Array),
+      ["Gemeente Utrecht"],
+      { dockerLocations: ["org/image"] }
+    );
+    const usage = report.results.find((result) => result.id === "usage");
+    expect(usage?.status).toBe("info");
+    expect(usage?.starRating).toBeUndefined();
+    expect(report.aspectRatings["usage-and-ecosystem"]).toEqual({ rating: null });
   });
 
   it("adds the publiccode.yml details to the report's repoMeta", async () => {

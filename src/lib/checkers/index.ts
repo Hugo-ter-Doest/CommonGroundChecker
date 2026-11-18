@@ -27,6 +27,8 @@ import { checkSemver } from "./semver";
 import { checkCopyrightOwner } from "./copyrightOwner";
 import { checkOwaspSecureCoding } from "./owaspSecureCoding";
 import { checkEuplLicense } from "./eupl";
+import { checkUsage } from "./usage";
+import { USAGE_CHECK_ID } from "../usage";
 import {
   getActiveScoringConfig,
 } from "./config";
@@ -157,6 +159,11 @@ export async function runChecks(
     checkFiveLayer(context, tree, meta),
     checkHelmChart(context, tree, options?.helmChartLocations ?? []),
   ]);
+  const usagePromise = networkChecksPromise.then(([, , , publiccodeAnalysis]) =>
+    checkUsage(context, meta, tree, publiccodeAnalysis.result.publiccode?.usedBy ?? [], {
+      dockerLocations: options?.dockerLocations,
+    })
+  );
   const complexityPromise = checkComplexity(
     owner,
     repo,
@@ -197,13 +204,14 @@ export async function runChecks(
 
   // Instant checks done; emit next step while slower checks complete in parallel
   onProgress?.("Analysing API specs, licence & deployment files...", 60);
-  const [[openapi, license, copyrightowner, publiccodeAnalysis, maintenance, fivelayer, helmchart], complexity, maintainability, codemetrics, owaspsecurecoding, adrvalidator] = await Promise.all([
+  const [[openapi, license, copyrightowner, publiccodeAnalysis, maintenance, fivelayer, helmchart], complexity, maintainability, codemetrics, owaspsecurecoding, adrvalidator, usage] = await Promise.all([
     networkChecksPromise,
     complexityPromise,
     maintainabilityPromise,
     codeMetricsPromise,
     owaspSecureCodingPromise,
     adrValidatorPromise,
+    usagePromise,
   ]);
   const publiccode = publiccodeAnalysis.result;
 
@@ -355,6 +363,7 @@ export async function runChecks(
     semver,
     fivelayer,
     helmchart,
+    usage,
   ].map((result) => ({
     ...result,
     requirementLevel:
@@ -366,7 +375,7 @@ export async function runChecks(
   const endorsement = computeEndorsement(resultsWithRequirementLevels, rating, scoringConfig);
   const resultsWithStars = resultsWithRequirementLevels.map((result) => ({
     ...result,
-    starRating: result.starRating ?? statusToStars(result.status),
+    starRating: result.id === USAGE_CHECK_ID ? undefined : (result.starRating ?? statusToStars(result.status)),
   }));
 
   return {

@@ -36,6 +36,47 @@ export interface CheckResult {
   measurements?: MeasurementGroup[];
   /** For the publiccode criterion: every field the repository's publiccode.yml declares */
   publiccode?: PublicCodeData;
+  /** For the usage criterion: what each source says about who uses the component */
+  usage?: UsageData;
+}
+
+/** The kind of evidence a usage source gives. */
+export type UsageSourceKind = "declared" | "downloads" | "containers" | "ecosystem";
+
+/** One count a usage source reports, for example "downloads last month". */
+export interface UsageFigure {
+  label: string;
+  value: number;
+}
+
+/**
+ * What one source says about the use of a component. Counts only: no names of
+ * people, logins or e-mail addresses. Only the declared users list names, and
+ * those are the organisations publiccode.yml names.
+ */
+export interface UsageSource {
+  /** Stable id, for example "npm" or "dockerhub" */
+  id: string;
+  kind: UsageSourceKind;
+  /** Name of the source as shown, for example "npm" */
+  source: string;
+  /** The package, app or image measured, or null for the repository itself */
+  subject: string | null;
+  /** Page of the subject at the source */
+  url: string | null;
+  /** Date of the measurement, YYYY-MM-DD */
+  measuredAt: string;
+  /** One line on what the figures do and do not say */
+  caveat: string;
+  figures: UsageFigure[];
+  /** For declared users: the organisations named */
+  names?: string[];
+  /** Why the source applies but could not be measured */
+  notMeasured?: string;
+}
+
+export interface UsageData {
+  sources: UsageSource[];
 }
 
 /** A named party in publiccode.yml, such as `organisation` or an entry of `fundedBy` */

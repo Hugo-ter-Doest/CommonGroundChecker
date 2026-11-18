@@ -3,7 +3,8 @@ import { RESULT_CATEGORY_BY_ID, type CriteriaCategory } from "./criteria";
 import { measurementsForAspect } from "./measurements";
 import { RATING_DOCS } from "./ratingDocs";
 import { MAX_RATING, MIN_RATING, criterionRating } from "./ratings";
-import type { AspectRating, CheckResult, CheckStatus, MeasurementGroup } from "./types";
+import type { AspectRating, CheckResult, CheckStatus, MeasurementGroup, UsageSource } from "./types";
+import { shownUsageSources } from "./usage";
 
 /** The ratings where the rounded stars change: 1.5, 2.5, 3.5 and 4.5. */
 export const STAR_BOUNDARIES = [1.5, 2.5, 3.5, 4.5] as const;
@@ -59,7 +60,8 @@ export interface AspectCriterion {
 export type AspectComposition =
   | { type: "measurements"; groups: MeasurementGroup[] }
   | { type: "documents"; criteria: AspectCriterion[] }
-  | { type: "criteria"; criteria: AspectCriterion[] };
+  | { type: "criteria"; criteria: AspectCriterion[] }
+  | { type: "usage"; sources: UsageSource[] };
 
 function aspectCriterion(result: CheckResult): AspectCriterion {
   return {
@@ -74,10 +76,15 @@ function aspectCriterion(result: CheckResult): AspectCriterion {
 /**
  * The inputs of an aspect in the report. An aspect a check rates itself shows
  * the check's measurements for it, or the check as a criterion when it has none.
+ * An informative aspect shows the sources its check measured.
  */
 export function aspectComposition(aspect: AspectDefinition, results: CheckResult[]): AspectComposition {
   const resultsById = new Map(results.map((result) => [result.id, result]));
   const { source } = aspect;
+
+  if (source.type === "informative") {
+    return { type: "usage", sources: shownUsageSources(resultsById.get(source.checkId)?.usage) };
+  }
 
   if (source.type === "check-aspect") {
     const result = resultsById.get(source.checkId);

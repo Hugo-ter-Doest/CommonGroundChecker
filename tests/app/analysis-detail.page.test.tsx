@@ -60,6 +60,45 @@ describe("AnalysisDetailPage", () => {
     expect(screen.queryByRole("region", { name: "From publiccode.yml" })).toBeNull();
   });
 
+  it("shows the usage stored with the scan, without stars", async () => {
+    getRepoHistory.mockResolvedValue({
+      repository: { metadata: { repoUrl: "https://github.com/org/repo", topics: [] } },
+      analyses: [
+        {
+          id: "analysis-1",
+          checkedAt: "2026-11-18T09:00:00Z",
+          score: 71,
+          results: [
+            result("license", "pass"),
+            {
+              ...result("usage", "info"),
+              usage: {
+                sources: [
+                  {
+                    id: "dockerhub:org/repo",
+                    kind: "containers",
+                    source: "Docker Hub",
+                    subject: "org/repo",
+                    url: "https://hub.docker.com/r/org/repo",
+                    measuredAt: "2026-11-18",
+                    caveat: "Includes CI pulls.",
+                    figures: [{ label: "pulls in total", value: 42 }],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    render(await AnalysisDetailPage({ params: Promise.resolve({ owner: "org", repo: "repo", analysisId: "analysis-1" }) }));
+
+    const group = screen.getByRole("group", { name: /Usage and ecosystem/ });
+    expect(group.textContent).toContain("42 pulls in total");
+    expect(group.querySelector("[role='meter']")).toBeNull();
+  });
+
   it("shows each criterion's stars", async () => {
     getRepoHistory.mockResolvedValue({
       repository: { metadata: { repoUrl: "https://github.com/org/repo", topics: [] } },

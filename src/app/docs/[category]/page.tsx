@@ -73,8 +73,14 @@ function AspectSection({ aspect }: { aspect: RatingAspectDoc }) {
       <h2 id={headingId} className="text-2xl font-bold text-cg-blue">
         {aspect.title}
       </h2>
-      {!aspect.counted && (
-        <p className="text-sm font-semibold text-gray-700">Shown in the report, but not counted in the rating.</p>
+      {aspect.informative ? (
+        <p className="text-sm font-semibold text-gray-700">
+          Shown in the report for information only: never rated, never given stars and not compared across components.
+        </p>
+      ) : (
+        !aspect.counted && (
+          <p className="text-sm font-semibold text-gray-700">Shown in the report, but not counted in the rating.</p>
+        )
       )}
 
       <h3 className="text-lg font-semibold text-gray-800">What it means</h3>
@@ -83,7 +89,7 @@ function AspectSection({ aspect }: { aspect: RatingAspectDoc }) {
       <h3 className="text-lg font-semibold text-gray-800">How the checker measures it</h3>
       <ul className="list-disc pl-6 space-y-1 text-gray-700">
         {aspect.criteria.map((criterion) => (
-          <li key={criterion.checkId}>
+          <li key={`${criterion.checkId}-${criterion.name}`}>
             <strong>{criterion.name}</strong>, measured with {criterion.tool}.
           </li>
         ))}

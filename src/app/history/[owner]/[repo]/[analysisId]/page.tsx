@@ -11,6 +11,7 @@ import { getRepoHistory } from "@/lib/apiClient";
 import { parseMeasurements } from "@/lib/measurements";
 import { isRating } from "@/lib/ratings";
 import { loadStoredRatings } from "@/lib/storedRatings";
+import { USAGE_CHECK_ID, readUsageData } from "@/lib/usage";
 import type { CheckReport, CheckResult, StarRating } from "@/lib/types";
 import type { RepoMeta } from "@/generated/openapi-client";
 import { CATEGORY_ORDER, RESULT_CATEGORY_BY_ID, RESULT_ORDER_BY_ID } from "@/lib/criteria";
@@ -68,6 +69,7 @@ function normalizeResults(raw: unknown): CheckResult[] {
         rating: isRating(item.rating) ? item.rating : undefined,
         measurements: parseMeasurements(item.measurements),
         publiccode: (item.id === "publiccode" && readPublicCodeData(item.publiccode)) || undefined,
+        usage: item.id === USAGE_CHECK_ID ? readUsageData(item.usage) : undefined,
       } satisfies CheckResult;
     });
 }

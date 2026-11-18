@@ -26,7 +26,7 @@ const EXPECTED_MODEL: Record<string, string[]> = {
     "supply-chain",
   ],
   maintainability: ["analysability", "modifiability", "testability", "modularity", "reusability", "testing"],
-  governance: ["licensing", "ownership", "maintenance", "community-documents"],
+  governance: ["licensing", "ownership", "maintenance", "community-documents", "usage-and-ecosystem"],
   "deployment-operations": ["containerisation", "release-management"],
   architecture: ["api", "layering"],
 };
@@ -69,9 +69,10 @@ describe("rating docs data", () => {
     }
   });
 
-  it("only leaves layering out of the rating", () => {
-    const uncounted = RATING_DOCS.flatMap((category) => category.aspects.filter((a) => !a.counted).map((a) => a.id));
-    expect(uncounted).toEqual(["layering"]);
+  it("only leaves layering and usage out of the rating, and only usage is informative", () => {
+    const aspects = RATING_DOCS.flatMap((category) => category.aspects);
+    expect(aspects.filter((a) => !a.counted).map((a) => a.id).sort()).toEqual(["layering", "usage-and-ecosystem"]);
+    expect(aspects.filter((a) => a.informative).map((a) => a.id)).toEqual(["usage-and-ecosystem"]);
   });
 
   it("builds the anchor link of an aspect", () => {
@@ -135,6 +136,18 @@ describe("CategoryDocPage", () => {
 
     expect(within(document.getElementById("layering")!).getByText(/not counted in the rating/)).toBeTruthy();
     expect(within(document.getElementById("api")!).queryByText(/not counted in the rating/)).toBeNull();
+  });
+
+  it("explains each usage source and why usage is never rated", async () => {
+    await renderCategory("governance");
+
+    const usage = document.getElementById("usage-and-ecosystem")!;
+    expect(within(usage).getByText(/never rated, never given stars and not compared across components/)).toBeTruthy();
+    expect(within(usage).queryByText(/but not counted in the rating/)).toBeNull();
+    for (const name of ["Declared users", "Nextcloud App Store", "GitHub releases", "npm, Packagist and PyPI", "deps.dev"]) {
+      expect(within(usage).getByText(name)).toBeTruthy();
+    }
+    expect(within(usage).getByText(/do not measure quality and cannot be compared fairly/)).toBeTruthy();
   });
 
   it("returns not found for an unknown category", async () => {

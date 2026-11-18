@@ -90,7 +90,7 @@ async function exportAnalysisReportAsPdf(report: CheckReport): Promise<void> {
       indent: 10,
       gapAfter: 1,
     });
-    for (const aspect of aspectsOfCategory(category)) {
+    for (const aspect of aspectsOfCategory(category).filter((entry) => entry.source.type !== "informative")) {
       const aspectRating = report.aspectRatings?.[aspect.id];
       const count = documentCountText(aspectRating);
       const rating = aspectRating?.rating ?? null;

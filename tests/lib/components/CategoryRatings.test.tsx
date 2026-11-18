@@ -128,4 +128,55 @@ describe("CategoryRatings", () => {
     expect(details?.open).toBe(false);
     expect(details?.querySelector("summary")?.textContent).toBe("Show what Licensing is made of");
   });
+
+  it("shows usage per source with its date and caveat, without a meter or stars", () => {
+    const usage = result("usage", "info");
+    usage.usage = {
+      sources: [
+        {
+          id: "dockerhub:openzaak/open-zaak",
+          kind: "containers",
+          source: "Docker Hub",
+          subject: "openzaak/open-zaak",
+          url: "https://hub.docker.com/r/openzaak/open-zaak",
+          measuredAt: "2026-11-18",
+          caveat: "Includes CI pulls.",
+          figures: [{ label: "pulls in total", value: 645727 }],
+        },
+        {
+          id: "ghcr:open-zaak/open-zaak",
+          kind: "containers",
+          source: "GitHub Container Registry",
+          subject: "open-zaak/open-zaak",
+          url: null,
+          measuredAt: "2026-11-18",
+          caveat: "Would include CI pulls.",
+          figures: [],
+          notMeasured: "no public count",
+        },
+      ],
+    };
+    render(<CategoryRatings results={[usage]} categoryRatings={{}} aspectRatings={{}} />);
+
+    const group = screen.getByRole("group", { name: /Usage and ecosystem/ });
+    expect(within(group).getByText("(informative, not rated)")).toBeTruthy();
+    expect(within(group).queryByRole("meter")).toBeNull();
+    expect(group.textContent).not.toMatch(/[★☆]|not measured$/);
+    const pulls = within(group).getByRole("row", { name: /Docker Hub: openzaak\/open-zaak/ });
+    expect(within(pulls).getAllByRole("cell").map((cell) => cell.textContent)).toEqual([
+      "Container pulls",
+      "645,727 pulls in total",
+      "2026-11-18",
+      "Includes CI pulls.",
+    ]);
+    expect(within(group).getByText("not measured: no public count")).toBeTruthy();
+  });
+
+  it("leaves usage out when no source found anything", () => {
+    const usage = { ...result("usage", "info"), usage: { sources: [] } };
+    render(<CategoryRatings results={[usage]} categoryRatings={{}} aspectRatings={{}} />);
+
+    expect(screen.queryByRole("group", { name: /Usage and ecosystem/ })).toBeNull();
+    expect(screen.getByRole("group", { name: "Licensing" })).toBeTruthy();
+  });
 });

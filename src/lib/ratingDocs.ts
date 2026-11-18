@@ -47,6 +47,8 @@ export interface RatingAspectDoc {
   properties?: CodePropertyId[];
   /** False when the aspect is shown but does not count in the category rating */
   counted: boolean;
+  /** True when the aspect is shown for information only and never rated */
+  informative?: boolean;
   sources: DocSource[];
 }
 
@@ -154,6 +156,28 @@ const SOURCES = {
     title: "publiccode.yml specification: maintenance",
     url: "https://publiccodeyml.github.io/v0/schema.core.html#section-maintenance",
   },
+  publiccodeUsedBy: {
+    title: "publiccode.yml specification: usedBy (deprecated)",
+    url: "https://publiccodeyml.github.io/v0/schema.core.html#key-usedby-deprecated",
+  },
+  npmDownloads: { title: "npm download counts API", url: "https://github.com/npm/registry/blob/main/docs/download-counts.md" },
+  packagistApi: { title: "Packagist API", url: "https://packagist.org/apidoc" },
+  pypistats: { title: "pypistats.org API", url: "https://pypistats.org/api/" },
+  nextcloudAppStoreApi: {
+    title: "Nextcloud App Store REST API",
+    url: "https://nextcloudappstore.readthedocs.io/en/latest/api/restapi.html",
+  },
+  githubReleaseAssets: {
+    title: "GitHub Docs: release assets and their download count",
+    url: "https://docs.github.com/en/rest/releases/assets",
+  },
+  dockerHubApi: { title: "Docker Hub API", url: "https://docs.docker.com/reference/api/hub/latest/" },
+  depsDevApi: { title: "deps.dev API", url: "https://docs.deps.dev/api/v3alpha/" },
+  githubContributors: {
+    title: "GitHub Docs: list repository contributors",
+    url: "https://docs.github.com/en/rest/repos/repos#list-repository-contributors",
+  },
+  ossRegister: { title: "Open Source Register (developer.overheid.nl)", url: "https://oss.developer.overheid.nl/" },
   legalGuide: { title: "Open Source Guides: the legal side of open source", url: "https://opensource.guide/legal/" },
   contributingGuide: {
     title: "GitHub Docs: setting guidelines for repository contributors",
@@ -559,6 +583,69 @@ export const RATING_DOCS: RatingCategoryDoc[] = [
           SOURCES.codeOfConduct,
           SOURCES.securityPolicy,
           SOURCES.changelog,
+        ],
+      },
+      {
+        id: "usage-and-ecosystem",
+        title: "Usage and ecosystem",
+        meaning:
+          "Who uses the component and how much, as far as public sources tell. It helps a buyer see whether others already run the component and whether there is a community around it.",
+        criteria: [
+          {
+            checkId: "usage",
+            name: "Declared users",
+            tool: "the usedBy list of publiccode.yml: self-declared by the maintainers and not verified. The publiccode.yml standard has deprecated the key, but files may still declare it",
+          },
+          {
+            checkId: "usage",
+            name: "Nextcloud App Store",
+            tool: "the App Store catalogue, for the app id in appinfo/info.xml: the number of ratings given. The App Store publishes no download count",
+          },
+          {
+            checkId: "usage",
+            name: "GitHub releases",
+            tool: "the download count of the release files, which includes App Store installs and updates, CI jobs and mirrors",
+          },
+          {
+            checkId: "usage",
+            name: "npm, Packagist and PyPI",
+            tool: "the downloads of the package named in package.json, composer.json or pyproject.toml, setup.cfg or setup.py, only when the registry says it is published from this repository. Downloads include CI builds and mirrors",
+          },
+          {
+            checkId: "usage",
+            name: "Docker Hub and GitHub Container Registry",
+            tool: "the pull count of the images given with the check or named in the README under the repository's owner or name. Pulls include CI pulls and automatic updates. GitHub publishes no pull count for its registry, so that row says not measured",
+          },
+          {
+            checkId: "usage",
+            name: "deps.dev",
+            tool: "the number of npm or PyPI packages that depend on the package's default version",
+          },
+          {
+            checkId: "usage",
+            name: "GitHub repository and contributors",
+            tool: "stars, forks and watchers, and the number of contributors that are not public members of the owner organisation. Only counts are kept: no names, logins or e-mail addresses",
+          },
+        ],
+        rating: [
+          "This aspect is never rated and never given stars. Each source is shown on its own with the date it was measured and a one-line caveat, and the figures are not added up.",
+          "It is not rated because the figures do not measure quality and cannot be compared fairly: a library used by thousands of packages and a case system run by twenty municipalities serve different markets, downloads count CI jobs and mirrors, a register lists what is declared rather than what runs, and many government installations are not visible to any public source at all.",
+          "A source that knows nothing about the component is left out; a source that applies but does not answer in time says not measured, with the reason. When no source has anything, the aspect is not shown.",
+          "The Open Source Register of developer.overheid.nl records which organisation manages a repository, not who uses it, so it is not one of the sources.",
+        ],
+        counted: false,
+        informative: true,
+        sources: [
+          SOURCES.publiccodeUsedBy,
+          SOURCES.nextcloudAppStoreApi,
+          SOURCES.githubReleaseAssets,
+          SOURCES.npmDownloads,
+          SOURCES.packagistApi,
+          SOURCES.pypistats,
+          SOURCES.dockerHubApi,
+          SOURCES.depsDevApi,
+          SOURCES.githubContributors,
+          SOURCES.ossRegister,
         ],
       },
     ],

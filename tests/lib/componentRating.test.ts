@@ -81,6 +81,7 @@ describe("categoryDocSlug", () => {
       "ownership",
       "maintenance",
       "community-documents",
+      "usage-and-ecosystem",
     ]);
   });
 });
@@ -102,6 +103,20 @@ describe("aspectComposition", () => {
     });
   });
 
+  it("shows the usage sources of an informative aspect, in the order of their kind", () => {
+    const declared = {
+      id: "publiccode-usedby", kind: "declared" as const, source: "publiccode.yml usedBy", subject: null, url: null,
+      measuredAt: "2026-11-18", caveat: "Self-declared.", figures: [{ label: "organisations named", value: 2 }],
+    };
+    const pulls = { ...declared, id: "dockerhub:a/b", kind: "containers" as const, source: "Docker Hub" };
+    const composition = aspectComposition(aspect("usage-and-ecosystem"), [
+      result("usage", "info", { usage: { sources: [pulls, declared] } }),
+    ]);
+
+    expect(composition).toEqual({ type: "usage", sources: [declared, pulls] });
+    expect(aspectComposition(aspect("usage-and-ecosystem"), [])).toEqual({ type: "usage", sources: [] });
+  });
+
   it("lists the documents of a document-count aspect", () => {
     const composition = aspectComposition(aspect("community-documents"), [
       result("documentation", "pass"),
@@ -109,7 +124,7 @@ describe("aspectComposition", () => {
     ]);
 
     expect(composition.type).toBe("documents");
-    expect(composition.type !== "measurements" && composition.criteria.map((entry) => [entry.id, entry.status])).toEqual([
+    expect(composition.type === "documents" && composition.criteria.map((entry) => [entry.id, entry.status])).toEqual([
       ["documentation", "pass"],
       ["contributing", "fail"],
     ]);

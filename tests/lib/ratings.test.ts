@@ -353,6 +353,19 @@ describe("computeRatings", () => {
       expect(ratings.categoryRatings[ARCHITECTURE]).toBe(5.5);
     });
 
+    it("never rate usage and ecosystem, whatever the usage check reports", () => {
+      const ratings = computeRatings(
+        [
+          result("license", "pass"),
+          result("usage", "pass", { requirementLevel: "recommended", rating: 5.5, starRating: 5 }),
+        ],
+        config({ usage: { weight: 1, requirementLevel: "recommended" } })
+      );
+
+      expect(ratings.aspectRatings["usage-and-ecosystem"]).toEqual({ rating: null });
+      expect(ratings.categoryRatings[GOVERNANCE]).toBe(5.5);
+    });
+
     it("are null when only aspects with weight 0 are rated", () => {
       const ratings = computeRatings([result("fivelayer", "pass")], config());
 
