@@ -28,6 +28,7 @@ import { checkEuplLicense } from "./eupl";
 import {
   getActiveScoringConfig,
 } from "./config";
+import { resolveScanRef } from "../scanRef";
 import { CATEGORY_WEIGHTS, RESULT_CATEGORY_BY_ID, type CriteriaCategory } from "../criteria";
 import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
@@ -83,6 +84,8 @@ interface RunChecksOptions {
   dockerLocations?: string[];
   apiSpecificationLocations?: string[];
   isRegister?: boolean;
+  /** Branch or tag to scan, or `latest-release`; the default branch when unset. */
+  ref?: string | null;
 }
 
 export async function runChecks(
@@ -100,10 +103,13 @@ export async function runChecks(
   const meta = await provider.getRepoMeta(context);
   context.defaultBranch = String(meta.default_branch ?? "main");
 
-  // Fetch file tree and version in parallel using the real default branch
+  const scanned = await resolveScanRef(context, context.defaultBranch, options?.ref ?? null);
+  // The commit pins the tree and every file read to one snapshot of the ref.
+  context.ref = scanned.commit ?? scanned.ref;
+
   onProgress?.("Loading repository file tree...", 30);
   const [tree, versionInfo] = await Promise.all([
-    provider.getRepoTree(context, context.defaultBranch),
+    provider.getRepoTree(context, context.ref),
     provider.getRepoVersion(context),
   ]);
 
@@ -121,7 +127,7 @@ export async function runChecks(
     const cloneUrl = provider.getCloneUrl(context);
     const clone = await runCommand(
       "git",
-      ["clone", "--depth", "1", cloneUrl, localRepoPath],
+      ["clone", "--depth", "1", "--branch", scanned.ref, cloneUrl, localRepoPath],
       { GIT_LFS_SKIP_SMUDGE: "1" }
     );
 
@@ -158,16 +164,17 @@ export async function runChecks(
     scoringConfig.complexityThreshold,
     scoringConfig.complexityMaxCcnThreshold,
     localRepoPath,
-    cloneUrl
+    cloneUrl,
+    scanned.ref
   );
-  const codeMetricsPromise = checkCodeMetrics(owner, repo, localRepoPath, cloneUrl);
+  const codeMetricsPromise = checkCodeMetrics(owner, repo, localRepoPath, cloneUrl, scanned.ref);
   const owaspSecureCodingPromise = checkOwaspSecureCoding(context, tree, localRepoPath);
   const adrValidatorPromise = checkAdrValidator(
     owner,
     repo,
     context.projectPath,
     context.provider.id,
-    context.defaultBranch,
+    context.ref,
     tree,
     options?.apiSpecificationLocations ?? [],
     scoringConfig.spectralRulesetSource
@@ -358,6 +365,10 @@ export async function runChecks(
     scoringConfigId: activeScoringConfig.id,
     score,
     results: resultsWithRequirementLevels,
+    scannedRef: scanned.ref,
+    scannedRefKind: scanned.kind,
+    scannedCommit: scanned.commit,
+    ...(scanned.warning ? { scanRefWarning: scanned.warning } : {}),
     repoMeta: {
       description: meta.description ?? null,
       language: meta.language ?? null,

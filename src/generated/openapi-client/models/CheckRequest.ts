@@ -9,5 +9,9 @@ export type CheckRequest = {
     dockerLocations?: Array<string>;
     apiSpecificationLocations?: Array<string>;
     isRegister?: boolean;
+    /**
+     * The branch or tag to scan; empty for the default branch, or "latest-release" for the newest stable release
+     */
+    ref?: string;
 };
 

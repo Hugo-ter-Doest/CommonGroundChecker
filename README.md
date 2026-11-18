@@ -252,6 +252,12 @@ These local Next.js endpoints either run the checker or proxy storage and config
 
 A repository's history page has a collapsed **Follow this repository (admin)** section. An admin chooses whether to follow the repository and how often it is rescanned (daily, weekly or monthly), and confirms with the backend's admin token (the backend's `ADMIN_TOKEN` environment variable). The token is sent with that one request and is not stored. The History index marks followed repositories with a **Followed** badge and shows their next check.
 
+### Choosing the branch or release to scan
+
+A check scans the repository's default branch unless it is told otherwise. `POST /api/check` and `/api/check/stream` accept an optional `ref`: a branch or tag name such as `development`, or `latest-release` for the newest stable release (drafts, pre-releases and `-rc`-style tags are skipped; without a release the newest stable semver tag is used, and without one of those the default branch is scanned and the result carries a warning). A branch or tag that does not exist is refused with `400`. The checker form has an optional **Branch or tag to scan** field, and the follow section has a **What to scan** setting (default branch, latest release, or a branch or tag) that scheduled rescans use.
+
+The tree, every file read, the clone used by the code tools and the API rules all read the same commit. Each result records `scannedRef`, `scannedRefKind` and `scannedCommit`, and the result and history pages show it, for example "Scanned: development @ abc1234" or "Scanned: release v1.2.0 @ abc1234".
+
 ### ADR Spectral ruleset source (Admin)
 
 On the **Admin** page, the field **"Spectral ruleset source"** controls which ruleset is used for the **NL API Design Rules** check.

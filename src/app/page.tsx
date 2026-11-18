@@ -7,6 +7,7 @@ import ResultCard from "@/components/ResultCard";
 import ScoreBadge from "@/components/ScoreBadge";
 import RepoMeta from "@/components/RepoMeta";
 import type { CheckReport } from "@/lib/types";
+import ScannedRef from "@/components/ScannedRef";
 import type { CriteriaCategory } from "@/lib/criteria";
 import { CATEGORY_ORDER, RESULT_CATEGORY_BY_ID, RESULT_ORDER_BY_ID } from "@/lib/criteria";
 import { getAdminScoring, streamCheck } from "@/lib/apiClient";
@@ -436,7 +437,8 @@ export default function HomePage() {
     documentationLocations: string[],
     dockerLocations: string[],
     apiSpecificationLocations: string[],
-    isRegister: boolean
+    isRegister: boolean,
+    ref: string
   ) {
     console.log("HomePage handleCheck", {
       url,
@@ -460,6 +462,7 @@ export default function HomePage() {
           dockerLocations,
           apiSpecificationLocations,
           isRegister,
+          ...(ref ? { ref } : {}),
         },
         (step, pct) => {
           setProgress({ step, pct });
@@ -637,8 +640,13 @@ export default function HomePage() {
                   </div>
                   <p className="text-xs text-gray-400">
                     Checked at{" "}
-                    {new Date(report.checkedAt).toLocaleString("nl-NL")} —
-                    Branch: {report.repoMeta.defaultBranch}
+                    {new Date(report.checkedAt).toLocaleString("nl-NL")} —{" "}
+                    <ScannedRef
+                      scannedRef={report.scannedRef ?? report.repoMeta.defaultBranch}
+                      kind={report.scannedRefKind}
+                      commit={report.scannedCommit}
+                      warning={report.scanRefWarning}
+                    />
                   </p>
                   <div className="flex items-center gap-4 text-xs">
                     <Link

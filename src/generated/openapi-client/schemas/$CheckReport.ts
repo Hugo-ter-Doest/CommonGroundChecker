@@ -36,6 +36,26 @@ export const $CheckReport = {
             },
             isRequired: true,
         },
+        scannedRef: {
+            type: 'string',
+            description: `The branch or tag name that was scanned`,
+            isRequired: true,
+        },
+        scannedRefKind: {
+            type: 'string',
+            description: `How the scanned ref was chosen: default-branch, branch, release, or tag (the newest semver tag when there is no release)`,
+            isRequired: true,
+        },
+        scannedCommit: {
+            type: 'string',
+            description: `The commit SHA that was scanned`,
+            isRequired: true,
+            isNullable: true,
+        },
+        scanRefWarning: {
+            type: 'string',
+            description: `Set when the requested ref could not be used as asked, for example when there is no release to scan`,
+        },
         repoMeta: {
             type: 'RepoMeta',
             isRequired: true,

@@ -474,6 +474,13 @@
               null
             ],
             "description": "24 (daily), 168 (weekly) or 720 (monthly). Defaults to the stored interval, or 168 when following for the first time"
+          },
+          "scanRef": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The branch or tag scheduled scans use: null for the default branch, \"latest-release\" for the newest stable release, or a branch or tag name"
           }
         },
         "required": [
@@ -497,6 +504,13 @@
             ],
             "description": "Hours between scheduled checks: 24 (daily), 168 (weekly) or 720 (monthly)"
           },
+          "scanRef": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The branch or tag scheduled scans use: null for the default branch, \"latest-release\" for the newest stable release, or a branch or tag name"
+          },
           "lastCheckedAt": {
             "type": [
               "string",
@@ -518,6 +532,7 @@
           "id",
           "followed",
           "checkIntervalHours",
+          "scanRef",
           "lastCheckedAt",
           "nextCheckAt"
         ]
@@ -576,6 +591,13 @@
             ],
             "description": "Hours between scheduled checks: 24 (daily), 168 (weekly) or 720 (monthly)"
           },
+          "scanRef": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The branch or tag scheduled scans use: null for the default branch, \"latest-release\" for the newest stable release, or a branch or tag name"
+          },
           "lastCheckedAt": {
             "type": [
               "string",
@@ -623,6 +645,7 @@
           "updatedAt",
           "followed",
           "checkIntervalHours",
+          "scanRef",
           "lastCheckedAt",
           "nextCheckAt",
           "analysisCount",
@@ -729,6 +752,10 @@
           },
           "isRegister": {
             "type": "boolean"
+          },
+          "ref": {
+            "type": "string",
+            "description": "The branch or tag to scan; empty for the default branch, or \"latest-release\" for the newest stable release"
           }
         },
         "required": [
@@ -753,6 +780,27 @@
               "string",
               "null"
             ]
+          },
+          "scannedRef": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The branch or tag name that was scanned, for example development or v1.2.0"
+          },
+          "scannedRefKind": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "How the scanned ref was chosen: default-branch, branch, release, or tag (the newest semver tag when there is no release)"
+          },
+          "scannedCommit": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The commit SHA that was scanned"
           },
           "score": {
             "type": "integer"
@@ -794,6 +842,27 @@
               "string",
               "null"
             ]
+          },
+          "scannedRef": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The branch or tag name that was scanned, for example development or v1.2.0"
+          },
+          "scannedRefKind": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "How the scanned ref was chosen: default-branch, branch, release, or tag (the newest semver tag when there is no release)"
+          },
+          "scannedCommit": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The commit SHA that was scanned"
           },
           "score": {
             "type": "integer"
@@ -850,6 +919,13 @@
                 ],
                 "description": "Hours between scheduled checks: 24 (daily), 168 (weekly) or 720 (monthly)"
               },
+              "scanRef": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The branch or tag scheduled scans use: null for the default branch, \"latest-release\" for the newest stable release, or a branch or tag name"
+              },
               "lastCheckedAt": {
                 "type": [
                   "string",
@@ -883,6 +959,7 @@
               "metadata",
               "followed",
               "checkIntervalHours",
+              "scanRef",
               "lastCheckedAt",
               "nextCheckAt",
               "createdAt",
@@ -1153,6 +1230,25 @@
               "$ref": "#/components/schemas/CheckResult"
             }
           },
+          "scannedRef": {
+            "type": "string",
+            "description": "The branch or tag name that was scanned"
+          },
+          "scannedRefKind": {
+            "type": "string",
+            "description": "How the scanned ref was chosen: default-branch, branch, release, or tag (the newest semver tag when there is no release)"
+          },
+          "scannedCommit": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The commit SHA that was scanned"
+          },
+          "scanRefWarning": {
+            "type": "string",
+            "description": "Set when the requested ref could not be used as asked, for example when there is no release to scan"
+          },
           "repoMeta": {
             "$ref": "#/components/schemas/RepoMeta"
           }
@@ -1164,7 +1260,10 @@
           "checkedAt",
           "score",
           "results",
-          "repoMeta"
+          "repoMeta",
+          "scannedRef",
+          "scannedRefKind",
+          "scannedCommit"
         ]
       }
     }

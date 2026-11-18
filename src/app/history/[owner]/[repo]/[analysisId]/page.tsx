@@ -1,5 +1,6 @@
 import Link from "next/link";
 import ResultCard from "@/components/ResultCard";
+import ScannedRef from "@/components/ScannedRef";
 import { getRepoHistory } from "@/lib/apiClient";
 import type { CheckReport, CheckResult } from "@/lib/types";
 import type { RepoMeta } from "@/generated/openapi-client";
@@ -161,6 +162,12 @@ export default async function AnalysisDetailPage({ params }: AnalysisDetailPageP
         </p>
         <p className="text-xs text-gray-500">
           Checked at {new Date(analysis.checkedAt).toLocaleString("nl-NL")}
+          {analysis.scannedRef ? " — " : null}
+          <ScannedRef
+            scannedRef={analysis.scannedRef}
+            kind={analysis.scannedRefKind}
+            commit={analysis.scannedCommit}
+          />
         </p>
         <div className="flex items-center gap-2 flex-wrap">
           <span

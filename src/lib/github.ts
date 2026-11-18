@@ -187,6 +187,57 @@ export async function getFileContent(
   }
 }
 
+/**
+ * Commit SHA that a branch, tag or SHA points at. Returns null when GitHub
+ * does not know the ref; other errors are thrown.
+ */
+export async function getCommitSha(
+  owner: string,
+  repo: string,
+  ref: string
+): Promise<string | null> {
+  const res = await fetch(
+    `${BASE}/repos/${owner}/${repo}/commits/${encodeURIComponent(ref)}`,
+    { headers: { ...headers(), Accept: "application/vnd.github.sha" }, cache: "no-store" }
+  );
+  if (res.status === 404 || res.status === 422) return null;
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`GitHub API ${res.status}: ${body.slice(0, 200)}`);
+  }
+  const sha = (await res.text()).trim();
+  return /^[0-9a-f]{40}$/i.test(sha) ? sha : null;
+}
+
+/** The repository's releases, newest first as GitHub lists them (up to 100). */
+export async function listReleases(
+  owner: string,
+  repo: string
+): Promise<Array<{ tag: string; draft: boolean; prerelease: boolean; publishedAt: string | null }>> {
+  const data = await ghFetch(`/repos/${owner}/${repo}/releases?per_page=100`);
+  if (!Array.isArray(data)) return [];
+  return data.map((entry: Record<string, unknown>) => ({
+    tag: typeof entry.tag_name === "string" ? entry.tag_name.trim() : "",
+    draft: entry.draft === true,
+    prerelease: entry.prerelease === true,
+    publishedAt:
+      typeof entry.published_at === "string"
+        ? entry.published_at
+        : typeof entry.created_at === "string"
+        ? entry.created_at
+        : null,
+  }));
+}
+
+/** The repository's tag names (up to 100). */
+export async function listTags(owner: string, repo: string): Promise<string[]> {
+  const data = await ghFetch(`/repos/${owner}/${repo}/tags?per_page=100`);
+  if (!Array.isArray(data)) return [];
+  return data
+    .map((entry: { name?: unknown }) => (typeof entry.name === "string" ? entry.name : ""))
+    .filter(Boolean);
+}
+
 /** Fetch repository metadata. */
 export async function getRepoMeta(owner: string, repo: string) {
   return ghFetch(`/repos/${owner}/${repo}`);

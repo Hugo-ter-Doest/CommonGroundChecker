@@ -24,6 +24,15 @@ export interface RepoContext extends RepoIdentifier {
   provider: RepositoryProvider;
   repoUrl: string;
   defaultBranch?: string;
+  /** Commit or ref the scan reads the tree and file contents from; the default branch when unset. */
+  ref?: string;
+}
+
+export interface RepositoryRelease {
+  tag: string;
+  draft: boolean;
+  prerelease: boolean;
+  publishedAt: string | null;
 }
 
 export interface RepositoryMeta {
@@ -52,6 +61,10 @@ export interface RepositoryProvider {
   getRepoTree(context: RepoContext, branch: string): Promise<string[]>;
   getFileContent(context: RepoContext, path: string): Promise<string | null>;
   getRepoVersion(context: RepoContext): Promise<RepoVersionResult>;
+  /** Commit SHA a branch, tag or SHA points at, or null when the ref does not exist. */
+  getCommitSha(context: RepoContext, ref: string): Promise<string | null>;
+  listReleases(context: RepoContext): Promise<RepositoryRelease[]>;
+  listTags(context: RepoContext): Promise<string[]>;
   getCloneUrl(context: RepoContext): string;
   parseRepoTreeUrl?(url: string): ParsedRepoTreeUrl | null;
 }

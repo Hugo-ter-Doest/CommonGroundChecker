@@ -35,5 +35,9 @@ export const $CheckRequest = {
         isRegister: {
             type: 'boolean',
         },
+        ref: {
+            type: 'string',
+            description: `The branch or tag to scan; empty for the default branch, or "latest-release" for the newest stable release`,
+        },
     },
 } as const;

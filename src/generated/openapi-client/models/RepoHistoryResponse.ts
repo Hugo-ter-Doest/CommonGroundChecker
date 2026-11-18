@@ -20,6 +20,10 @@ export type RepoHistoryResponse = {
          */
         checkIntervalHours: number;
         /**
+         * The branch or tag scheduled scans use: null for the default branch, "latest-release" for the newest stable release, or a branch or tag name
+         */
+        scanRef: string | null;
+        /**
          * When the latest analysis was stored
          */
         lastCheckedAt: string;

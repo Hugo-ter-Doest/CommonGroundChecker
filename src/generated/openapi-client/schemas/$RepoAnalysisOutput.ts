@@ -25,6 +25,21 @@ export const $RepoAnalysisOutput = {
             type: 'string',
             isNullable: true,
         },
+        scannedRef: {
+            type: 'string',
+            description: `The branch or tag name that was scanned, for example development or v1.2.0`,
+            isNullable: true,
+        },
+        scannedRefKind: {
+            type: 'string',
+            description: `How the scanned ref was chosen: default-branch, branch, release, or tag (the newest semver tag when there is no release)`,
+            isNullable: true,
+        },
+        scannedCommit: {
+            type: 'string',
+            description: `The commit SHA that was scanned`,
+            isNullable: true,
+        },
         score: {
             type: 'number',
             isRequired: true,
