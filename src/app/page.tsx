@@ -125,6 +125,7 @@ const DEFAULT_REQUIREMENT_LEVEL_BY_CHECK_ID: Record<string, RequirementLevelLabe
   tests: "mandatory",
   complexity: "recommended",
   maintainability: "recommended",
+  duplication: "informative",
   codemetrics: "informative",
   changelog: "recommended",
   coverage: "mandatory",
@@ -154,6 +155,7 @@ const CHECK_ID_BY_CRITERION_LABEL: Record<string, string> = {
   "Code coverage": "coverage",
   "Cyclomatic complexity": "complexity",
   "Maintainability (ISO 25010)": "maintainability",
+  "Duplication (open track)": "duplication",
   "Code Metrics": "codemetrics",
   "OWASP Secure Coding": "owaspsecurecoding",
   "Contributing guide": "contributing",
@@ -332,6 +334,14 @@ const CRITERIA_OVERVIEW = [
     desc: "1 to 5 star maintainability rating",
     tooltip:
       "Rates unit size, unit complexity, unit interfacing, duplication, module coupling and component structure from 1 to 5 stars, and estimates an overall maintainability rating. 4 stars or more passes.",
+  },
+  {
+    icon: "📑",
+    label: "Duplication (open track)",
+    category: "Software Quality" as CriteriaCategory,
+    desc: "jscpd duplicated lines, informative",
+    tooltip:
+      "Runs jscpd on the production code per language and shows the share of duplicated lines and the largest clones. Informative: it gets no stars until open thresholds are calibrated.",
   },
   {
     icon: "🛡️",

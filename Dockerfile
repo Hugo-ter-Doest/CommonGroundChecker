@@ -22,7 +22,8 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends git ca-certificates python3 python3-pip \
   && rm -rf /var/lib/apt/lists/* \
   && pip3 install --no-cache-dir --break-system-packages lizard==1.24.3 \
-  && npm install --silent --no-audit --no-fund --ignore-scripts --prefix /opt/analysis-tools/jscpd-4.0.5 jscpd@4.0.5
+  && npm install --silent --no-audit --no-fund --ignore-scripts --prefix /opt/analysis-tools/jscpd-4.0.5 jscpd@4.0.5 \
+  && npm install --silent --no-audit --no-fund --ignore-scripts --prefix /opt/analysis-tools/jscpd-5.4.2 jscpd@5.4.2
 
 COPY package*.json ./
 COPY --from=deps /app/node_modules ./node_modules

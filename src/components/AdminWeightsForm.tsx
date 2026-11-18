@@ -139,6 +139,13 @@ const CRITERION_CATEGORIES: CriterionCategory[] = [
           "Clones the analyzed repository and rates unit size, unit complexity, unit interfacing, duplication, module coupling and component structure from 1 to 5 stars. The criterion passes at an estimated rating of 4 stars or more and warns at 3 stars.",
       },
       {
+        id: "duplication",
+        label: "Duplication (open track)",
+        explanation:
+          "Runs jscpd 5.4.2 on the production code, one language at a time (clones of at least 6 lines and 30 tokens, comments ignored), and shows the share of duplicated lines per language and overall, with the largest clones. This criterion is informative and does not contribute to the overall score by default.",
+        requirementLevel: "informative",
+      },
+      {
         id: "codemetrics",
         label: "Code metrics",
         explanation:
