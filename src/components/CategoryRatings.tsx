@@ -190,7 +190,14 @@ function InformativeAspectRow({
         Each source is shown on its own, with its date and caveat. The figures are not added up, rated or compared
         with other components.
       </p>
-      <UsageTable caption={`What the sources say about ${aspect.title}`} sources={sources} />
+      <details className="mt-1">
+        <summary className="cursor-pointer text-xs text-cg-lightblue focus-visible:outline focus-visible:outline-2 focus-visible:outline-cg-lightblue">
+          Show what {aspect.title} is made of
+        </summary>
+        <div className="mt-2">
+          <UsageTable caption={`What the sources say about ${aspect.title}`} sources={sources} />
+        </div>
+      </details>
     </div>
   );
 }

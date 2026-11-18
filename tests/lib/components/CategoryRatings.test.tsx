@@ -170,6 +170,9 @@ describe("CategoryRatings", () => {
       "Includes CI pulls.",
     ]);
     expect(within(group).getByText("not measured: no public count")).toBeTruthy();
+    const details = within(group).getByRole("table", { name: /What the sources say about Usage and ecosystem/ }).closest("details");
+    expect(details?.open).toBe(false);
+    expect(details?.querySelector("summary")?.textContent).toBe("Show what Usage and ecosystem is made of");
   });
 
   it("leaves usage out when no source found anything", () => {
