@@ -29,6 +29,13 @@ describe("mapOpenDuplicationReport", () => {
     expect(result.evidence).toContain("python: 5.8% (2840 of 49265 lines, 251 clone(s) in 342 file(s))");
   });
 
+  it("says the open-track rating rates the raw figures, not that they wait for calibration", () => {
+    const { description } = mapOpenDuplicationReport(report);
+
+    expect(description).toContain('rated by "Maintainability, open track" when that rating is available');
+    expect(description).not.toContain("calibrated");
+  });
+
   it("lists the five largest clones", () => {
     const clones = mapOpenDuplicationReport(report).evidence?.filter((line) => line.startsWith("Clone of"));
 

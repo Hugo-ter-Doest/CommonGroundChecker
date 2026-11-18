@@ -37,7 +37,7 @@ const BASE_RESULT = {
   id: "duplication",
   title: "Duplication (open track)",
   description:
-    "Duplicated lines per language as jscpd reports them, over the production code the maintainability estimate rates. Informative: no stars until open thresholds are calibrated.",
+    "Duplicated lines per language as jscpd reports them, over the production code the maintainability estimate rates. Informative: the raw figures are shown here and rated by \"Maintainability, open track\" when that rating is available.",
   referenceUrl: "https://github.com/kucherenko/jscpd",
 } as const;
 

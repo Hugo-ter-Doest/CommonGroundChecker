@@ -341,7 +341,7 @@ const CRITERIA_OVERVIEW = [
     category: "Software Quality" as CriteriaCategory,
     desc: "jscpd duplicated lines, informative",
     tooltip:
-      "Runs jscpd on the production code per language and shows the share of duplicated lines and the largest clones. Informative: it gets no stars until open thresholds are calibrated.",
+      "Runs jscpd on the production code per language and shows the share of duplicated lines and the largest clones. Informative: the raw figures are shown here and rated by \"Maintainability, open track\" when that rating is available.",
   },
   {
     icon: "🛡️",
