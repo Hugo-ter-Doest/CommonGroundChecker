@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   checkUsage,
   classifyContributors,
@@ -441,6 +441,126 @@ describe("checkUsage", () => {
     expect(result.usage).toEqual({ sources: [] });
     expect(result.message).toBe("No source reports usage of this component.");
     expect(fetchFn).not.toHaveBeenCalled();
+  });
+});
+
+interface GraphqlRequest {
+  query: string;
+  variables: { after?: string | null; id?: string };
+}
+
+/** Answers GraphQL from `answer`, and every other URL from `routes`. */
+function graphqlFetch(answer: (request: GraphqlRequest) => unknown, routes: Record<string, Route> = {}) {
+  const rest = fakeFetch(routes);
+  return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    if (String(input) !== "https://api.github.com/graphql") return rest(input, init);
+    return new Response(JSON.stringify(answer(JSON.parse(String(init?.body)) as GraphqlRequest)), { status: 200 });
+  }) as unknown as typeof fetch;
+}
+
+function assets(downloads: number[], hasNextPage = false, totalCount = downloads.length, endCursor: string | null = null) {
+  return { totalCount, pageInfo: { hasNextPage, endCursor }, nodes: downloads.map((downloadCount) => ({ downloadCount })) };
+}
+
+function releasePage(nodes: Array<{ id: string; releaseAssets: ReturnType<typeof assets> }>, hasNextPage: boolean, endCursor: string | null = null) {
+  return { data: { repository: { releases: { pageInfo: { hasNextPage, endCursor }, nodes } } } };
+}
+
+function graphqlRequests(fetchFn: typeof fetch): GraphqlRequest[] {
+  return vi
+    .mocked(fetchFn)
+    .mock.calls.filter(([url]) => String(url).endsWith("/graphql"))
+    .map(([, init]) => JSON.parse(String(init?.body)) as GraphqlRequest);
+}
+
+describe("GitHub release downloads", () => {
+  const token = process.env.GITHUB_TOKEN;
+
+  beforeEach(() => {
+    process.env.GITHUB_TOKEN = "test-token";
+  });
+
+  afterEach(() => {
+    if (token === undefined) delete process.env.GITHUB_TOKEN;
+    else process.env.GITHUB_TOKEN = token;
+  });
+
+  async function releases(fetchFn: typeof fetch) {
+    const result = await checkUsage(contextWith({}), {}, [], undefined, { fetchFn, now: NOW });
+    return byId(result.usage?.sources, "github-releases");
+  }
+
+  it("pages through GraphQL with the cursor and sums the downloads, also past 100 files", async () => {
+    const fetchFn = graphqlFetch((request) => {
+      if (request.query.includes("node(id:")) return { data: { node: { releaseAssets: assets([7]) } } };
+      return request.variables.after === "page-2"
+        ? releasePage([{ id: "r3", releaseAssets: assets([1, 2]) }], false)
+        : releasePage(
+            [
+              { id: "r1", releaseAssets: assets([10, 5], true, 3, "files-2") },
+              { id: "r2", releaseAssets: assets([]) },
+            ],
+            true,
+            "page-2"
+          );
+    });
+
+    expect((await releases(fetchFn))?.figures).toEqual([
+      { label: "release file downloads", value: 25 },
+      { label: "releases with files", value: 2 },
+    ]);
+    const requests = graphqlRequests(fetchFn);
+    expect(requests.map((request) => request.variables)).toEqual([
+      { owner: "open-zaak", name: "open-zaak", after: null },
+      { id: "r1", after: "files-2" },
+      { owner: "open-zaak", name: "open-zaak", after: "page-2" },
+    ]);
+    expect(requests[0].query).not.toMatch(/description|browserDownloadUrl/);
+    expect(vi.mocked(fetchFn).mock.calls.some(([url]) => String(url).includes("/releases?"))).toBe(false);
+  });
+
+  it("reads at most five pages and then says the releases are the most recent ones", async () => {
+    let page = 0;
+    const fetchFn = graphqlFetch(() => {
+      page += 1;
+      return releasePage([{ id: `r${page}`, releaseAssets: assets([1]) }], true, `page-${page + 1}`);
+    });
+
+    expect((await releases(fetchFn))?.figures).toEqual([
+      { label: "release file downloads", value: 5 },
+      { label: "most recent releases with files", value: 5 },
+    ]);
+    expect(graphqlRequests(fetchFn)).toHaveLength(5);
+  });
+
+  it("falls back to REST when GraphQL answers with an error", async () => {
+    const fetchFn = graphqlFetch(() => ({ errors: [{ message: "Something went wrong" }] }), {
+      [`${GH}/releases`]: { body: [{ assets: [{ download_count: 4 }] }] },
+    });
+
+    expect((await releases(fetchFn))?.figures).toEqual([
+      { label: "release file downloads", value: 4 },
+      { label: "releases with files", value: 1 },
+    ]);
+    expect(graphqlRequests(fetchFn)).toHaveLength(1);
+  });
+
+  it("is not measured when GraphQL and REST both fail", async () => {
+    const fetchFn = graphqlFetch(() => ({ errors: [{ message: "Something went wrong" }] }), {
+      [`${GH}/releases`]: { status: 502 },
+    });
+
+    expect(await releases(fetchFn)).toMatchObject({ figures: [], notMeasured: "HTTP 502" });
+  });
+
+  it("reads REST without a token, as GraphQL needs one", async () => {
+    delete process.env.GITHUB_TOKEN;
+    const fetchFn = graphqlFetch(() => releasePage([], false), {
+      [`${GH}/releases`]: { body: [{ assets: [{ download_count: 3 }] }] },
+    });
+
+    expect((await releases(fetchFn))?.figures[0]).toEqual({ label: "release file downloads", value: 3 });
+    expect(graphqlRequests(fetchFn)).toHaveLength(0);
   });
 });
 

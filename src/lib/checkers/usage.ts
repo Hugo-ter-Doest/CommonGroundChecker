@@ -347,6 +347,120 @@ async function githubPages(
   return { items, complete: false };
 }
 
+/** The file count and the downloads of one release. */
+interface ReleaseFiles {
+  files: number;
+  downloads: number;
+}
+
+interface GraphqlAssets {
+  totalCount: number;
+  pageInfo: { hasNextPage: boolean; endCursor: string | null };
+  nodes: Array<{ downloadCount: number }>;
+}
+
+const ASSETS_FIELDS = "totalCount pageInfo { hasNextPage endCursor } nodes { downloadCount }";
+
+const RELEASES_QUERY = `query($owner: String!, $name: String!, $after: String) {
+  repository(owner: $owner, name: $name) {
+    releases(first: 100, after: $after, orderBy: { field: CREATED_AT, direction: DESC }) {
+      pageInfo { hasNextPage endCursor }
+      nodes { id releaseAssets(first: 100) { ${ASSETS_FIELDS} } }
+    }
+  }
+}`;
+
+/** The further assets of a release with more than 100; GitHub allows 1,000. */
+const RELEASE_ASSETS_QUERY = `query($id: ID!, $after: String) {
+  node(id: $id) { ... on Release { releaseAssets(first: 100, after: $after) { ${ASSETS_FIELDS} } } }
+}`;
+
+/** Posts a GraphQL query; query errors arrive with status 200, so they throw here. */
+async function githubGraphql(fetchFn: FetchFn, query: string, variables: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const response = await fetchFn(`${GITHUB_API}/graphql`, {
+    method: "POST",
+    headers: { ...githubHeaders(), "Content-Type": "application/json" },
+    body: JSON.stringify({ query, variables }),
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+  });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const body: unknown = await response.json();
+  const errors = isRecord(body) && Array.isArray(body.errors) ? body.errors : [];
+  if (!isRecord(body) || !isRecord(body.data) || errors.length > 0) {
+    const first = errors[0];
+    throw new Error(`GraphQL: ${isRecord(first) && typeof first.message === "string" ? first.message : "no data"}`);
+  }
+  return body.data;
+}
+
+function assetDownloads(assets: GraphqlAssets): number {
+  return assets.nodes.reduce((sum, asset) => sum + (numberOrNull(asset.downloadCount) ?? 0), 0);
+}
+
+/**
+ * The releases through GraphQL, with only the download count of each file; a
+ * REST page carries every asset and body, several MB on a repository with
+ * nightly builds. Same page size and cap as the REST path.
+ */
+async function graphqlReleaseFiles(
+  fetchFn: FetchFn,
+  context: RepoContext,
+  maxPages: number
+): Promise<{ releases: ReleaseFiles[]; complete: boolean }> {
+  const releases: ReleaseFiles[] = [];
+  let after: string | null = null;
+  for (let page = 1; page <= maxPages; page += 1) {
+    const data = await githubGraphql(fetchFn, RELEASES_QUERY, { owner: context.owner, name: context.repo, after });
+    const repository = isRecord(data.repository) ? data.repository : null;
+    if (!repository) throw new Error("GraphQL: no repository");
+    const connection = repository.releases as {
+      pageInfo: { hasNextPage: boolean; endCursor: string | null };
+      nodes: Array<{ id: string; releaseAssets: GraphqlAssets }>;
+    };
+    for (const release of connection.nodes) {
+      let assets = release.releaseAssets;
+      let downloads = assetDownloads(assets);
+      while (assets.pageInfo.hasNextPage) {
+        const more = await githubGraphql(fetchFn, RELEASE_ASSETS_QUERY, { id: release.id, after: assets.pageInfo.endCursor });
+        assets = (more.node as { releaseAssets: GraphqlAssets }).releaseAssets;
+        downloads += assetDownloads(assets);
+      }
+      releases.push({ files: release.releaseAssets.totalCount, downloads });
+    }
+    if (!connection.pageInfo.hasNextPage) return { releases, complete: true };
+    after = connection.pageInfo.endCursor;
+  }
+  return { releases, complete: false };
+}
+
+async function restReleaseFiles(
+  fetchFn: FetchFn,
+  context: RepoContext,
+  maxPages: number
+): Promise<{ releases: ReleaseFiles[]; complete: boolean }> {
+  const { items, complete } = await githubPages(fetchFn, `/repos/${context.projectPath}/releases`, maxPages);
+  const releases = items.map((release) => {
+    const assets = Array.isArray(release.assets) ? release.assets : [];
+    return {
+      files: assets.length,
+      downloads: assets.reduce<number>((sum, asset) => sum + (isRecord(asset) ? (numberOrNull(asset.download_count) ?? 0) : 0), 0),
+    };
+  });
+  return { releases, complete };
+}
+
+/** GraphQL needs a token; without one, or when GraphQL fails, the releases come from REST. */
+async function releaseFiles(fetchFn: FetchFn, context: RepoContext, maxPages: number) {
+  if (process.env.GITHUB_TOKEN) {
+    try {
+      return await graphqlReleaseFiles(fetchFn, context, maxPages);
+    } catch {
+      // REST answers the same question, at a higher transfer cost.
+    }
+  }
+  return restReleaseFiles(fetchFn, context, maxPages);
+}
+
 function releaseSource(fetchFn: FetchFn, context: RepoContext, measuredAt: string) {
   return measure(
     {
@@ -360,12 +474,10 @@ function releaseSource(fetchFn: FetchFn, context: RepoContext, measuredAt: strin
     },
     measuredAt,
     async () => {
-      const { items, complete } = await githubPages(fetchFn, `/repos/${context.projectPath}/releases`, MAX_RELEASE_PAGES);
-      const withFiles = items.filter((release) => Array.isArray(release.assets) && release.assets.length > 0);
+      const { releases, complete } = await releaseFiles(fetchFn, context, MAX_RELEASE_PAGES);
+      const withFiles = releases.filter((release) => release.files > 0);
       if (withFiles.length === 0) return null;
-      const downloads = withFiles
-        .flatMap((release) => release.assets as unknown[])
-        .reduce<number>((sum, asset) => sum + (isRecord(asset) ? (numberOrNull(asset.download_count) ?? 0) : 0), 0);
+      const downloads = withFiles.reduce((sum, release) => sum + release.downloads, 0);
       return {
         figures: [
           { label: "release file downloads", value: downloads },
