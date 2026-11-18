@@ -33,7 +33,8 @@ const MEASURES = {
   component: {
     measures: [
       { metric: "sqale_debt_ratio", value: "0.0" },
-      { metric: "sqale_index", value: "6491" },
+      { metric: "sqale_index", value: "7626" },
+      { metric: "software_quality_maintainability_remediation_effort", value: "6491" },
       { metric: "development_cost", value: "17449680" },
       { metric: "ncloc", value: "581656" },
     ],
@@ -152,7 +153,7 @@ describe("checkSonarQube", () => {
         "S1192 duplicated string literals: 257 open issue(s)",
         "Worst file: lib/Service/ObjectService.php (31 issue(s))",
         "Quality profile: CGC calibrated (php), CGC calibrated (py)",
-        "Project key ConductionNL_openregister (derived from the repository name) on SonarQube 26.10.0.133078",
+        "Project key ConductionNL_openregister (derived from the repository URL) on SonarQube 26.10.0.133078",
       ])
     );
     expect(result?.evidence?.at(-1)).toContain("fitted on six repositories");
@@ -207,6 +208,23 @@ describe("checkSonarQube", () => {
     expect(result?.evidence?.some((line) => line.startsWith("Project key openregister "))).toBe(true);
   });
 
+  it("uses sqale_index when the server reports no Multi-Quality Rule effort", async () => {
+    const fetchImpl = fakeSonarQube(["openregister"], {
+      "/api/measures/component": () =>
+        Response.json({
+          component: {
+            measures: [
+              { metric: "sqale_index", value: "1186" },
+              { metric: "development_cost", value: "1671450" },
+            ],
+          },
+        }),
+    });
+    const result = await checkSonarQube(contextWith(), [], CONFIG, fetchImpl);
+
+    expect(result?.message).toMatch(/^Technical debt ratio 0\.071 %;/);
+  });
+
   it("falls back to sqale_debt_ratio when the debt and cost are not reported", async () => {
     const fetchImpl = fakeSonarQube(["openregister"], {
       "/api/measures/component": () =>
@@ -225,7 +243,7 @@ describe("checkSonarQube", () => {
     const result = await checkSonarQube(contextWith(), [], CONFIG, fetchImpl);
 
     expect(result?.evidence?.some((line) => line.startsWith("Quality profile"))).toBe(false);
-    expect(result?.evidence).toContain("Project key openregister (derived from the repository name)");
+    expect(result?.evidence).toContain("Project key openregister (derived from the repository URL)");
   });
 
   it("says the configured SonarQube could not be read on an authentication error", async () => {

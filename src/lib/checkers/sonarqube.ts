@@ -112,10 +112,11 @@ function debtRatioPercent(measures: Measure[]): number | null {
     const raw = measures.find((measure) => measure.metric === metric)?.value;
     return raw === undefined ? null : Number(raw);
   };
-  const index = value("sqale_index");
+  // The debt ratios are rounded to one decimal, which shows 0.0 % for most components, so the ratio
+  // is recomputed from the effort; the Multi-Quality Rule effort is the one the profile was calibrated on.
+  const effort = value("software_quality_maintainability_remediation_effort") ?? value("sqale_index");
   const cost = value("development_cost");
-  // sqale_debt_ratio is rounded to one decimal, which shows 0.0 % for most components.
-  if (index !== null && cost) return (index / cost) * 100;
+  if (effort !== null && cost) return (effort / cost) * 100;
   return value("sqale_debt_ratio");
 }
 
@@ -143,7 +144,7 @@ export async function checkSonarQube(
       `/api/issues/search?components=${component}&rules=${rules}&issueStatuses=OPEN,CONFIRMED&ps=1${facets}`;
     const [measures, issues, ruleTotals, profiles, version] = await Promise.all([
       get<{ component: { measures: Measure[] } }>(
-        `/api/measures/component?component=${component}&metricKeys=sqale_debt_ratio,sqale_index,development_cost,ncloc`
+        `/api/measures/component?component=${component}&metricKeys=sqale_debt_ratio,sqale_index,software_quality_maintainability_remediation_effort,development_cost,ncloc`
       ),
       get<IssueSearch>(issuesPath(RULES.map((rule) => ruleList(rule.key)).join(","), "&facets=files")),
       // The rules facet ignores the rules filter and lists only the top rules, so each rule is counted on its own.
@@ -157,7 +158,7 @@ export async function checkSonarQube(
 
     const ratio = debtRatioPercent(measures.component.measures);
     const ncloc = measures.component.measures.find((measure) => measure.metric === "ncloc")?.value;
-    const declaredNote = key === declared ? `from ${PROPERTIES_FILE}` : "derived from the repository name";
+    const declaredNote = key === declared ? `from ${PROPERTIES_FILE}` : "derived from the repository URL";
 
     const evidence = RULES.map((rule, index) => `${rule.label}: ${ruleTotals[index]?.total ?? 0} open issue(s)`);
     const files = issues.facets?.find((facet) => facet.property === "files")?.values ?? [];
