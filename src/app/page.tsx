@@ -164,6 +164,7 @@ const DEFAULT_REQUIREMENT_LEVEL_BY_CHECK_ID: Record<string, RequirementLevelLabe
   tests: "mandatory",
   complexity: "recommended",
   maintainability: "recommended",
+  opentrack: "informative",
   codemetrics: "informative",
   changelog: "recommended",
   coverage: "mandatory",
@@ -193,6 +194,7 @@ const CHECK_ID_BY_CRITERION_LABEL: Record<string, string> = {
   "Code coverage": "coverage",
   "Cyclomatic complexity": "complexity",
   "Maintainability (ISO 25010)": "maintainability",
+  "Maintainability, open track": "opentrack",
   "Code Metrics": "codemetrics",
   "OWASP Secure Coding": "owaspsecurecoding",
   "Contributing guide": "contributing",
@@ -371,6 +373,14 @@ const CRITERIA_OVERVIEW = [
     desc: "1 to 5 star maintainability rating",
     tooltip:
       "Rates unit size, unit complexity, unit interfacing, duplication, module coupling and component structure from 1 to 5 stars, and estimates an overall maintainability rating. 4 stars or more passes.",
+  },
+  {
+    icon: "⭐",
+    label: "Maintainability, open track",
+    category: "Software Quality" as CriteriaCategory,
+    desc: "Open thresholds from a public benchmark",
+    tooltip:
+      "Rates unit size, unit complexity, unit interfacing and duplication against open thresholds derived from a public benchmark of Common Ground and Developer Overheid repositories. Informative: shown next to the estimate and not counted.",
   },
   {
     icon: "🛡️",

@@ -63,10 +63,13 @@ The rating guide at `/docs` ("Rating guide" in the site navigation) explains per
 | 23 | **Code metrics** — repository metrics such as lines of code and function count are collected as informative context | Informative | [commonground.nl](https://www.commonground.nl) |
 | 24 | **Semantic versioning** — releases or tags following MAJOR.MINOR.PATCH | Recommended | [semver.org](https://semver.org/) |
 | 25 | **Maintainability (ISO 25010)** — unit size, unit complexity, unit interfacing, duplication, module coupling and component structure, each rated from 1 to 5 stars, with an estimated overall maintainability rating | Recommended | [Maintainability model](https://github.com/Software-Improvement-Group/sigridci/blob/main/docs/reference/sig-quality-models.md) |
+| 26 | **Maintainability, open track** — the same code properties rated against open thresholds derived from a public benchmark of Common Ground and Developer Overheid repositories; shown next to the estimate, not counted | Informative | [Alves et al. 2010](https://doi.org/10.1109/ICSM.2010.5609747) |
 
 **Stars:** every criterion also shows 1 to 5 stars. Maintainability has its own scale (4 stars or more passes, 3 stars warns). The other criteria map pass, warn and fail to 5, 3 and 1 stars. The component as a whole and each category also get a rating; see [Ratings](#ratings).
 
 The maintainability analysis runs `scripts/maintainability/check_maintainability.py`, which needs `python3`, lizard 1.24.3 and jscpd 4.0.5. The Docker image installs them. `MAINTAINABILITY_TIMEOUT_SECONDS` (default 600) caps how long one analysis may run. `node scripts/sync-maintainability.mjs [commit]` refreshes the vendored script from its upstream; `scripts/maintainability/UPSTREAM` records the commit.
+
+The open track runs `scripts/open-track/measure.py` with the same scope and lizard reader, and rates the result with the thresholds in `src/lib/openModel/thresholds-<date>.json`. Those thresholds, the benchmark list and the script that regenerates both are in `scripts/open-benchmark/` (see its README). The open track is not a SIG rating.
 
 **Note:** Mandatory criteria are included in the overall score. Recommended criteria still contribute when enabled, while informative criteria are only shown as contextual information and are not used in scoring.
 

@@ -1,0 +1,255 @@
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { spawn } from "node:child_process";
+import type { CheckResult, MeasurementGroup, MeasurementRow, StarLevel, StarRating } from "../types";
+import { STAR_LEVELS } from "../types";
+import { formatStars, ratingToStars } from "../stars";
+import {
+  OPEN_TRACK_THRESHOLDS,
+  scoreOpenTrack,
+  type Histogram,
+  type OpenTrackInput,
+  type OpenTrackThresholds,
+  type PropertyScore,
+} from "../openModel/score";
+
+const SCRIPT_PATH = path.join(process.cwd(), "scripts", "open-track", "measure.py");
+const TIMEOUT_MS = (Number(process.env.MAINTAINABILITY_TIMEOUT_SECONDS) || 600) * 1000;
+/** Exit status of the script when no file in a supported language is in scope. */
+const NOTHING_TO_MEASURE = 4;
+/** Alves, Ypma and Visser 2010, Deriving metric thresholds from benchmark data */
+const REFERENCE_URL = "https://doi.org/10.1109/ICSM.2010.5609747";
+
+const PROPERTY_LABELS: Record<string, string> = {
+  unit_size: "Unit size",
+  unit_complexity: "Unit complexity",
+  unit_interfacing: "Unit interfacing",
+  duplication: "Duplication",
+  module_coupling: "Module coupling",
+  component_independence: "Component independence",
+  component_entanglement: "Component entanglement",
+};
+
+/** How each bound of a risk-profile property reads. */
+const BOUND_LABELS: Record<string, (bound: number) => string> = {
+  unit_size: (bound) => `more than ${bound} lines`,
+  unit_complexity: (bound) => `complexity above ${bound}`,
+  unit_interfacing: (bound) => `${bound + 1} or more parameters`,
+  module_coupling: (bound) => `fan-in above ${bound}`,
+};
+
+/** The unit of the bounds in a one-line summary. */
+const BOUND_UNITS: Record<string, string> = {
+  unit_size: "lines",
+  unit_complexity: "complexity",
+  unit_interfacing: "parameters",
+  module_coupling: "fan-in",
+};
+
+const UNIT_PROPERTIES = ["unit_size", "unit_complexity", "unit_interfacing"] as const;
+
+interface LanguageMeasures {
+  code_loc: number;
+  unit_loc: number;
+  unit_size: Histogram;
+  unit_complexity: Histogram;
+  unit_interfacing: Histogram;
+  duplication?: { lines: number; duplicated_lines: number };
+}
+
+/** The JSON the measure script writes. */
+export interface OpenTrackMeasures {
+  schema: number;
+  files: number;
+  skipped_files?: Array<{ file: string; reason: string }>;
+  tools: Record<string, string | null>;
+  languages: Record<string, LanguageMeasures>;
+}
+
+const BASE_RESULT = {
+  id: "opentrack",
+  title: "Maintainability, open track",
+  description:
+    "Rates unit size, complexity, interfacing and duplication against open thresholds derived from a public benchmark of Common Ground and Developer Overheid repositories. Informative: shown next to the estimate, not counted.",
+  referenceUrl: REFERENCE_URL,
+} as const;
+
+function info(message: string, evidence: string[] = []): CheckResult {
+  return { ...BASE_RESULT, status: "info", message, evidence };
+}
+
+/** All languages of a repository pooled into one open-track input, as the benchmark pools them. */
+export function openTrackInput(measures: OpenTrackMeasures): OpenTrackInput {
+  const histograms: Record<string, Histogram> = {};
+  let lines = 0;
+  let duplicatedLines = 0;
+  let duplicationMeasured = false;
+  for (const language of Object.values(measures.languages)) {
+    for (const property of UNIT_PROPERTIES) {
+      const pooled = (histograms[property] ??= {});
+      for (const [value, loc] of Object.entries(language[property] ?? {})) {
+        pooled[value] = (pooled[value] ?? 0) + loc;
+      }
+    }
+    if (language.duplication) {
+      duplicationMeasured = true;
+      lines += language.duplication.lines;
+      duplicatedLines += language.duplication.duplicated_lines;
+    }
+  }
+  return {
+    histograms,
+    shares: duplicationMeasured && lines > 0 ? { duplication: duplicatedLines / lines } : {},
+  };
+}
+
+function percent(share: number): string {
+  return `${(share * 100).toFixed(1)}%`;
+}
+
+function rowStars(fits: (level: StarLevel) => boolean): StarRating {
+  return STAR_LEVELS.find(fits) ?? 1;
+}
+
+function measurementRows(score: PropertyScore): MeasurementRow[] {
+  const { limits } = score;
+  if (!limits) return [];
+  if (score.share !== undefined) {
+    const share = score.share;
+    const thresholds: MeasurementRow["thresholds"] = {};
+    for (const level of STAR_LEVELS) {
+      const cap = limits[level];
+      if (typeof cap === "number") thresholds[level] = `≤ ${percent(cap)}`;
+    }
+    return [
+      {
+        label: "All languages",
+        value: percent(share),
+        thresholds,
+        stars: rowStars((level) => share <= ((limits[level] as number | undefined) ?? -Infinity)),
+      },
+    ];
+  }
+  return (score.shares ?? []).map((share, index) => {
+    const thresholds: MeasurementRow["thresholds"] = {};
+    for (const level of STAR_LEVELS) {
+      const caps = limits[level];
+      if (Array.isArray(caps)) thresholds[level] = `≤ ${percent(caps[index])}`;
+    }
+    const bound = score.bounds![index];
+    return {
+      label: `All languages, ${BOUND_LABELS[score.property]?.(bound) ?? `above ${bound}`}`,
+      value: percent(share),
+      thresholds,
+      stars: rowStars((level) => {
+        const caps = limits[level];
+        return Array.isArray(caps) && share <= caps[index];
+      }),
+    };
+  });
+}
+
+function evidenceLine(score: PropertyScore): string {
+  const label = PROPERTY_LABELS[score.property] ?? score.property;
+  if (score.stars === null) return `${label}: ${score.reason}`;
+  if (score.share !== undefined) return `${label}: ${formatStars(score.stars)} ${percent(score.share)} duplicated lines`;
+  const shares = (score.shares ?? []).map(percent).join(" / ");
+  const bounds = (score.bounds ?? []).join(" / ");
+  const unit = BOUND_UNITS[score.property];
+  return `${label}: ${formatStars(score.stars)} ${shares} of the code above ${bounds}${unit ? ` ${unit}` : ""}`;
+}
+
+/** Turns raw open-track measures, plus measures other checks add, into a check result. */
+export function mapOpenTrack(
+  input: OpenTrackInput,
+  thresholds: OpenTrackThresholds = OPEN_TRACK_THRESHOLDS,
+  skippedFiles = 0
+): CheckResult {
+  const score = scoreOpenTrack(input, thresholds);
+  if (score.rating === null) {
+    return info("No open-track property could be rated.", score.properties.map(evidenceLine));
+  }
+  const measurements: MeasurementGroup[] = score.properties.flatMap((property) => {
+    const rows = measurementRows(property);
+    if (rows.length === 0) return [];
+    return [{ id: `open-${property.property.replace(/_/g, "-")}`, title: PROPERTY_LABELS[property.property], aspects: [], rows }];
+  });
+  const rated = score.properties.filter((property) => property.stars !== null).length;
+  const evidence = score.properties.map(evidenceLine);
+  evidence.push(
+    `Thresholds ${thresholds.version}, derived from ${thresholds.benchmark.repositories} benchmark repositories (${thresholds.benchmark.list})`
+  );
+  if (skippedFiles > 0) evidence.push(`Skipped ${skippedFiles} file(s) the analyser could not read`);
+
+  return {
+    ...BASE_RESULT,
+    status: "info",
+    starRating: ratingToStars(score.rating),
+    rating: score.rating,
+    measurements,
+    message:
+      `Open-track rating ${score.rating.toFixed(1)} of 5, the mean of ${rated} rated propert${rated === 1 ? "y" : "ies"}. ` +
+      "Open thresholds from a public benchmark, not a SIG rating; shown for information and not counted.",
+    evidence,
+  };
+}
+
+function runScript(args: string[]): Promise<{ code: number; stderr: string }> {
+  return new Promise((resolve) => {
+    const child = spawn("python3", [SCRIPT_PATH, ...args], { stdio: ["ignore", "ignore", "pipe"] });
+    let stderr = "";
+    const timer = setTimeout(() => child.kill("SIGKILL"), TIMEOUT_MS);
+    child.stderr.on("data", (chunk) => {
+      stderr += String(chunk);
+    });
+    child.on("error", (error) => {
+      clearTimeout(timer);
+      resolve({ code: 127, stderr: error.message });
+    });
+    child.on("close", (code, signal) => {
+      clearTimeout(timer);
+      resolve({ code: signal ? 124 : code ?? 1, stderr });
+    });
+  });
+}
+
+/**
+ * Measures the repository with the open-track script and rates it. `extra`
+ * holds measures other checks produce (duplication, coupling); a field there
+ * replaces the script's own.
+ */
+export async function checkOpenTrack(localRepoPath?: string, extra: OpenTrackInput = {}): Promise<CheckResult> {
+  if (!localRepoPath) {
+    return info("The repository could not be cloned, so the open track was not measured.");
+  }
+
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "cgchecker-open-track-"));
+  try {
+    const jsonPath = path.join(tempRoot, "measures.json");
+    const run = await runScript([localRepoPath, "--json", jsonPath]);
+    if (run.code === 124) {
+      return info(`Open-track measurement did not finish within ${TIMEOUT_MS / 1000} seconds.`);
+    }
+    if (run.code === NOTHING_TO_MEASURE) {
+      return info("No source code in a supported language (PHP, JavaScript, TypeScript, Vue, Python) was found to rate.");
+    }
+    if (run.code !== 0) {
+      return info(
+        "Open-track measurement could not run. It needs python3 with lizard 1.24.3.",
+        run.stderr.trim().split(/\r?\n/).slice(-3)
+      );
+    }
+    const measures = JSON.parse(await readFile(jsonPath, "utf8")) as OpenTrackMeasures;
+    const own = openTrackInput(measures);
+    const input: OpenTrackInput = {
+      histograms: { ...own.histograms, ...extra.histograms },
+      shares: { ...own.shares, ...extra.shares },
+    };
+    return mapOpenTrack(input, OPEN_TRACK_THRESHOLDS, measures.skipped_files?.length ?? 0);
+  } catch (error) {
+    return info(`Open-track measures could not be read: ${(error as Error).message}`);
+  } finally {
+    await rm(tempRoot, { recursive: true, force: true });
+  }
+}

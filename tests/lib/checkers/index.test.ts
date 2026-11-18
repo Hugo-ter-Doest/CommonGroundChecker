@@ -17,6 +17,7 @@ const ids = [
   "tests",
   "complexity",
   "maintainability",
+  "opentrack",
   "codemetrics",
   "owaspsecurecoding",
   "adrvalidator",
@@ -51,6 +52,7 @@ const mocks = vi.hoisted(() => ({
   checkTests: vi.fn(),
   checkComplexity: vi.fn(),
   checkMaintainability: vi.fn(),
+  checkOpenTrack: vi.fn(),
   checkSourceCode: vi.fn(),
   checkSemver: vi.fn(),
   checkFiveLayer: vi.fn(),
@@ -120,6 +122,7 @@ vi.mock("@/lib/checkers/security", () => ({ checkSecurity: mocks.checkSecurity }
 vi.mock("@/lib/checkers/tests", () => ({ checkTests: mocks.checkTests }));
 vi.mock("@/lib/checkers/complexity", () => ({ checkComplexity: mocks.checkComplexity }));
 vi.mock("@/lib/checkers/maintainability", () => ({ checkMaintainability: mocks.checkMaintainability }));
+vi.mock("@/lib/checkers/openTrack", () => ({ checkOpenTrack: mocks.checkOpenTrack }));
 vi.mock("@/lib/checkers/codeMetrics", () => ({ checkCodeMetrics: mocks.checkCodeMetrics }));
 vi.mock("@/lib/checkers/owaspSecureCoding", () => ({ checkOwaspSecureCoding: mocks.checkOwaspSecureCoding }));
 vi.mock("@/lib/checkers/eupl", () => ({
@@ -238,6 +241,7 @@ describe("runChecks", () => {
     mocks.checkTests.mockReturnValue(resultFor("tests", "pass"));
     mocks.checkComplexity.mockResolvedValue(resultFor("complexity", "pass"));
     mocks.checkMaintainability.mockResolvedValue({ ...resultFor("maintainability", "warn"), starRating: 3 });
+    mocks.checkOpenTrack.mockResolvedValue({ ...resultFor("opentrack", "info"), starRating: 4, rating: 4.25 });
     mocks.checkCodeMetrics.mockResolvedValue(resultFor("codemetrics", "info"));
     mocks.checkOwaspSecureCoding.mockResolvedValue(resultFor("owaspsecurecoding", "pass"));
     mocks.checkAdrValidator.mockResolvedValue(resultFor("adrvalidator", "pass"));
@@ -275,7 +279,7 @@ describe("runChecks", () => {
     expect(report.scoringConfigId).toBe("cfg-1");
     expect(report.score).toBe(25);
     expect(mocks.checkOpenApi).not.toHaveBeenCalled();
-    expect(report.results).toHaveLength(24);
+    expect(report.results).toHaveLength(25);
     expect(report.results.find((result) => result.id === "maintainability")?.starRating).toBe(3);
     expect(report.results.find((result) => result.id === "semver")?.starRating).toBe(1);
     expect(report.results.find((result) => result.id === "tests")?.starRating).toBe(3);
@@ -283,6 +287,36 @@ describe("runChecks", () => {
     const openApiResult = report.results.find((result) => result.id === "openapi");
     expect(openApiResult?.status).toBe("pass");
     expect(openApiResult?.message).toContain("not marked as a register");
+  });
+
+  it("shows the open-track rating next to the estimate without counting it", async () => {
+    const configById = criterionConfig(1, "mandatory");
+    configById.opentrack = { weight: 0, requirementLevel: "informative" };
+    mocks.getActiveScoringConfig.mockResolvedValue({
+      id: "cfg-open-track",
+      config: {
+        criterionConfigByCheckId: configById,
+        statusScoreByStatus: { pass: 1, warn: 0.5, info: 0.5, fail: 0 },
+        complexityThreshold: 12,
+        complexityMaxCcnThreshold: 20,
+        spectralRulesetSource: "https://static.developer.overheid.nl/adr/ruleset.yaml",
+      },
+    });
+
+    const high = await runChecks("https://github.com/org/repo", { isRegister: false });
+    mocks.checkOpenTrack.mockResolvedValue({ ...resultFor("opentrack", "info"), starRating: 1, rating: 1 });
+    const low = await runChecks("https://github.com/org/repo", { isRegister: false });
+
+    const order = high.results.map((result) => result.id);
+    expect(order.indexOf("opentrack")).toBe(order.indexOf("maintainability") + 1);
+    expect(high.results.find((result) => result.id === "opentrack")).toMatchObject({
+      starRating: 4,
+      requirementLevel: "informative",
+    });
+    expect(low.results.find((result) => result.id === "opentrack")?.starRating).toBe(1);
+    expect(low.score).toBe(high.score);
+    expect(low.rating).toBe(high.rating);
+    expect(low.categoryRatings).toEqual(high.categoryRatings);
   });
 
   it("rates the aspects, the categories and the component, and judges the endorsement", async () => {

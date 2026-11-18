@@ -139,6 +139,13 @@ const CRITERION_CATEGORIES: CriterionCategory[] = [
           "Clones the analyzed repository and rates unit size, unit complexity, unit interfacing, duplication, module coupling and component structure from 1 to 5 stars. The criterion passes at an estimated rating of 4 stars or more and warns at 3 stars.",
       },
       {
+        id: "opentrack",
+        label: "Maintainability, open track",
+        explanation:
+          "Rates the same code properties against open thresholds derived from a public benchmark of Common Ground and Developer Overheid repositories (scripts/open-benchmark). This criterion is informative and does not contribute to the overall score.",
+        requirementLevel: "informative",
+      },
+      {
         id: "codemetrics",
         label: "Code metrics",
         explanation:
