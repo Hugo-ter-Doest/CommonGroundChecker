@@ -1,6 +1,7 @@
 import AspectBar from "@/components/AspectBar";
 import MeasurementTable, { StarsText } from "@/components/MeasurementTable";
 import RatingBadge from "@/components/RatingBadge";
+import SizeTable from "@/components/SizeTable";
 import type { AspectDefinition } from "@/lib/aspects";
 import {
   aspectComposition,
@@ -11,6 +12,7 @@ import {
 } from "@/lib/componentRating";
 import { CATEGORY_ORDER, criterionAnchorId, type CriteriaCategory } from "@/lib/criteria";
 import { aspectDocHref } from "@/lib/ratingDocs";
+import { sizeSummary } from "@/lib/size";
 import { ratingToStars } from "@/lib/stars";
 import type { AspectRating, CheckResult, CheckStatus } from "@/lib/types";
 
@@ -95,6 +97,10 @@ function AspectComposition({ aspect, results }: { aspect: AspectDefinition; resu
   if (composition.type === "measurements") {
     return <MeasurementTable caption={caption} groups={composition.groups} />;
   }
+  if (composition.type === "size") {
+    if (composition.size) return <SizeTable caption={caption} size={composition.size} />;
+    return <p className="text-xs text-gray-600">{composition.message ?? "Size was not measured."}</p>;
+  }
   if (composition.criteria.length === 0) {
     return <p className="text-xs text-gray-600">None of its criteria were checked.</p>;
   }
@@ -111,6 +117,17 @@ function AspectValue({ aspect, aspectRating }: { aspect: AspectDefinition; aspec
     <span className="inline-flex items-baseline gap-2">
       <RatingBadge rating={rating} label={`${aspect.title} rating`} />
       {count && <span className="text-xs text-gray-700">{count}</span>}
+    </span>
+  );
+}
+
+/** A size aspect is not rated: it shows the lines of code in place of a bar and a rating. */
+function SizeValue({ aspect, results }: { aspect: AspectDefinition; results: CheckResult[] }) {
+  const composition = aspectComposition(aspect, results);
+  const size = composition.type === "size" ? composition.size : null;
+  return (
+    <span className="text-sm text-gray-800 sm:col-span-2">
+      {size ? sizeSummary(size) : <span className="text-xs text-gray-600">not measured</span>}
     </span>
   );
 }
@@ -140,8 +157,14 @@ function AspectRow({
           )}
           {aspect.weight === 0 && <span className="ml-1 text-xs font-normal text-gray-600">(not counted)</span>}
         </h5>
-        <AspectBar title={aspect.title} rating={aspectRating?.rating ?? null} />
-        <AspectValue aspect={aspect} aspectRating={aspectRating} />
+        {aspect.source.type === "size" ? (
+          <SizeValue aspect={aspect} results={results} />
+        ) : (
+          <>
+            <AspectBar title={aspect.title} rating={aspectRating?.rating ?? null} />
+            <AspectValue aspect={aspect} aspectRating={aspectRating} />
+          </>
+        )}
       </div>
       <details className="mt-1">
         <summary className="cursor-pointer text-xs text-cg-lightblue focus-visible:outline focus-visible:outline-2 focus-visible:outline-cg-lightblue">

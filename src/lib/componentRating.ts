@@ -3,7 +3,7 @@ import { RESULT_CATEGORY_BY_ID, type CriteriaCategory } from "./criteria";
 import { measurementsForAspect } from "./measurements";
 import { RATING_DOCS } from "./ratingDocs";
 import { MAX_RATING, MIN_RATING, criterionRating } from "./ratings";
-import type { AspectRating, CheckResult, CheckStatus, MeasurementGroup } from "./types";
+import type { AspectRating, CheckResult, CheckStatus, MeasurementGroup, SizeMeasurement } from "./types";
 
 /** The ratings where the rounded stars change: 1.5, 2.5, 3.5 and 4.5. */
 export const STAR_BOUNDARIES = [1.5, 2.5, 3.5, 4.5] as const;
@@ -59,7 +59,8 @@ export interface AspectCriterion {
 export type AspectComposition =
   | { type: "measurements"; groups: MeasurementGroup[] }
   | { type: "documents"; criteria: AspectCriterion[] }
-  | { type: "criteria"; criteria: AspectCriterion[] };
+  | { type: "criteria"; criteria: AspectCriterion[] }
+  | { type: "size"; size: SizeMeasurement | null; message: string | null };
 
 function aspectCriterion(result: CheckResult): AspectCriterion {
   return {
@@ -78,6 +79,11 @@ function aspectCriterion(result: CheckResult): AspectCriterion {
 export function aspectComposition(aspect: AspectDefinition, results: CheckResult[]): AspectComposition {
   const resultsById = new Map(results.map((result) => [result.id, result]));
   const { source } = aspect;
+
+  if (source.type === "size") {
+    const result = resultsById.get(source.checkId);
+    return { type: "size", size: result?.size ?? null, message: result?.message ?? null };
+  }
 
   if (source.type === "check-aspect") {
     const result = resultsById.get(source.checkId);

@@ -34,6 +34,8 @@ export interface CheckResult {
   aspectRatings?: Record<string, number | null>;
   /** The measured values behind the check's rating, with the thresholds per star level */
   measurements?: MeasurementGroup[];
+  /** Lines of code per language on the production scope, for a check that measures size */
+  size?: SizeMeasurement;
 }
 
 /** A star level that has a threshold of its own; below 2 stars is 1 star. */
@@ -63,6 +65,27 @@ export interface MeasurementGroup {
   /** Keys in the check's `aspectRatings` this property counts in */
   aspects: string[];
   rows: MeasurementRow[];
+}
+
+/** The language families the size effort models have factors for. */
+export type SizeFamily = "php" | "python" | "javascript" | "typescript" | "vue" | "html" | "css" | "sql";
+
+/** The lines of code of one language, as the line counter names it. */
+export interface SizeLanguage {
+  language: string;
+  /** The family whose effort factors apply, or null when no model has one */
+  family: SizeFamily | null;
+  files: number;
+  loc: number;
+}
+
+/** The size of the production code: lines of code (not blank, not comment) per language. */
+export interface SizeMeasurement {
+  /** The line counter and its version, for example "scc 4.1.0" */
+  tool: string;
+  files: number;
+  loc: number;
+  languages: SizeLanguage[];
 }
 
 export interface AspectRating {

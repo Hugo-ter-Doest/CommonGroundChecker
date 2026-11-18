@@ -108,6 +108,8 @@ function rateAspect(
 ): { rating: number | null; found?: number; expected?: number } {
   const { source } = aspect;
 
+  if (source.type === "size") return { rating: null };
+
   if (source.type === "check-aspect") {
     const result = resultsById.get(source.checkId);
     if (countedWeight(result, config) === null) return { rating: null };

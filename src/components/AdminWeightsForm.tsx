@@ -139,6 +139,13 @@ const CRITERION_CATEGORIES: CriterionCategory[] = [
           "Clones the analyzed repository and rates unit size, unit complexity, unit interfacing, duplication, module coupling and component structure from 1 to 5 stars. The criterion passes at an estimated rating of 4 stars or more and warns at 3 stars.",
       },
       {
+        id: "size",
+        label: "Size",
+        explanation:
+          "Counts the lines of production code per language with scc and estimates the effort to rebuild it. This criterion is informative and does not contribute to the score.",
+        requirementLevel: "informative",
+      },
+      {
         id: "codemetrics",
         label: "Code metrics",
         explanation:

@@ -7,6 +7,7 @@ import RatingSummary from "@/components/RatingSummary";
 import { statusToStars } from "@/lib/stars";
 import { getRepoHistory } from "@/lib/apiClient";
 import { parseMeasurements } from "@/lib/measurements";
+import { parseSize } from "@/lib/size";
 import { isRating } from "@/lib/ratings";
 import { loadStoredRatings } from "@/lib/storedRatings";
 import type { CheckReport, CheckResult, StarRating } from "@/lib/types";
@@ -65,6 +66,7 @@ function normalizeResults(raw: unknown): CheckResult[] {
             : undefined,
         rating: isRating(item.rating) ? item.rating : undefined,
         measurements: parseMeasurements(item.measurements),
+        size: parseSize(item.size),
       } satisfies CheckResult;
     });
 }

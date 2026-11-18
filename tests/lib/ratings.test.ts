@@ -421,6 +421,20 @@ describe("computeRatings", () => {
   });
 });
 
+describe("the size aspect", () => {
+  it("is never rated and does not change the Maintainability rating", () => {
+    const results = [
+      result("maintainability", "warn", { aspectRatings: SUBCHARACTERISTICS }),
+      result("size", "info"),
+    ];
+    const withSize = computeRatings(results, config({ maintainability: mandatory, size: { weight: 1, requirementLevel: "mandatory" } }));
+    const withoutSize = computeRatings(results.slice(0, 1), config({ maintainability: mandatory }));
+
+    expect(withSize.aspectRatings.size).toEqual({ rating: null });
+    expect(withSize.categoryRatings[MAINTAINABILITY]).toBe(withoutSize.categoryRatings[MAINTAINABILITY]);
+  });
+});
+
 describe("computeEndorsement", () => {
   it("passes without failing mandatory criteria and a rating of at least 2.5", () => {
     expect(computeEndorsement([result("license", "pass", { requirementLevel: "mandatory" })], 2.5, config())).toEqual({

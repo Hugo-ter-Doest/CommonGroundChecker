@@ -63,10 +63,13 @@ The rating guide at `/docs` ("Rating guide" in the site navigation) explains per
 | 23 | **Code metrics** — repository metrics such as lines of code and function count are collected as informative context | Informative | [commonground.nl](https://www.commonground.nl) |
 | 24 | **Semantic versioning** — releases or tags following MAJOR.MINOR.PATCH | Recommended | [semver.org](https://semver.org/) |
 | 25 | **Maintainability (ISO 25010)** — unit size, unit complexity, unit interfacing, duplication, module coupling and component structure, each rated from 1 to 5 stars, with an estimated overall maintainability rating | Recommended | [Maintainability model](https://github.com/Software-Improvement-Group/sigridci/blob/main/docs/reference/sig-quality-models.md) |
+| 26 | **Size** — lines of production code per language, the rebuild effort by backfiring, and SIG-style person-years as context; shown, not rated | Informative | [scc](https://github.com/boyter/scc) |
 
 **Stars:** every criterion also shows 1 to 5 stars. Maintainability has its own scale (4 stars or more passes, 3 stars warns). The other criteria map pass, warn and fail to 5, 3 and 1 stars. The component as a whole and each category also get a rating; see [Ratings](#ratings).
 
 The maintainability analysis runs `scripts/maintainability/check_maintainability.py`, which needs `python3`, lizard 1.24.3 and jscpd 4.0.5. The Docker image installs them. `MAINTAINABILITY_TIMEOUT_SECONDS` (default 600) caps how long one analysis may run. `node scripts/sync-maintainability.mjs [commit]` refreshes the vendored script from its upstream; `scripts/maintainability/UPSTREAM` records the commit.
+
+The size check lists the production files with `scripts/size/scope.py`, which applies the maintainability script's excludes, and counts them with scc 4.1.0, which the Docker image installs. `SIZE_TIMEOUT_SECONDS` (default 300) caps each step. The formulas and factors are on the Maintainability page of the rating guide.
 
 **Note:** Mandatory criteria are included in the overall score. Recommended criteria still contribute when enabled, while informative criteria are only shown as contextual information and are not used in scoring.
 
@@ -324,7 +327,7 @@ Each category consists of aspects, defined in `src/lib/aspects.ts`:
 | Governance | licensing, ownership, community documents |
 | Security | vulnerabilities, dependency freshness, activity, licences and management, secrets, secure coding, supply chain |
 | Architecture | API, layering (shown, not counted) |
-| Maintainability | analysability, modifiability, testability, modularity, reusability, testing |
+| Maintainability | analysability, modifiability, testability, modularity, reusability, testing, size (shown, not counted) |
 | Deployment & Operations | containerisation, release management |
 
 - **Criterion rating:** the criterion's continuous rating when it has one, otherwise its stars, otherwise its status: pass = 5.5, warn = 3, fail = 0.5, the ends and the middle of the scale. Mandatory and recommended criteria count with their criterion weight; informative criteria, criteria with weight 0 and results that were not measured (`info`) are left out.
@@ -338,6 +341,7 @@ The live report and the stored analysis page show the rating of one component fr
 
 - **Measured aspects** (the maintainability sub-characteristics): the measured share per property, language and bound, against the thresholds for 5, 4, 3 and 2 stars, and the stars it earns. A check provides these in the `measurements` field of its result; for maintainability they come from the analysis script's report, including its `bands`.
 - **Document aspects:** one row per document, found or missing.
+- **Size:** no bar; the lines of code per language, the rebuild effort and the SIG-style person-years, from the `size` field of the size check's result.
 - **Other aspects:** one row per criterion with its status and stars, linking to its result card.
 
 The PDF export lists every aspect with its rating.

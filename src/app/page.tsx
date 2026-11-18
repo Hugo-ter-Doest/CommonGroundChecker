@@ -8,7 +8,8 @@ import ResultCard from "@/components/ResultCard";
 import RatingBadge from "@/components/RatingBadge";
 import RatingSummary from "@/components/RatingSummary";
 import CategoryRatings from "@/components/CategoryRatings";
-import { aspectsOfCategory, documentCountText } from "@/lib/componentRating";
+import { aspectComposition, aspectsOfCategory, documentCountText } from "@/lib/componentRating";
+import { sizeSummary } from "@/lib/size";
 import { ratingToStars } from "@/lib/stars";
 import RepoMeta from "@/components/RepoMeta";
 import type { CheckReport } from "@/lib/types";
@@ -93,7 +94,13 @@ async function exportAnalysisReportAsPdf(report: CheckReport): Promise<void> {
       const aspectRating = report.aspectRatings?.[aspect.id];
       const count = documentCountText(aspectRating);
       const rating = aspectRating?.rating ?? null;
-      const value = rating === null ? "not measured" : describeRating(rating);
+      const composition = aspect.source.type === "size" ? aspectComposition(aspect, report.results) : null;
+      const value =
+        composition?.type === "size" && composition.size
+          ? sizeSummary(composition.size)
+          : rating === null
+            ? "not measured"
+            : describeRating(rating);
       addBlock(`${aspect.title}: ${value}${count ? ` (${count})` : ""}`, {
         size: 9,
         indent: 20,
@@ -164,6 +171,7 @@ const DEFAULT_REQUIREMENT_LEVEL_BY_CHECK_ID: Record<string, RequirementLevelLabe
   tests: "mandatory",
   complexity: "recommended",
   maintainability: "recommended",
+  size: "informative",
   codemetrics: "informative",
   changelog: "recommended",
   coverage: "mandatory",
