@@ -34,7 +34,7 @@ function normalizeResults(raw: unknown): CheckResult[] {
           ? item.requirementLevel
           : undefined;
 
-      return {
+      const result = {
         id: typeof item.id === "string" ? item.id : "unknown",
         title: typeof item.title === "string" ? item.title : "Unknown check",
         description: typeof item.description === "string" ? item.description : "",
@@ -66,6 +66,12 @@ function normalizeResults(raw: unknown): CheckResult[] {
         rating: isRating(item.rating) ? item.rating : undefined,
         measurements: parseMeasurements(item.measurements),
       } satisfies CheckResult;
+
+      // The open-track measures of duplication and coupling, read by shape as openTrackExtras reads them.
+      const openTrack = item.openTrack;
+      return openTrack && typeof openTrack === "object" && !Array.isArray(openTrack)
+        ? { ...result, openTrack: openTrack as Record<string, unknown> }
+        : result;
     });
 }
 
