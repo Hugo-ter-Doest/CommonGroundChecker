@@ -338,7 +338,7 @@ describe("runChecks", () => {
     expect(report.rating).toBe(
       Math.round(((5.5 * governanceWeight + 3.5 * maintainabilityWeight) / (governanceWeight + maintainabilityWeight)) * 10) / 10
     );
-    expect(report.endorsement).toEqual({ passed: true, reasons: [] });
+    expect(report.endorsement).toEqual({ passed: false, reasons: ["Maintainability below 4 stars (3.40)"] });
     expect(report.results.find((result) => result.id === "license")?.starRating).toBe(5);
   });
 
@@ -346,6 +346,7 @@ describe("runChecks", () => {
     const configById = criterionConfig(1, "recommended");
     configById.license = { weight: 1, requirementLevel: "mandatory" };
     mocks.checkLicense.mockResolvedValue({ ...resultFor("license", "fail"), title: "Open source licence" });
+    mocks.checkMaintainability.mockResolvedValue({ ...resultFor("maintainability", "pass"), starRating: 4, rating: 4.4 });
     mocks.getActiveScoringConfig.mockResolvedValue({
       id: "cfg-endorsement",
       config: {

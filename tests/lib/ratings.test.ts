@@ -6,11 +6,14 @@ import {
   documentCountRating,
   formatRating,
   hasStoredRatings,
+  PASSING_MAINTAINABILITY_RATING,
+  PASSING_MAINTAINABILITY_STARS,
   ratingsForStoredAnalysis,
   roundRating,
   type RatingConfig,
   type RatingInput,
 } from "@/lib/ratings";
+import { ratingToStars } from "@/lib/stars";
 import { ASPECT_MODEL, resolveCategory, type CategoryAspects } from "@/lib/aspects";
 import { CATEGORY_ORDER, CATEGORY_WEIGHTS } from "@/lib/criteria";
 import type { RequirementLevel } from "@/lib/types";
@@ -422,8 +425,10 @@ describe("computeRatings", () => {
 });
 
 describe("computeEndorsement", () => {
+  const maintainable = result("maintainability", "pass", { rating: 4.4, starRating: 4 });
+
   it("passes without failing mandatory criteria and a rating of at least 2.5", () => {
-    expect(computeEndorsement([result("license", "pass", { requirementLevel: "mandatory" })], 2.5, config())).toEqual({
+    expect(computeEndorsement([result("license", "pass", { requirementLevel: "mandatory" }), maintainable], 2.5, config())).toEqual({
       passed: true,
       reasons: [],
     });
@@ -435,6 +440,7 @@ describe("computeEndorsement", () => {
         result("license", "fail", { requirementLevel: "mandatory", title: "Open source licence" }),
         result("changelog", "fail", { requirementLevel: "recommended", title: "Changelog" }),
         result("publiccode", "fail", { title: "publiccode.yml" }),
+        maintainable,
       ],
       4,
       config({ publiccode: mandatory })
@@ -447,40 +453,40 @@ describe("computeEndorsement", () => {
   });
 
   it("does not pass with a rating below 2.5", () => {
-    expect(computeEndorsement([], 2.4, config())).toEqual({ passed: false, reasons: ["Overall rating below 2.5"] });
+    expect(computeEndorsement([maintainable], 2.4, config())).toEqual({ passed: false, reasons: ["Overall rating below 2.5"] });
   });
 
   it("does not pass without a rating", () => {
-    expect(computeEndorsement([], null, config())).toEqual({ passed: false, reasons: ["No overall rating"] });
+    expect(computeEndorsement([maintainable], null, config())).toEqual({ passed: false, reasons: ["No overall rating"] });
   });
 
   it("lists every reason", () => {
-    const endorsement = computeEndorsement([result("tests", "fail", { requirementLevel: "mandatory" })], 1.2, config());
+    const endorsement = computeEndorsement([result("tests", "fail", { requirementLevel: "mandatory" }), maintainable], 1.2, config());
 
     expect(endorsement.reasons).toEqual(["Mandatory criterion fails: tests", "Overall rating below 2.5"]);
   });
 
   it("is suitable when the component is maintained", () => {
-    expect(computeEndorsement([result("maintenance", "pass")], 4, config())).toEqual({ passed: true, reasons: [] });
+    expect(computeEndorsement([result("maintenance", "pass"), maintainable], 4, config())).toEqual({ passed: true, reasons: [] });
   });
 
   it("is not yet suitable without a valid maintenance contract, and gives the criterion's reason", () => {
     const message = "No valid maintenance contract: Maykin has no end date (until).";
 
-    expect(computeEndorsement([result("maintenance", "fail", { message })], 4, config())).toEqual({
+    expect(computeEndorsement([result("maintenance", "fail", { message }), maintainable], 4, config())).toEqual({
       passed: false,
       reasons: [message],
     });
   });
 
   it("falls back to a general reason for a failing maintenance criterion without a message", () => {
-    expect(computeEndorsement([result("maintenance", "fail")], 4, config()).reasons).toEqual([
+    expect(computeEndorsement([result("maintenance", "fail"), maintainable], 4, config()).reasons).toEqual([
       "No valid maintenance contract",
     ]);
   });
 
   it("is not yet suitable when the maintenance contract could not be checked", () => {
-    expect(computeEndorsement([result("maintenance", "warn")], 4, config())).toEqual({
+    expect(computeEndorsement([result("maintenance", "warn"), maintainable], 4, config())).toEqual({
       passed: false,
       reasons: ["Maintenance contract not checked"],
     });
@@ -488,7 +494,7 @@ describe("computeEndorsement", () => {
 
   it("names a mandatory maintenance criterion that fails once", () => {
     const endorsement = computeEndorsement(
-      [result("maintenance", "fail", { title: "Maintained" })],
+      [result("maintenance", "fail", { title: "Maintained" }), maintainable],
       4,
       config({ maintenance: mandatory })
     );
@@ -497,11 +503,74 @@ describe("computeEndorsement", () => {
   });
 
   it("does not judge maintenance for a scan made before the criterion existed", () => {
-    expect(computeEndorsement([result("license", "pass")], 4, config()).passed).toBe(true);
+    expect(computeEndorsement([result("license", "pass"), maintainable], 4, config()).passed).toBe(true);
   });
 
   it("passes with a mandatory criterion that warns", () => {
-    expect(computeEndorsement([result("tests", "warn", { requirementLevel: "mandatory" })], 3, config()).passed).toBe(true);
+    expect(computeEndorsement([result("tests", "warn", { requirementLevel: "mandatory" }), maintainable], 3, config()).passed).toBe(true);
+  });
+
+  it("passes at a maintainability of exactly 3.5, where 4 stars start", () => {
+    expect(PASSING_MAINTAINABILITY_RATING).toBe(3.5);
+    expect(ratingToStars(PASSING_MAINTAINABILITY_RATING)).toBe(PASSING_MAINTAINABILITY_STARS);
+    expect(computeEndorsement([result("maintainability", "pass", { rating: 3.5 })], 4, config())).toEqual({
+      passed: true,
+      reasons: [],
+    });
+  });
+
+  it("does not pass at a maintainability of 3.49, and gives the measured value", () => {
+    expect(ratingToStars(3.49)).toBe(3);
+    expect(computeEndorsement([result("maintainability", "warn", { rating: 3.49 })], 4, config())).toEqual({
+      passed: false,
+      reasons: ["Maintainability below 4 stars (3.49)"],
+    });
+  });
+
+  it("does not pass when the scan has no maintainability result", () => {
+    expect(computeEndorsement([result("license", "pass")], 4, config())).toEqual({
+      passed: false,
+      reasons: ["Maintainability not measured"],
+    });
+  });
+
+  it("does not pass when the maintainability could not be rated", () => {
+    for (const unrated of [
+      result("maintainability", "warn", { message: "No source files in a supported language" }),
+      result("maintainability", "info"),
+      result("maintainability", "warn", { rating: Number.NaN }),
+    ]) {
+      expect(computeEndorsement([unrated], 4, config()).reasons).toEqual(["Maintainability not measured"]);
+    }
+  });
+
+  it("uses the maintainability stars of a stored result without a continuous rating", () => {
+    expect(computeEndorsement([result("maintainability", "pass", { starRating: 4 })], 4, config()).passed).toBe(true);
+    expect(computeEndorsement([result("maintainability", "warn", { starRating: 3 })], 4, config()).reasons).toEqual([
+      "Maintainability below 4 stars (3.00)",
+    ]);
+  });
+
+  it("lists a low maintainability together with the other reasons", () => {
+    const endorsement = computeEndorsement(
+      [
+        result("license", "fail", { requirementLevel: "mandatory", title: "Open source licence" }),
+        result("maintenance", "fail", { message: "No publiccode.yml was found, so there is no maintenance contract." }),
+        result("maintainability", "fail", { rating: 2.68 }),
+      ],
+      2.1,
+      config()
+    );
+
+    expect(endorsement).toEqual({
+      passed: false,
+      reasons: [
+        "Mandatory criterion fails: Open source licence",
+        "Overall rating below 2.5",
+        "No publiccode.yml was found, so there is no maintenance contract.",
+        "Maintainability below 4 stars (2.68)",
+      ],
+    });
   });
 });
 
