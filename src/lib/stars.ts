@@ -9,6 +9,11 @@ export function ratingToStars(rating: number): StarRating {
   return clampStars(Math.floor(rating + 0.5));
 }
 
+/** The lowest continuous rating that rounds to the given stars. */
+export function minimumRatingFor(stars: StarRating): number {
+  return stars - 0.5;
+}
+
 /** Stars for a criterion that has no scale of its own. */
 export function statusToStars(status: CheckStatus): StarRating {
   if (status === "pass") return 5;

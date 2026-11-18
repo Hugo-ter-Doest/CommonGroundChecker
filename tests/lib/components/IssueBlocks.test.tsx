@@ -101,6 +101,7 @@ describe("countIssues", () => {
     result("security", "mandatory", "fail", { title: "Security" }),
     result("publiccode", "mandatory", "warn"),
     result("changelog", "recommended", "fail"),
+    result("maintainability", "recommended", "pass", { rating: 4.4 }),
   ];
   const config = {
     criterionConfigByCheckId: Object.fromEntries(

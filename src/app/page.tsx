@@ -381,7 +381,7 @@ const CRITERIA_OVERVIEW = [
     category: "Software Quality" as CriteriaCategory,
     desc: "1 to 5 star maintainability rating",
     tooltip:
-      "Rates unit size, unit complexity, unit interfacing, duplication, module coupling and component structure from 1 to 5 stars, and estimates an overall maintainability rating. 4 stars or more passes.",
+      "Rates unit size, unit complexity, unit interfacing, duplication, module coupling and component structure from 1 to 5 stars, and estimates an overall maintainability rating. 4 stars or more passes, and is needed to be suitable for Common Ground.",
   },
   {
     icon: "🛡️",
