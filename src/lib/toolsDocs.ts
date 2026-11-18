@@ -250,9 +250,10 @@ export const TOOL_GROUPS: ToolGroup[] = [
         tool: "PHP: pdepend. Python: grimp, with import-linter for declared contracts. JavaScript, TypeScript and Vue: dependency-cruiser",
         version: "pdepend 3.0.0, grimp 3.18, import-linter 2.15, dependency-cruiser 17.4.3",
         licence: "pdepend BSD-3-Clause, grimp and import-linter BSD-2-Clause, dependency-cruiser MIT",
-        proves: "The same properties as the estimate, from a dependency graph that a dedicated open-source tool resolved.",
+        proves:
+          "The same properties as the estimate, from a dependency graph that a dedicated open-source tool resolved. With the unit properties and duplication, the open track rates all seven properties.",
         doesNotProve:
-          "Coupling at the level of calls. The open track rates independence and entanglement against the benchmark. Module coupling shows as not measured until the check reports a fan-in histogram.",
+          "Coupling at the level of calls. Fan-in counts the files that depend on a file, not the calls. The open track rates all three properties against the benchmark, from the fan-in histogram per language that the check reports.",
         inReview: true,
         pr: 64,
       },
