@@ -229,13 +229,21 @@ export async function listReleases(
   }));
 }
 
-/** The repository's tag names (up to 100). */
+/** Most tag pages read; repositories with nightly tags can have thousands. */
+export const MAX_TAG_PAGES = 10;
+
+/** The repository's tag names, up to MAX_TAG_PAGES pages of 100. */
 export async function listTags(owner: string, repo: string): Promise<string[]> {
-  const data = await ghFetch(`/repos/${owner}/${repo}/tags?per_page=100`);
-  if (!Array.isArray(data)) return [];
-  return data
-    .map((entry: { name?: unknown }) => (typeof entry.name === "string" ? entry.name : ""))
-    .filter(Boolean);
+  const names: string[] = [];
+  for (let page = 1; page <= MAX_TAG_PAGES; page += 1) {
+    const data = await ghFetch(`/repos/${owner}/${repo}/tags?per_page=100&page=${page}`);
+    if (!Array.isArray(data)) break;
+    for (const entry of data as Array<{ name?: unknown }>) {
+      if (typeof entry.name === "string" && entry.name) names.push(entry.name);
+    }
+    if (data.length < 100) break;
+  }
+  return names;
 }
 
 /** Fetch repository metadata. */

@@ -127,8 +127,43 @@ describe("GitHubRepositoryProvider scan refs", () => {
       expect.anything()
     );
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://api.github.com/repos/org/repo/tags?per_page=100",
+      "https://api.github.com/repos/org/repo/tags?per_page=100&page=1",
       expect.anything()
     );
+  });
+});
+
+describe("GitHubRepositoryProvider.listTags", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("reads further pages, so stable tags behind 100 nightly tags are found, up to 10 pages", async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      const page = Number(new URL(url).searchParams.get("page"));
+      const names =
+        page === 1
+          ? Array.from({ length: 100 }, (_, i) => `v1.3.0-unstable.${i}`)
+          : page === 2
+          ? ["v1.2.2", "v1.2.0"]
+          : [];
+      return new Response(JSON.stringify(names.map((name) => ({ name }))), { status: 200 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const tags = await GitHubRepositoryProvider.listTags(contextFor());
+
+    expect(tags).toHaveLength(102);
+    expect(tags.slice(-2)).toEqual(["v1.2.2", "v1.2.0"]);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    fetchMock.mockClear();
+    fetchMock.mockImplementation(async () =>
+      new Response(JSON.stringify(Array.from({ length: 100 }, (_, i) => ({ name: `n${i}` }))), {
+        status: 200,
+      })
+    );
+    await GitHubRepositoryProvider.listTags(contextFor());
+    expect(fetchMock).toHaveBeenCalledTimes(10);
   });
 });

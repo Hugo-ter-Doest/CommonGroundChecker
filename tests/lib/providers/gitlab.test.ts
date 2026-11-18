@@ -151,4 +151,19 @@ describe("GitLabRepositoryProvider scan refs", () => {
     ]);
     await expect(GitLabRepositoryProvider.listTags(context)).resolves.toEqual(["v1.0.0"]);
   });
+
+  it("reads further tag pages", async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      const page = Number(new URL(url).searchParams.get("page"));
+      const names = page === 1 ? Array.from({ length: 100 }, (_, i) => `nightly-${i}`) : ["v1.0.0"];
+      return new Response(JSON.stringify(names.map((name) => ({ name }))), { status: 200 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const tags = await GitLabRepositoryProvider.listTags(context);
+
+    expect(tags).toHaveLength(101);
+    expect(tags[100]).toBe("v1.0.0");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
 });

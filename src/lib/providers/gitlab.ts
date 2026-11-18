@@ -8,6 +8,8 @@ import type {
 } from "./types";
 
 const BASE = "https://gitlab.com/api/v4";
+/** Most tag pages read; repositories with nightly tags can have thousands. */
+const MAX_TAG_PAGES = 10;
 const MANIFEST_CANDIDATES = ["package.json", "pyproject.toml", "Chart.yaml"];
 
 function headers() {
@@ -247,11 +249,18 @@ export const GitLabRepositoryProvider: RepositoryProvider = {
   },
   listTags: async (context: RepoContext) => {
     const project = encodeProjectPath(context.projectPath);
-    const data = await glFetch(`/projects/${project}/repository/tags?per_page=100`);
-    if (!Array.isArray(data)) return [];
-    return data
-      .map((entry: { name?: unknown }) => (typeof entry.name === "string" ? entry.name : ""))
-      .filter(Boolean);
+    const names: string[] = [];
+    for (let page = 1; page <= MAX_TAG_PAGES; page += 1) {
+      const data = await glFetch(
+        `/projects/${project}/repository/tags?per_page=100&page=${page}`
+      );
+      if (!Array.isArray(data)) break;
+      for (const entry of data as Array<{ name?: unknown }>) {
+        if (typeof entry.name === "string" && entry.name) names.push(entry.name);
+      }
+      if (data.length < 100) break;
+    }
+    return names;
   },
   getCloneUrl: (context: RepoContext) =>
     `https://gitlab.com/${context.projectPath}.git`,
