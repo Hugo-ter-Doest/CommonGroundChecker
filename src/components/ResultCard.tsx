@@ -87,7 +87,8 @@ export default function ResultCard({
   referenceUrl,
 }: ResultCardProps) {
   const [open, setOpen] = useState(false);
-  const { icon: Icon, bg, border, text, label } = STATUS_CONFIG[status];
+  // An informative criterion does not count, so a failing one is shown as information, not as a failure.
+  const { icon: Icon, bg, border, text, label } = STATUS_CONFIG[requirementLevel === "informative" ? "info" : status];
   const req = REQUIREMENT_CONFIG[requirementLevel ?? "recommended"];
 
   return (
