@@ -61,10 +61,13 @@ Criteria are grouped into five categories. Each criterion has a requirement leve
 | 23 | **Code metrics** — repository metrics such as lines of code and function count are collected as informative context | Informative | [commonground.nl](https://www.commonground.nl) |
 | 24 | **Semantic versioning** — releases or tags following MAJOR.MINOR.PATCH | Recommended | [semver.org](https://semver.org/) |
 | 25 | **Maintainability (ISO 25010)** — unit size, unit complexity, unit interfacing, duplication, module coupling and component structure, each rated from 1 to 5 stars, with an estimated overall maintainability rating | Recommended | [Maintainability model](https://github.com/Software-Improvement-Group/sigridci/blob/main/docs/reference/sig-quality-models.md) |
+| 26 | **External comparison: SonarQube** — the technical debt ratio and the open issues of four SIG-like rules (S138, S3776, S107, S1192) read from a SonarQube that already analyses the component; only shown when one is configured, never stars, never scored | Informative | [SonarQube Web API](https://docs.sonarsource.com/sonarqube-server/latest/extension-guide/web-api/) |
 
 **Stars:** every criterion also shows 1 to 5 stars. Maintainability has its own scale (4 stars or more passes, 3 stars warns). The other criteria map pass, warn and fail to 5, 3 and 1 stars. The overall score shows as stars in bands of 25 points next to the 0-100 number.
 
 The maintainability analysis runs `scripts/maintainability/check_maintainability.py`, which needs `python3`, lizard 1.24.3 and jscpd 4.0.5. The Docker image installs them. `MAINTAINABILITY_TIMEOUT_SECONDS` (default 600) caps how long one analysis may run. `node scripts/sync-maintainability.mjs [commit]` refreshes the vendored script from its upstream; `scripts/maintainability/UPSTREAM` records the commit.
+
+**SonarQube comparison:** when `SONARQUBE_URL` and `SONARQUBE_TOKEN` are set on the web container, the checker reads, through the SonarQube Web API, the project of the component: the technical debt ratio (`sqale_index` over `development_cost`, because `sqale_debt_ratio` is rounded to one decimal) and the open issues of S138, S3776, S107 and S1192 with the five files that have the most. It never runs a scan. The project key is `sonar.projectKey` from the repository's `sonar-project.properties` when it has one, otherwise `<owner>_<repo>` (the SonarQube Cloud convention), otherwise the repository name; the first key that exists is used. Without configuration, or without a project for the component, no result is shown. The values are information only. The thresholds of the calibrated quality profile (S138 max 60, S3776 threshold 25, S107 max 6, S1192 defaults) were fitted on six repositories, so the comparison is only meaningful against a project analysed with that profile.
 
 **Note:** Mandatory criteria are included in the overall score. Recommended criteria still contribute when enabled, while informative criteria are only shown as contextual information and are not used in scoring.
 
@@ -83,6 +86,17 @@ cp .env.local.example .env
 Edit .env and set `URL` to the remote API server, e.g. `http://localhost:3000`
 
 Edit `GITHUB_TOKEN` if available
+
+Environment variables of the web container:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `URL` | none | Base URL of the remote Component Checker Register API |
+| `GITHUB_TOKEN` | none | GitHub token, raises the API rate limit |
+| `GITLAB_TOKEN` | none | GitLab token for GitLab repositories |
+| `MAINTAINABILITY_TIMEOUT_SECONDS` | 600 | Time limit of one maintainability analysis |
+| `SONARQUBE_URL` | none | Base URL of a SonarQube server to compare with, for example `https://sonar.example.org`; the comparison needs both SonarQube variables |
+| `SONARQUBE_TOKEN` | none | SonarQube user token with Browse permission on the projects; sent only as a bearer header, never stored in results or logs |
 
 3. Install Lizard (required for cyclomatic complexity criterion)
 ```

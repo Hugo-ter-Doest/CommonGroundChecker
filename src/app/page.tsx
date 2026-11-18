@@ -125,6 +125,7 @@ const DEFAULT_REQUIREMENT_LEVEL_BY_CHECK_ID: Record<string, RequirementLevelLabe
   tests: "mandatory",
   complexity: "recommended",
   maintainability: "recommended",
+  sonarqube: "informative",
   codemetrics: "informative",
   changelog: "recommended",
   coverage: "mandatory",
