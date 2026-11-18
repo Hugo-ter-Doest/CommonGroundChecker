@@ -214,3 +214,20 @@ describe("the open track with every property", () => {
     expect(result.evidence?.find((line) => line.startsWith("Module coupling"))).toMatch(/^Module coupling: ★★☆☆☆ /);
   });
 });
+
+describe("open-track description", () => {
+  it("names every property the open track rates", () => {
+    const result = rateOpenTrack({ input: openTrackInput(openZaak), skippedFiles: 0 });
+    for (const property of [
+      "unit size",
+      "unit complexity",
+      "unit interfacing",
+      "duplication",
+      "module coupling",
+      "component independence",
+      "component entanglement",
+    ]) {
+      expect(result.description.toLowerCase()).toContain(property);
+    }
+  });
+});

@@ -380,7 +380,7 @@ const CRITERIA_OVERVIEW = [
     category: "Software Quality" as CriteriaCategory,
     desc: "Open thresholds from a public benchmark",
     tooltip:
-      "Rates unit size, unit complexity, unit interfacing and duplication against open thresholds derived from a public benchmark of Common Ground and Developer Overheid repositories. Informative: shown next to the estimate and not counted.",
+      "Rates unit size, unit complexity, unit interfacing, duplication, module coupling, component independence and component entanglement against open thresholds derived from a public benchmark of Common Ground and Developer Overheid repositories. Informative: shown next to the estimate and not counted.",
   },
   {
     icon: "🛡️",

@@ -71,7 +71,7 @@ const BASE_RESULT = {
   id: "opentrack",
   title: "Maintainability, open track",
   description:
-    "Rates unit size, complexity, interfacing and duplication against open thresholds derived from a public benchmark of Common Ground and Developer Overheid repositories. Informative: shown next to the estimate, not counted.",
+    "Rates unit size, unit complexity, unit interfacing, duplication, module coupling, component independence and component entanglement against open thresholds derived from a public benchmark of Common Ground and Developer Overheid repositories. Informative: shown next to the estimate, not counted.",
   referenceUrl: REFERENCE_URL,
 } as const;
 

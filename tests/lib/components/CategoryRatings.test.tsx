@@ -128,4 +128,27 @@ describe("CategoryRatings", () => {
     expect(details?.open).toBe(false);
     expect(details?.querySelector("summary")?.textContent).toBe("Show what Licensing is made of");
   });
+
+  it("shows the open-track rating under the Maintainability header, linked to its criterion and not counted", () => {
+    const openTrack: CheckResult = { ...result("opentrack", "info"), rating: 2.94, starRating: 3 };
+    render(
+      <CategoryRatings
+        results={[maintainability, openTrack]}
+        categoryRatings={{ [MAINTAINABILITY]: 2.6 }}
+        aspectRatings={{}}
+      />
+    );
+
+    const section = screen.getByRole("region", { name: MAINTAINABILITY });
+    const link = within(section).getByRole("link", { name: "Open track" });
+    expect(link.getAttribute("href")).toBe("#criterion-opentrack");
+    const line = link.closest("p") as HTMLElement;
+    expect(line.textContent).toBe("Open track: 2.9 ★★★☆☆3 stars (informative, not counted)");
+  });
+
+  it("shows no open-track line without an open-track rating", () => {
+    renderRatings();
+
+    expect(screen.queryByRole("link", { name: "Open track" })).toBeNull();
+  });
 });

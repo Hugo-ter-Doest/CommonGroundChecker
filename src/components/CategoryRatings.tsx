@@ -1,7 +1,7 @@
 import AspectBar from "@/components/AspectBar";
 import MeasurementTable, { StarsText } from "@/components/MeasurementTable";
 import RatingBadge from "@/components/RatingBadge";
-import type { AspectDefinition } from "@/lib/aspects";
+import { resolveCategory, type AspectDefinition } from "@/lib/aspects";
 import {
   aspectComposition,
   aspectsOfCategory,
@@ -155,6 +155,21 @@ function AspectRow({
   );
 }
 
+/** The open-track rating, shown next to the estimate of the Maintainability category without counting it. */
+function OpenTrackLine({ results }: { results: CheckResult[] }) {
+  const openTrack = results.find((result) => result.id === "opentrack");
+  if (typeof openTrack?.rating !== "number") return null;
+  return (
+    <p className="text-sm text-gray-800">
+      <a href={`#${criterionAnchorId(openTrack.id)}`} className={LINK_CLASS}>
+        Open track
+      </a>
+      : {openTrack.rating.toFixed(1)} <StarsText stars={ratingToStars(openTrack.rating)} />{" "}
+      <span className="text-xs text-gray-600">(informative, not counted)</span>
+    </p>
+  );
+}
+
 function CategorySection({
   category,
   rating,
@@ -184,6 +199,7 @@ function CategorySection({
         </h4>
         <RatingBadge rating={rating} label={`${category} rating`} />
       </div>
+      {category === resolveCategory("Maintainability") && <OpenTrackLine results={results} />}
       {aspects.map((aspect) => (
         <AspectRow
           key={aspect.id}
