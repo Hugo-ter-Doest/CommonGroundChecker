@@ -3,6 +3,7 @@
 export type CheckStatus = "pass" | "fail" | "warn" | "info";
 export type RequirementLevel = "mandatory" | "recommended" | "informative";
 export type ConfidenceLevel = "high" | "medium" | "low";
+export type StarRating = 1 | 2 | 3 | 4 | 5;
 
 export interface VersionEvidence {
   source: "release" | "tag" | "manifest" | "readme" | "none";
@@ -25,6 +26,37 @@ export interface CheckResult {
   referenceUrl?: string;
   /** Optional confidence level for inferred/heuristic checks */
   confidence?: ConfidenceLevel;
+  /** 1 to 5 stars; from the criterion's own scale, or derived from its status */
+  starRating?: StarRating;
+  /** Raw measures of the open track, for a scorer to band once open thresholds exist */
+  openTrack?: OpenTrackMeasures;
+}
+
+/** One clone pair as the open-track duplication tool reported it. */
+export interface OpenTrackClone {
+  language: string;
+  file: string;
+  startLine: number;
+  endLine: number;
+  otherFile: string;
+  otherStartLine: number;
+  otherEndLine: number;
+  lines: number;
+}
+
+/** Duplicated lines as a percentage of all lines, per language and overall. */
+export interface OpenTrackDuplication {
+  /** Tool and version that measured, such as "jscpd 5.4.2" */
+  tool: string;
+  /** Over all languages; null when a language was not measured */
+  percentage: number | null;
+  /** Per language; null for a language that was not measured */
+  languages: Record<string, number | null>;
+  largestClones: OpenTrackClone[];
+}
+
+export interface OpenTrackMeasures {
+  duplication?: OpenTrackDuplication;
 }
 
 export interface CheckReport {
