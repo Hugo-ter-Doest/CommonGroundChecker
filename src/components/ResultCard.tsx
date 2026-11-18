@@ -1,6 +1,7 @@
 "use client";
 
-import type { CheckStatus, ConfidenceLevel, RequirementLevel } from "@/lib/types";
+import type { CheckStatus, ConfidenceLevel, RequirementLevel, StarRating } from "@/lib/types";
+import { formatStars } from "@/lib/stars";
 import {
   CheckCircle,
   XCircle,
@@ -10,7 +11,8 @@ import {
   ChevronUp,
   ExternalLink,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { criterionAnchorId } from "@/lib/criteria";
 
 interface ResultCardProps {
   id: string;
@@ -22,6 +24,7 @@ interface ResultCardProps {
   message: string;
   evidence?: string[];
   referenceUrl?: string;
+  starRating?: StarRating;
 }
 
 const REQUIREMENT_CONFIG: Record<
@@ -77,6 +80,7 @@ const STATUS_CONFIG: Record<
 };
 
 export default function ResultCard({
+  id,
   title,
   description,
   requirementLevel,
@@ -85,14 +89,29 @@ export default function ResultCard({
   message,
   evidence,
   referenceUrl,
+  starRating,
 }: ResultCardProps) {
   const [open, setOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const anchorId = criterionAnchorId(id);
+
+  useEffect(() => {
+    const openWhenTargeted = () => {
+      if (window.location.hash !== `#${anchorId}`) return;
+      setOpen(true);
+      buttonRef.current?.focus();
+    };
+    openWhenTargeted();
+    window.addEventListener("hashchange", openWhenTargeted);
+    return () => window.removeEventListener("hashchange", openWhenTargeted);
+  }, [anchorId]);
   const { icon: Icon, bg, border, text, label } = STATUS_CONFIG[status];
   const req = REQUIREMENT_CONFIG[requirementLevel ?? "recommended"];
 
   return (
-    <div className={`rounded-xl border ${border} ${bg} overflow-hidden`}>
+    <div id={anchorId} className={`rounded-xl border ${border} ${bg} overflow-hidden scroll-mt-4`}>
       <button
+        ref={buttonRef}
         className="w-full flex items-center gap-3 px-5 py-4 text-left"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
@@ -115,6 +134,11 @@ export default function ResultCard({
             </span>
           )}
         </span>
+        {starRating && (
+          <span className="text-sm leading-none text-amber-500" aria-label={`${starRating} of 5 stars`}>
+            {formatStars(starRating)}
+          </span>
+        )}
         <span
           className={`text-xs font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${text} border ${border}`}
         >
