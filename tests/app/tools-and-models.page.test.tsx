@@ -15,12 +15,14 @@ import {
   TOOL_GROUPS,
   TOOLS_DOC_HREF,
   TOOLS_DOC_SOURCES,
+  THREE_SYSTEMS,
   TWO_TRACKS,
   WHY_BOTH,
 } from "@/lib/toolsDocs";
 
 function allText(): string[] {
   return [
+    ...THREE_SYSTEMS.flatMap((system) => [system.title, ...system.paragraphs]),
     ...TWO_TRACKS.flatMap((track) => [track.title, ...track.paragraphs]),
     WHY_BOTH,
     ...TOOL_GROUPS.flatMap((group) => group.rows.flatMap((row) => Object.values(row).map(String))),
@@ -62,14 +64,40 @@ describe("tools and models data", () => {
   });
 });
 
+describe("what the checker reports", () => {
+  afterEach(() => cleanup());
+
+  it("explains the three systems and the four conditions of the verdict", () => {
+    render(<ToolsAndModelsPage />);
+
+    const section = document.getElementById("three-systems")!;
+    for (const system of THREE_SYSTEMS) {
+      expect(within(section).getByRole("heading", { level: 3, name: system.title })).toBeTruthy();
+    }
+    expect(
+      within(section).getByText(
+        /no mandatory criterion fails, the overall rating is at least 2\.5, it has a valid maintenance contract, and the maintainability estimate is at least 4 stars \(a rating of 3\.5 or more\)/
+      )
+    ).toBeTruthy();
+    expect(within(section).getByText(/most components will not reach 4 stars/)).toBeTruthy();
+  });
+
+  it("gives every in-review row its pull request", () => {
+    for (const row of TOOL_GROUPS.flatMap((group) => group.rows).filter((candidate) => candidate.inReview)) {
+      expect(row.pr, row.measure).toBeGreaterThan(0);
+    }
+  });
+});
+
 describe("ToolsAndModelsPage", () => {
   afterEach(() => cleanup());
 
-  it("renders the five sections in order", () => {
+  it("renders the six sections in order", () => {
     const { container } = render(<ToolsAndModelsPage />);
 
     expect(screen.getByRole("heading", { level: 1, name: "Tools and models" })).toBeTruthy();
     expect(Array.from(container.querySelectorAll("section[id]"), (section) => section.id)).toEqual([
+      "three-systems",
       "two-tracks",
       "tools",
       "deviations",
@@ -77,6 +105,7 @@ describe("ToolsAndModelsPage", () => {
       "limits",
     ]);
     for (const name of [
+      "What the checker reports",
       "Two tracks, and why both",
       "Tools per measure",
       "Where we deviate from SIG, and why",
@@ -103,9 +132,10 @@ describe("ToolsAndModelsPage", () => {
       expect(within(table).getByRole("columnheader", { name: "What it does not prove" })).toBeTruthy();
     }
     const duplication = screen.getByRole("table", { name: "Maintainability" });
-    expect(within(duplication).getAllByText(/\(in review\)/).length).toBe(
+    expect(within(duplication).getAllByText(/\(in review/).length).toBe(
       TOOL_GROUPS[0].rows.filter((row) => row.inReview).length
     );
+    expect(within(duplication).getByText(/\(in review, #66\)/)).toBeTruthy();
   });
 
   it("lists every deviation, every rejected tool and every source", () => {

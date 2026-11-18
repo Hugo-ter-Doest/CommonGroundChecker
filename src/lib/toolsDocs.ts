@@ -18,6 +18,8 @@ export interface ToolRow {
   doesNotProve: string;
   /** True while the part of the checker that uses the tool is still in review */
   inReview: boolean;
+  /** The pull request that adds or changes it, while in review */
+  pr?: number;
 }
 
 export interface ToolGroup {
@@ -113,12 +115,41 @@ const SOURCES = {
   sloccount: { title: "SLOCCount", url: "https://dwheeler.com/sloccount/" },
 } satisfies Record<string, DocSource>;
 
+/** The three things the checker reports about a component. */
+export const THREE_SYSTEMS: { id: string; title: string; paragraphs: string[] }[] = [
+  {
+    id: "information",
+    title: "Information only",
+    paragraphs: [
+      "Some results are shown but never rated: project health (CHAOSS), usage and ecosystem, size, and the comparison with SonarQube. They have weight 0, no stars, and do not count in any rating or in the verdict.",
+    ],
+  },
+  {
+    id: "improvement-rating",
+    title: "The improvement rating",
+    paragraphs: [
+      "The overall rating is the weighted mean of all five categories: Security, Maintainability, Governance, Deployment and operations, and Architecture. It shows a supplier where a component can improve. It runs from 0.5 to 5.5 and is shown as 1 to 5 stars.",
+    ],
+  },
+  {
+    id: "verdict",
+    title: "The verdict: suitable for Common Ground",
+    paragraphs: [
+      "The verdict is advice for a buyer, not a condition for being listed. A component is suitable for Common Ground when all four of these hold: no mandatory criterion fails, the overall rating is at least 2.5, it has a valid maintenance contract, and the maintainability estimate is at least 4 stars (a rating of 3.5 or more). 4 stars is the level of the SIG/TÜViT certification.",
+      "By design, most components will not reach 4 stars on maintainability. SIG calibrates its model so that 5% of systems get 5 stars and 30% get 4, so about one in three reaches 4 stars or more. The open benchmark is spread the same way: on each unit property and on duplication, 21 of its 60 repositories rate 4 or 5 stars. A component below 4 stars is not bad; it is not yet at certification level.",
+    ],
+  },
+];
+
 export const TWO_TRACKS: { id: "open" | "estimate"; title: string; paragraphs: string[] }[] = [
   {
     id: "open",
     title: "The open track",
     paragraphs: [
-      "The open track uses only open-source tools and thresholds that anyone can check and regenerate. The thresholds come from a public benchmark of 60 Common Ground and Developer Overheid repositories, with the benchmark method of Alves et al. The benchmark list, the raw measures and the scripts are published with the checker.",
+      "The open track uses only open-source tools and thresholds that anyone can check and regenerate. The thresholds come from a public benchmark of 60 Common Ground and Developer Overheid repositories, 57 of them for coupling. The benchmark list, the raw measures, the scripts and the thresholds file (thresholds-2026-11-18.2.json) are published with the checker.",
+      "The risk bounds are the metric values at 70, 80 and 90% of the benchmark's code (Alves, Ypma and Visser 2010; 80, 90 and 95% for unit interfacing). The star limits come from Algorithm 1 of Alves, Correia and Visser 2011, as implemented in derive.py, with 5, 30, 30, 30 and 5% of the benchmark at 5 to 1 stars.",
+      "The derived bounds: unit size more than 29 / 42 / 71 lines, unit complexity McCabe above 5 / 7 / 10, unit interfacing more than 2 / 3 / 4 parameters, module coupling a fan-in above 2 / 3 / 5. SIG uses 15 / 30 / 60, 5 / 10 / 25, 2 / 4 / 6 and 10 / 20 / 50. They differ because they describe this benchmark, not SIG's. In these public repositories modules have few dependants: at least 70% of the code sits in modules with at most two, so the fan-in bounds land far below SIG's. And 30% of the unit code sits in units of more than 29 lines, so the unit size bounds land above SIG's.",
+      "Component entanglement does not spread as planned. 15 of the 57 repositories have a violation degree of 0 and cannot be told apart, so 26% of the benchmark gets 5 stars there instead of 5%.",
       "We need it for openness and reproducibility. Anyone can see why a component gets its stars, and anyone can measure again and get the same answer.",
       "The open track is not a SIG rating and does not predict one. It is shown next to the estimate, for information only (weight 0).",
     ],
@@ -144,7 +175,7 @@ export const TOOL_GROUPS: ToolGroup[] = [
     rows: [
       {
         measure: "Unit size, unit complexity and unit interfacing",
-        track: "both",
+        track: "estimate",
         tool: "lizard",
         version: "1.24.3",
         licence: "MIT",
@@ -153,6 +184,17 @@ export const TOOL_GROUPS: ToolGroup[] = [
         doesNotProve:
           "That the code is easy to read. McCabe counts branches, not meaning. lizard is not SIG's parser, so its unit boundaries can differ from a Sigrid scan.",
         inReview: false,
+      },
+      {
+        measure: "Unit size, unit complexity and unit interfacing",
+        track: "open",
+        tool: "lizard, rated with the open thresholds of thresholds-2026-11-18.2.json",
+        version: "1.24.3",
+        licence: "MIT",
+        proves: "Where the component stands against the 60 public benchmark repositories, with bounds and limits anyone can regenerate.",
+        doesNotProve: "Where it would stand in SIG's benchmark. It is not a SIG rating and does not predict one.",
+        inReview: true,
+        pr: 66,
       },
       {
         measure: "Duplication",
@@ -176,6 +218,7 @@ export const TOOL_GROUPS: ToolGroup[] = [
           "A second, independent count of literal clones. On the six test repositories it landed in the same band as the estimate in 14 of 14 production cells.",
         doesNotProve: "Anything for Vue, which Simian cannot read. It never changes the rating.",
         inReview: true,
+        pr: 62,
       },
       {
         measure: "Duplication",
@@ -187,11 +230,12 @@ export const TOOL_GROUPS: ToolGroup[] = [
         doesNotProve:
           "SIG's duplication figure. jscpd finds token clones that can run into neighbouring lines, and it divides by all lines instead of code lines.",
         inReview: true,
+        pr: 61,
       },
       {
         measure: "Module coupling, component independence and component entanglement",
         track: "estimate",
-        tool: "the vendored estimate script's import graph (regular expressions over imports), for PHP, Python and, in review, JavaScript, TypeScript and Vue",
+        tool: "the vendored estimate script's import graph (regular expressions over imports), for PHP and Python, and JavaScript, TypeScript and Vue once #58 is merged",
         version: "script at ConductionNL/.github cd0fe04",
         licence: "EUPL-1.2",
         proves:
@@ -208,8 +252,9 @@ export const TOOL_GROUPS: ToolGroup[] = [
         licence: "pdepend BSD-3-Clause, grimp and import-linter BSD-2-Clause, dependency-cruiser MIT",
         proves: "The same properties as the estimate, from a dependency graph that a dedicated open-source tool resolved.",
         doesNotProve:
-          "A rating. These measures have no calibrated thresholds yet, so the open track reports them as not calibrated.",
+          "Coupling at the level of calls. The open track rates independence and entanglement against the benchmark. Module coupling shows as not measured until the check reports a fan-in histogram.",
         inReview: true,
+        pr: 64,
       },
       {
         measure: "Size",
@@ -221,6 +266,7 @@ export const TOOL_GROUPS: ToolGroup[] = [
           "The lines of production code per language, and from them a rebuild effort: backfiring (QSM and ISBSG) for the open track, SIG v17.0 lines per person-year for the estimate.",
         doesNotProve: "Quality. Size is context only and has no stars.",
         inReview: true,
+        pr: 59,
       },
       {
         measure: "Comparison with SonarQube",
@@ -232,6 +278,7 @@ export const TOOL_GROUPS: ToolGroup[] = [
         doesNotProve:
           "A rating. It is information only and never gives stars. The calibrated profile was fitted on six repositories.",
         inReview: true,
+        pr: 63,
       },
       {
         measure: "Test code ratio",
@@ -318,17 +365,20 @@ export const TOOL_GROUPS: ToolGroup[] = [
         proves: "How many people carry the project, from how many organisations, and how fast pull requests and issues get an answer.",
         doesNotProve: "Code quality. It is shown without stars and never counts in a rating.",
         inReview: true,
+        pr: 60,
       },
       {
         measure: "Usage and ecosystem",
         track: "information",
-        tool: "per source: publiccode.yml, the Nextcloud App Store, release and package downloads, Docker Hub, deps.dev, GitHub stars and forks",
+        tool: "per source: publiccode.yml, the Nextcloud App Store, release and package downloads, Docker Hub, deps.dev, GitHub stars and forks, and the commit authors of the last 12 months",
         version: "the checker's own",
         licence: "EUPL-1.2",
-        proves: "What each source reports, with its date.",
+        proves:
+          "What each source reports, with its date. Contributors are counted as from the owning organisation, from other organisations or unknown. After the repository's .mailmap, each author is placed by the domain of their email address. For a personal, hidden or noreply address the checker reads the company field of the public profile while counting, for at most 200 profiles per scan. When the organisation of more than half of the authors is unknown, no split is shown, only the total. Nothing personal is stored: no names, logins, addresses or companies, only counts.",
         doesNotProve:
           "Real use. Downloads include CI and mirrors, and many government installations show up in no public source. It is shown per source and never ranked.",
         inReview: true,
+        pr: 65,
       },
     ],
   },
@@ -355,7 +405,7 @@ export const DEVIATIONS: Deviation[] = [
     topic: "Benchmark",
     sig: "SIG calibrates its thresholds on a private benchmark of the systems it has measured.",
     checker:
-      "The open track uses its own public benchmark of 60 repositories, with the method of Alves et al. The estimate uses SIG's published 4-star limits. The 5, 3 and 2-star limits of the estimate are derived by the checker.",
+      "The open track uses its own public benchmark of 60 repositories (57 for coupling), with Algorithm 1 of Alves et al. 2011. The estimate uses SIG's published 4-star limits. The 5, 3 and 2-star limits of the estimate are derived by the checker.",
     why: "SIG's benchmark is not public, and only its 4-star limits are published.",
   },
   {
@@ -489,8 +539,8 @@ export const REJECTED_TOOLS: RejectedTool[] = [
 
 export const LIMITS: string[] = [
   "The estimate track is not calibrated against real SIG audits. There are no Sigrid results to compare with. It is checked against the published model v18.1 only, and only the 4-star limits in it are published.",
-  "The open-track thresholds come from one benchmark of 60 public repositories, measured on 18 November 2026. At most 12 repositories per owner count. Module coupling and the component properties are not calibrated yet.",
-  "The star limits of the open track are our reading of the 2011 calibration method. They are not a copy of SIG's algorithm.",
+  "The open-track thresholds come from one benchmark of 60 public repositories, measured on 18 November 2026, and 57 for coupling: three repositories had a language that could not be measured. At most 12 repositories per owner count. Entanglement puts 26% of the benchmark at 5 stars, because 15 repositories score 0.",
+  "The star limits of the open track are our implementation of Algorithm 1 of the 2011 paper. The paper does not define its distribution function, so derive.py reads it as the number of repositories at a level or better. It is not a copy of SIG's own tooling.",
   "The tools were compared on six repositories: OpenRegister, OpenCatalogi, Open Zaak, Open Forms, plugin-pdc-base and Objects API. The SonarQube profile was fitted on the same six. It orders them like the estimate (Spearman 0.94), but six repositories are too few to trust that order elsewhere.",
   "Tool versions are pinned, because a new version can change the numbers. A version bump needs a new benchmark run.",
 ];

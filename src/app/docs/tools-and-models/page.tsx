@@ -6,6 +6,7 @@ import {
   REJECTED_TOOLS,
   TOOL_GROUPS,
   TOOLS_DOC_SOURCES,
+  THREE_SYSTEMS,
   TRACK_LABELS,
   TWO_TRACKS,
   WHY_BOTH,
@@ -42,7 +43,7 @@ function ToolTable({ group }: { group: ToolGroup }) {
                 {row.measure}
                 <span className="block text-xs font-normal text-gray-600">
                   {TRACK_LABELS[row.track]}
-                  {row.inReview && " (in review)"}
+                  {row.inReview && (row.pr ? ` (in review, #${row.pr})` : " (in review)")}
                 </span>
               </th>
               <td className="p-2">{row.tool}</td>
@@ -77,6 +78,22 @@ export default function ToolsAndModelsPage() {
           The estimate track is not calibrated against real SIG audits. There are no Sigrid results to compare
           with: it is checked against the published model v18.1 only.
         </p>
+      </section>
+
+      <section id="three-systems" aria-labelledby="three-systems-heading" className={SECTION}>
+        <h2 id="three-systems-heading" className={H2}>
+          What the checker reports
+        </h2>
+        {THREE_SYSTEMS.map((system) => (
+          <div key={system.id} className="space-y-2">
+            <h3 className="text-lg font-semibold text-gray-800">{system.title}</h3>
+            {system.paragraphs.map((paragraph) => (
+              <p key={paragraph} className="text-gray-700">
+                {paragraph}
+              </p>
+            ))}
+          </div>
+        ))}
       </section>
 
       <section id="two-tracks" aria-labelledby="two-tracks-heading" className={SECTION}>
