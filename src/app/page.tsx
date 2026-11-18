@@ -125,6 +125,7 @@ const DEFAULT_REQUIREMENT_LEVEL_BY_CHECK_ID: Record<string, RequirementLevelLabe
   tests: "mandatory",
   complexity: "recommended",
   maintainability: "recommended",
+  coupling: "informative",
   codemetrics: "informative",
   changelog: "recommended",
   coverage: "mandatory",
@@ -154,6 +155,7 @@ const CHECK_ID_BY_CRITERION_LABEL: Record<string, string> = {
   "Code coverage": "coverage",
   "Cyclomatic complexity": "complexity",
   "Maintainability (ISO 25010)": "maintainability",
+  "Coupling (open track)": "coupling",
   "Code Metrics": "codemetrics",
   "OWASP Secure Coding": "owaspsecurecoding",
   "Contributing guide": "contributing",
@@ -332,6 +334,14 @@ const CRITERIA_OVERVIEW = [
     desc: "1 to 5 star maintainability rating",
     tooltip:
       "Rates unit size, unit complexity, unit interfacing, duplication, module coupling and component structure from 1 to 5 stars, and estimates an overall maintainability rating. 4 stars or more passes.",
+  },
+  {
+    icon: "🔗",
+    label: "Coupling (open track)",
+    category: "Software Quality" as CriteriaCategory,
+    desc: "Module and component structure",
+    tooltip:
+      "Builds the module dependency graph with pdepend (PHP), grimp (Python) and dependency-cruiser (JavaScript, TypeScript, Vue) and shows module coupling, component independence, entanglement and cycles. Informative, not rated yet.",
   },
   {
     icon: "🛡️",

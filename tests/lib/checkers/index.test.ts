@@ -17,6 +17,7 @@ const ids = [
   "tests",
   "complexity",
   "maintainability",
+  "coupling",
   "codemetrics",
   "owaspsecurecoding",
   "adrvalidator",
@@ -51,6 +52,7 @@ const mocks = vi.hoisted(() => ({
   checkTests: vi.fn(),
   checkComplexity: vi.fn(),
   checkMaintainability: vi.fn(),
+  checkCoupling: vi.fn(),
   checkSourceCode: vi.fn(),
   checkSemver: vi.fn(),
   checkFiveLayer: vi.fn(),
@@ -120,6 +122,7 @@ vi.mock("@/lib/checkers/security", () => ({ checkSecurity: mocks.checkSecurity }
 vi.mock("@/lib/checkers/tests", () => ({ checkTests: mocks.checkTests }));
 vi.mock("@/lib/checkers/complexity", () => ({ checkComplexity: mocks.checkComplexity }));
 vi.mock("@/lib/checkers/maintainability", () => ({ checkMaintainability: mocks.checkMaintainability }));
+vi.mock("@/lib/checkers/coupling", () => ({ checkCoupling: mocks.checkCoupling }));
 vi.mock("@/lib/checkers/codeMetrics", () => ({ checkCodeMetrics: mocks.checkCodeMetrics }));
 vi.mock("@/lib/checkers/owaspSecureCoding", () => ({ checkOwaspSecureCoding: mocks.checkOwaspSecureCoding }));
 vi.mock("@/lib/checkers/eupl", () => ({
@@ -236,6 +239,7 @@ describe("runChecks", () => {
     mocks.checkTests.mockReturnValue(resultFor("tests", "pass"));
     mocks.checkComplexity.mockResolvedValue(resultFor("complexity", "pass"));
     mocks.checkMaintainability.mockResolvedValue({ ...resultFor("maintainability", "warn"), starRating: 3 });
+    mocks.checkCoupling.mockResolvedValue(resultFor("coupling", "info"));
     mocks.checkCodeMetrics.mockResolvedValue(resultFor("codemetrics", "info"));
     mocks.checkOwaspSecureCoding.mockResolvedValue(resultFor("owaspsecurecoding", "pass"));
     mocks.checkAdrValidator.mockResolvedValue(resultFor("adrvalidator", "pass"));
@@ -273,7 +277,7 @@ describe("runChecks", () => {
     expect(report.scoringConfigId).toBe("cfg-1");
     expect(report.score).toBe(25);
     expect(mocks.checkOpenApi).not.toHaveBeenCalled();
-    expect(report.results).toHaveLength(24);
+    expect(report.results).toHaveLength(25);
     expect(report.results.find((result) => result.id === "maintainability")?.starRating).toBe(3);
     expect(report.results.find((result) => result.id === "semver")?.starRating).toBe(1);
     expect(report.results.find((result) => result.id === "tests")?.starRating).toBe(3);
@@ -301,6 +305,28 @@ describe("runChecks", () => {
 
     expect(report.results.find((result) => result.id === "security")?.starRating).toBeUndefined();
     expect(report.results.find((result) => result.id === "maintainability")?.starRating).toBe(2);
+  });
+
+  it("passes the open-track coupling values through without stars", async () => {
+    const coupling = { version: 1, languages: { php: { measured: false as const, reason: "pdepend 3.0.0 is not installed", files: 3 } } };
+    mocks.checkCoupling.mockResolvedValue({ ...resultFor("coupling", "info"), openTrack: { coupling } });
+    mocks.getActiveScoringConfig.mockResolvedValue({
+      id: "cfg-1",
+      config: {
+        criterionConfigByCheckId: criterionConfig(1),
+        statusScoreByStatus: { pass: 1, warn: 0.5, info: 0.5, fail: 0 },
+        complexityThreshold: 12,
+        complexityMaxCcnThreshold: 20,
+        spectralRulesetSource: "https://static.developer.overheid.nl/adr/ruleset.yaml",
+      },
+    });
+
+    const report = await runChecks("https://github.com/org/repo", { isRegister: false });
+    const result = report.results.find((entry) => entry.id === "coupling");
+
+    expect(mocks.checkCoupling).toHaveBeenCalledOnce();
+    expect(result?.openTrack?.coupling).toEqual(coupling);
+    expect(result?.starRating).toBeUndefined();
   });
 
   it("applies fixed category weights when aggregating mandatory criteria", async () => {
