@@ -624,7 +624,7 @@ export const RATING_DOCS: RatingCategoryDoc[] = [
           {
             checkId: "usage",
             name: "GitHub repository and contributors",
-            tool: "stars, forks and watchers, and the number of contributors that are not public members of the owner organisation. Only counts are kept: no names, logins or e-mail addresses",
+            tool: "stars, forks and watchers, and the authors of the commits of the last 12 months, told apart by email domain: from the owning organisation (the most common organisation domain, plus the domains of the maintenance contacts, contractors and organisation in publiccode.yml), from other organisations, or unknown (personal mail providers, hidden addresses such as GitHub's noreply, and noreply addresses of tools). Only the counts are kept: no names, logins, addresses or the domain of one person; a domain is named only when at least two authors share it",
           },
         ],
         rating: [

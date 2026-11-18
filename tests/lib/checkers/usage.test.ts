@@ -1,10 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   checkUsage,
+  classifyContributors,
   detectImages,
   detectPackages,
+  domainOf,
   normaliseRepositoryUrl,
+  ownerDomainsFromPublicCode,
 } from "@/lib/checkers/usage";
+import { readPublicCodeData } from "@/lib/checkers/publiccode";
 import type { RepoContext, RepositoryMeta } from "@/lib/providers/types";
 import type { UsageSource } from "@/lib/types";
 
@@ -57,6 +61,80 @@ function byId(sources: UsageSource[] | undefined, id: string): UsageSource | und
 }
 
 const GH = "https://api.github.com/repos/open-zaak/open-zaak";
+
+const PUBLICCODE = readPublicCodeData({
+  usedBy: ["Gemeente Utrecht", "Gemeente Utrecht", "Gemeente Delft"],
+  maintenance: { type: "contract", contractors: [{ name: "Maykin", website: "https://www.maykinmedia.nl" }] },
+})!;
+
+function commit(email: string, login: string | null = null, type = "User") {
+  return { author: login ? { login, type } : null, commit: { author: { email, name: login ?? "x" } } };
+}
+
+const COMMITS = [
+  commit("alice@maykinmedia.nl", "alice"),
+  commit("alice@maykinmedia.nl", "alice"),
+  commit("bob@maykinmedia.nl", "bob"),
+  commit("carol@example.org", "carol"),
+  commit("dave@gmail.com", "dave"),
+  commit("123+erin@users.noreply.github.com", "erin"),
+  commit("49699333+dependabot[bot]@users.noreply.github.com", "dependabot[bot]", "Bot"),
+];
+
+describe("classifyContributors", () => {
+  it("takes the organisation domain with the most authors as the owner's", () => {
+    const counts = classifyContributors(
+      [
+        { email: "a@conduction.nl", bot: false },
+        { email: "B@Conduction.nl", bot: false },
+        { email: "c@gemeente.nl", bot: false },
+        { email: "d@hotmail.com", bot: false },
+        { email: "noreply@agent.example", bot: false },
+        { email: "root@t", bot: false },
+        { email: null, bot: false },
+        { email: "ci@conduction.nl", bot: true },
+      ],
+      []
+    );
+
+    expect(counts).toEqual({ total: 6, inside: 2, other: 1, unknown: 3, insideDomains: ["conduction.nl"] });
+  });
+
+  it("counts the publiccode.yml domains and their subdomains as inside, and names no domain of a single author", () => {
+    const counts = classifyContributors(
+      [
+        { email: "a@big.org", bot: false },
+        { email: "b@big.org", bot: false },
+        { email: "c@mail.small.nl", bot: false },
+      ],
+      ["small.nl"]
+    );
+
+    expect(counts).toEqual({ total: 3, inside: 3, other: 0, unknown: 0, insideDomains: ["big.org"] });
+  });
+});
+
+describe("domainOf and ownerDomainsFromPublicCode", () => {
+  it("reads domains from addresses and URLs", () => {
+    expect(domainOf("Jane@Example.ORG")).toBe("example.org");
+    expect(domainOf("https://www.conduction.nl/about")).toBe("conduction.nl");
+    expect(domainOf("conduction.nl")).toBe("conduction.nl");
+    expect(domainOf("")).toBeNull();
+  });
+
+  it("takes the maintenance contacts, contractors and organisation, without personal mail domains", () => {
+    const publiccode = readPublicCodeData({
+      organisation: { uri: "https://www.utrecht.nl" },
+      maintenance: {
+        contractors: [{ name: "Acme", email: "info@acme.nl", website: "https://acme.nl" }],
+        contacts: [{ name: "Jane", email: "jane@gmail.com" }, { name: "Joe", email: "joe@conduction.nl" }],
+      },
+    })!;
+
+    expect(ownerDomainsFromPublicCode(publiccode).sort()).toEqual(["acme.nl", "conduction.nl", "utrecht.nl"]);
+    expect(ownerDomainsFromPublicCode(undefined)).toEqual([]);
+  });
+});
 
 describe("normaliseRepositoryUrl", () => {
   it.each([
@@ -138,13 +216,10 @@ describe("checkUsage", () => {
       "https://api.deps.dev/v3/systems/npm/packages/openzaak": { body: { versions: [{ versionKey: { version: "1.2.0" }, isDefault: true }] } },
       "https://api.deps.dev/v3alpha/systems/npm/packages/openzaak/versions/1.2.0:dependents": { body: { dependentCount: 7, directDependentCount: 3 } },
       [`${GH}/releases`]: { body: [{ assets: [{ download_count: 10 }, { download_count: 5 }] }, { assets: [] }] },
-      [`${GH}/contributors`]: {
-        body: [{ login: "member", type: "User" }, { login: "outsider", type: "User" }, { login: "dependabot[bot]", type: "Bot" }],
-      },
-      "https://api.github.com/orgs/open-zaak/public_members": { body: [{ login: "Member" }] },
+      [`${GH}/commits`]: { body: COMMITS },
     });
 
-    const result = await checkUsage(contextWith(FILES), META, TREE, ["Gemeente Utrecht", "Gemeente Utrecht", "Gemeente Delft"], {
+    const result = await checkUsage(contextWith(FILES), META, TREE, PUBLICCODE, {
       fetchFn,
       now: NOW,
     });
@@ -161,7 +236,7 @@ describe("checkUsage", () => {
       "dockerhub:openzaak/open-zaak",
       "ghcr:open-zaak/open-zaak",
       "repository",
-      "outside-contributors",
+      "contributors",
       "depsdev:npm",
     ]);
     expect(sources?.every((source) => source.measuredAt === "2026-11-18" && source.caveat.length > 0)).toBe(true);
@@ -182,9 +257,11 @@ describe("checkUsage", () => {
       { label: "forks", value: 40 },
       { label: "watchers", value: 15 },
     ]);
-    expect(byId(sources, "outside-contributors")?.figures).toEqual([
-      { label: "contributors", value: 2 },
-      { label: "of whom outside the owner", value: 1 },
+    expect(byId(sources, "contributors")?.figures).toEqual([
+      { label: "contributors", value: 5 },
+      { label: "from the owning organisation", value: 2 },
+      { label: "from other organisations", value: 1 },
+      { label: "unknown", value: 2 },
     ]);
     expect(byId(sources, "depsdev:npm")).toMatchObject({
       subject: "openzaak@1.2.0",
@@ -193,8 +270,10 @@ describe("checkUsage", () => {
         { label: "of which depend on it directly", value: 3 },
       ],
     });
-    expect(byId(sources, "outside-contributors")?.caveat).toMatch(/^Outside means not one of the 1 public members of open-zaak;/);
-    expect(JSON.stringify(result)).not.toMatch(/outsider|"member"|dependabot/i);
+    expect(byId(sources, "contributors")?.caveat).toMatch(/^Authors of the commits of the last 12 months, told apart by email domain\. The owning organisation \(maykinmedia\.nl\) is/);
+    expect(JSON.stringify(result)).not.toMatch(/alice|bob|carol|dave|erin|dependabot|example\.org|gmail|users\.noreply/i);
+    const commitsUrl = vi.mocked(fetchFn).mock.calls.map(([url]) => String(url)).find((url) => url.includes("/commits"));
+    expect(commitsUrl).toContain("since=2025-11-18T09:00:00.000Z");
     expect(result.evidence).toContain("npm openzaak: 1,234 downloads in the last month (2026-11-18)");
   });
 
@@ -204,7 +283,7 @@ describe("checkUsage", () => {
       "https://api.npmjs.org/downloads/point/last-month/openzaak": { body: { downloads: 1234 } },
     });
 
-    const result = await checkUsage(contextWith(FILES), {}, TREE, [], { fetchFn, now: NOW });
+    const result = await checkUsage(contextWith(FILES), {}, TREE, undefined, { fetchFn, now: NOW });
 
     expect(byId(result.usage?.sources, "npm")).toBeUndefined();
     expect(byId(result.usage?.sources, "depsdev:npm")).toBeUndefined();
@@ -213,16 +292,16 @@ describe("checkUsage", () => {
   it("shows a source that does not answer as not measured, with the reason", async () => {
     const fetchFn = fakeFetch({
       "https://hub.docker.com/v2/repositories/openzaak/open-zaak/": timeout,
-      [`${GH}/contributors`]: { status: 502 },
+      [`${GH}/commits`]: { status: 502 },
     });
 
-    const result = await checkUsage(contextWith(FILES), META, TREE, [], { fetchFn, now: NOW });
+    const result = await checkUsage(contextWith(FILES), META, TREE, undefined, { fetchFn, now: NOW });
 
     expect(byId(result.usage?.sources, "dockerhub:openzaak/open-zaak")).toMatchObject({
       figures: [],
       notMeasured: "no answer in time",
     });
-    expect(byId(result.usage?.sources, "outside-contributors")?.notMeasured).toBe("HTTP 502");
+    expect(byId(result.usage?.sources, "contributors")?.notMeasured).toBe("HTTP 502");
     expect(result.message).toMatch(/3 not measured/);
     expect(result.evidence).toContain("Docker Hub openzaak/open-zaak: not measured: no answer in time (2026-11-18)");
   });
@@ -230,7 +309,7 @@ describe("checkUsage", () => {
   it("gives every request a timeout", async () => {
     const fetchFn = fakeFetch({});
 
-    await checkUsage(contextWith(FILES), META, TREE, [], { fetchFn, now: NOW });
+    await checkUsage(contextWith(FILES), META, TREE, undefined, { fetchFn, now: NOW });
 
     const calls = vi.mocked(fetchFn).mock.calls;
     expect(calls.length).toBeGreaterThan(0);
@@ -250,7 +329,7 @@ describe("checkUsage", () => {
       },
     });
 
-    const result = await checkUsage(context as RepoContext, {}, Object.keys(files), [], { fetchFn, now: NOW });
+    const result = await checkUsage(context as RepoContext, {}, Object.keys(files), undefined, { fetchFn, now: NOW });
 
     expect(byId(result.usage?.sources, "nextcloud-appstore")?.figures).toEqual([{ label: "ratings given", value: 4 }]);
     expect(byId(result.usage?.sources, "packagist")?.figures).toEqual([
@@ -263,7 +342,7 @@ describe("checkUsage", () => {
   it("finds nothing for a repository no source knows, and asks nothing GitHub-specific elsewhere", async () => {
     const fetchFn = fakeFetch({});
 
-    const result = await checkUsage(contextWith({}, "gitlab"), {}, [], [], { fetchFn, now: NOW });
+    const result = await checkUsage(contextWith({}, "gitlab"), {}, [], undefined, { fetchFn, now: NOW });
 
     expect(result.usage).toEqual({ sources: [] });
     expect(result.message).toBe("No source reports usage of this component.");

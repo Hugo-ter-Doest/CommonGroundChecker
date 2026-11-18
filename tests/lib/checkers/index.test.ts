@@ -428,9 +428,10 @@ describe("runChecks", () => {
     expect(report.score).toBe(50);
   });
 
-  it("passes the declared users to the usage check and gives its result no stars", async () => {
+  it("passes the publiccode.yml data to the usage check and gives its result no stars", async () => {
+    const publiccode = { usedBy: ["Gemeente Utrecht"] };
     mocks.analysePublicCode.mockResolvedValue({
-      result: { ...resultFor("publiccode", "pass"), publiccode: { usedBy: ["Gemeente Utrecht"] } },
+      result: { ...resultFor("publiccode", "pass"), publiccode },
       details: {},
     });
 
@@ -440,7 +441,7 @@ describe("runChecks", () => {
       expect.objectContaining({ owner: "org", repo: "repo" }),
       expect.anything(),
       expect.any(Array),
-      ["Gemeente Utrecht"],
+      publiccode,
       { dockerLocations: ["org/image"] }
     );
     const usage = report.results.find((result) => result.id === "usage");

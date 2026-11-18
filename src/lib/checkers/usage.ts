@@ -1,6 +1,6 @@
 import { githubApiHeaders } from "../github";
 import type { RepoContext, RepositoryMeta } from "../providers/types";
-import type { CheckResult, UsageFigure, UsageSource, UsageSourceKind } from "../types";
+import type { CheckResult, PublicCodeData, UsageFigure, UsageSource, UsageSourceKind } from "../types";
 import { USAGE_CHECK_ID, describeUsageSource, shownUsageSources } from "../usage";
 
 type FetchFn = typeof fetch;
@@ -30,9 +30,8 @@ const TIMEOUT_MS = 10_000;
 const APP_STORE_TIMEOUT_MS = 30_000;
 const GITHUB_API = "https://api.github.com";
 const MAX_RELEASE_PAGES = 5;
-/** GitHub lists at most 500 contributors with an account. */
-const MAX_CONTRIBUTOR_PAGES = 5;
-const MAX_MEMBER_PAGES = 10;
+/** At most 1,000 commits are read for the contributor count. */
+const MAX_COMMIT_PAGES = 10;
 
 const MANIFEST_PATHS = ["package.json", "composer.json", "pyproject.toml", "setup.cfg", "setup.py", "appinfo/info.xml"];
 
@@ -442,52 +441,174 @@ function repositorySource(context: RepoContext, meta: RepositoryMeta, measuredAt
   };
 }
 
-function isBot(contributor: Record<string, unknown>): boolean {
-  return contributor.type === "Bot" || (typeof contributor.login === "string" && contributor.login.endsWith("[bot]"));
+/** Mail providers whose addresses say nothing about an organisation; the same list as the CHAOSS check. */
+const PERSONAL_MAIL_DOMAINS = new Set([
+  "gmail.com",
+  "googlemail.com",
+  "outlook.com",
+  "hotmail.com",
+  "live.com",
+  "live.nl",
+  "hotmail.nl",
+  "msn.com",
+  "yahoo.com",
+  "icloud.com",
+  "me.com",
+  "mac.com",
+  "proton.me",
+  "protonmail.com",
+  "pm.me",
+  "gmx.com",
+  "gmx.de",
+  "gmx.net",
+  "web.de",
+  "posteo.de",
+  "mailbox.org",
+  "fastmail.com",
+  "ziggo.nl",
+  "kpnmail.nl",
+  "planet.nl",
+  "xs4all.nl",
+  "home.nl",
+  "telfort.nl",
+]);
+
+const BOT_NAME = /\[bot\]$|(^|[-_.])bot$|^ghost$/i;
+
+/** The domain of an email address or the host of a URL, in lower case without "www.", or null. */
+export function domainOf(value: unknown): string | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  const text = value.trim().toLowerCase();
+  if (text.includes("@") && !text.includes("/")) return text.slice(text.lastIndexOf("@") + 1) || null;
+  try {
+    return new URL(/^[a-z]+:\/\//.test(text) ? text : `https://${text}`).hostname.replace(/^www\./, "") || null;
+  } catch {
+    return null;
+  }
 }
 
-/** Contributors outside the owner organisation, as counts; the logins are compared and dropped. */
-function contributorSource(fetchFn: FetchFn, context: RepoContext, meta: RepositoryMeta, measuredAt: string) {
-  const ownerIsOrganisation = isRecord(meta.owner) && meta.owner.type === "Organization";
+function isUnknownDomain(domain: string): boolean {
+  return (
+    !domain.includes(".") ||
+    PERSONAL_MAIL_DOMAINS.has(domain) ||
+    domain === "localhost" ||
+    /(^|\.)noreply\.|^noreply\b|(^|\.)local$|(^|\.)localdomain$/.test(domain)
+  );
+}
+
+/** One commit as the contributor count sees it; the email is only read while counting. */
+export interface CommitAuthor {
+  email: string | null;
+  bot: boolean;
+}
+
+export interface ContributorCounts {
+  total: number;
+  inside: number;
+  other: number;
+  unknown: number;
+  /** Inside domains that at least two authors share, so naming them names no one */
+  insideDomains: string[];
+}
+
+/**
+ * Sorts commit authors, told apart by email address, into the owning
+ * organisation, other organisations and unknown. Inside are the given domains
+ * (with their subdomains) and the organisation domain with the most authors.
+ * Personal, hidden and noreply addresses are unknown. Only counts leave this function.
+ */
+export function classifyContributors(commits: CommitAuthor[], ownerDomains: string[]): ContributorCounts {
+  const authors = new Map<string, string | null>();
+  for (const commit of commits) {
+    if (commit.bot || !commit.email) continue;
+    const email = commit.email.trim().toLowerCase();
+    if (!authors.has(email)) authors.set(email, /^no-?reply@/.test(email) ? null : domainOf(email));
+  }
+
+  const authorsPerDomain = new Map<string, number>();
+  for (const domain of authors.values()) {
+    if (domain && !isUnknownDomain(domain)) authorsPerDomain.set(domain, (authorsPerDomain.get(domain) ?? 0) + 1);
+  }
+  const dominant = [...authorsPerDomain.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+  const owners = [...new Set([...ownerDomains, ...(dominant ? [dominant] : [])])];
+  const isInside = (domain: string) => owners.some((owner) => domain === owner || domain.endsWith(`.${owner}`));
+
+  const counts: ContributorCounts = { total: authors.size, inside: 0, other: 0, unknown: 0, insideDomains: [] };
+  const insideAuthors = new Map<string, number>();
+  for (const domain of authors.values()) {
+    if (!domain || isUnknownDomain(domain)) counts.unknown += 1;
+    else if (isInside(domain)) {
+      counts.inside += 1;
+      insideAuthors.set(domain, (insideAuthors.get(domain) ?? 0) + 1);
+    } else counts.other += 1;
+  }
+  counts.insideDomains = [...insideAuthors.entries()].filter(([, count]) => count >= 2).map(([domain]) => domain).sort();
+  return counts;
+}
+
+/** Domains publiccode.yml gives for the owner: maintenance contacts and contractors, and the organisation. */
+export function ownerDomainsFromPublicCode(publiccode: PublicCodeData | undefined): string[] {
+  if (!publiccode) return [];
+  const values = [
+    ...publiccode.maintenance.contacts.map((contact) => contact.email),
+    ...publiccode.maintenance.contractors.flatMap((contractor) => [contractor.email, contractor.website]),
+    publiccode.organisation?.uri,
+  ];
+  return [...new Set(values.map(domainOf).filter((domain): domain is string => !!domain && !isUnknownDomain(domain)))];
+}
+
+const COMMIT_WINDOW_DAYS = 365;
+
+/** Commit authors of the last 12 months, counted by organisation; no address, name or domain of one person is kept. */
+function contributorSource(
+  fetchFn: FetchFn,
+  context: RepoContext,
+  publiccode: PublicCodeData | undefined,
+  now: Date,
+  measuredAt: string
+) {
   return measure(
     {
-      id: "outside-contributors",
+      id: "contributors",
       kind: "ecosystem",
-      source: "GitHub contributors",
+      source: "GitHub commits",
       subject: context.projectPath,
       url: `https://github.com/${context.projectPath}/graphs/contributors`,
-      caveat: ownerIsOrganisation
-        ? `Outside means not a public member of ${context.owner}; members who keep their membership private count as outside. Bots are left out.`
-        : `Outside means anyone but ${context.owner}. Bots are left out.`,
+      caveat: "",
     },
     measuredAt,
     async () => {
-      const contributors = await githubPages(
+      const since = new Date(now.getTime() - COMMIT_WINDOW_DAYS * 86_400_000).toISOString();
+      const { items, complete } = await githubPages(
         fetchFn,
-        `/repos/${context.projectPath}/contributors`,
-        MAX_CONTRIBUTOR_PAGES
+        `/repos/${context.projectPath}/commits?since=${since}`,
+        MAX_COMMIT_PAGES
       );
-      const people = contributors.items.filter((contributor) => !isBot(contributor));
-      if (people.length === 0) return null;
+      const commits = items.map((item): CommitAuthor => {
+        const author = isRecord(item.author) ? item.author : {};
+        const gitAuthor = isRecord(item.commit) && isRecord(item.commit.author) ? item.commit.author : {};
+        const names = [author.login, gitAuthor.name].filter((name): name is string => typeof name === "string");
+        return {
+          email: typeof gitAuthor.email === "string" ? gitAuthor.email : null,
+          bot: author.type === "Bot" || names.some((name) => BOT_NAME.test(name.trim())),
+        };
+      });
+      const counts = classifyContributors(commits, ownerDomainsFromPublicCode(publiccode));
+      if (counts.total === 0) return null;
 
-      const insiders = new Set([context.owner.toLowerCase()]);
-      let caveat: string | undefined;
-      if (ownerIsOrganisation) {
-        const members = await githubPages(fetchFn, `/orgs/${context.owner}/public_members`, MAX_MEMBER_PAGES);
-        for (const member of members.items) {
-          if (typeof member.login === "string") insiders.add(member.login.toLowerCase());
-        }
-        caveat = `Outside means not one of the ${members.items.length} public members of ${context.owner}; members who keep their membership private count as outside. Bots are left out.`;
-      }
-      const outside = people.filter(
-        (person) => typeof person.login !== "string" || !insiders.has(person.login.toLowerCase())
-      ).length;
+      const scope = complete ? "the commits of the last 12 months" : `the latest ${items.length} commits of the last 12 months`;
+      const named = counts.insideDomains.length > 0 ? ` (${counts.insideDomains.join(", ")})` : "";
       return {
         figures: [
-          { label: contributors.complete ? "contributors" : "contributors (first 500)", value: people.length },
-          { label: "of whom outside the owner", value: outside },
+          { label: "contributors", value: counts.total },
+          { label: "from the owning organisation", value: counts.inside },
+          { label: "from other organisations", value: counts.other },
+          { label: "unknown", value: counts.unknown },
         ],
-        caveat,
+        caveat:
+          `Authors of ${scope}, told apart by email domain. The owning organisation${named} is the most common ` +
+          "organisation domain plus the domains in publiccode.yml; personal, hidden and noreply addresses are unknown, " +
+          "and one person with two addresses counts twice. Bots are left out.",
       };
     }
   );
@@ -517,17 +638,19 @@ function readmePath(tree: string[]): string | undefined {
  * Who uses the component and how much, per source, without a rating: declared
  * users, package downloads, container pulls, dependents and repository
  * activity. Only sources that know the component are shown; a source that
- * fails is shown as not measured. Never stores names of people or logins.
+ * fails is shown as not measured. Never stores names, logins, email addresses
+ * or the email domain of one person.
  */
 export async function checkUsage(
   context: RepoContext,
   meta: RepositoryMeta,
   tree: string[],
-  usedBy: string[],
+  publiccode: PublicCodeData | undefined,
   options: UsageOptions = {}
 ): Promise<CheckResult> {
   const fetchFn = options.fetchFn ?? fetch;
-  const measuredAt = (options.now ?? new Date()).toISOString().slice(0, 10);
+  const now = options.now ?? new Date();
+  const measuredAt = now.toISOString().slice(0, 10);
   const isGitHub = context.provider.id === "github";
 
   const treeFiles = new Set(tree);
@@ -546,7 +669,7 @@ export async function checkUsage(
   );
 
   const measured = await Promise.all([
-    declaredUsersSource(usedBy, measuredAt),
+    declaredUsersSource(publiccode?.usedBy ?? [], measuredAt),
     packages.nextcloudApp ? appStoreSource(fetchFn, packages.nextcloudApp, measuredAt) : null,
     isGitHub ? releaseSource(fetchFn, context, measuredAt) : null,
     packages.npm ? npmSource(fetchFn, packages.npm, context, measuredAt) : null,
@@ -555,7 +678,7 @@ export async function checkUsage(
     ...images.dockerHub.map((image) => dockerHubSource(fetchFn, image, measuredAt)),
     ...images.ghcr.map((image) => ghcrSource(image, measuredAt)),
     repositorySource(context, meta, measuredAt),
-    isGitHub ? contributorSource(fetchFn, context, meta, measuredAt) : null,
+    isGitHub ? contributorSource(fetchFn, context, publiccode, now, measuredAt) : null,
   ]);
   const found = measured.filter((source): source is UsageSource => source !== null);
 

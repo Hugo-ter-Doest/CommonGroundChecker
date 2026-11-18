@@ -160,7 +160,7 @@ export async function runChecks(
     checkHelmChart(context, tree, options?.helmChartLocations ?? []),
   ]);
   const usagePromise = networkChecksPromise.then(([, , , publiccodeAnalysis]) =>
-    checkUsage(context, meta, tree, publiccodeAnalysis.result.publiccode?.usedBy ?? [], {
+    checkUsage(context, meta, tree, publiccodeAnalysis.result.publiccode, {
       dockerLocations: options?.dockerLocations,
     })
   );
