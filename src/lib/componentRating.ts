@@ -35,6 +35,18 @@ export function documentCountText(aspectRating: AspectRating | undefined): strin
   return `${aspectRating.found ?? 0} of ${aspectRating.expected} found`;
 }
 
+/** Aspect sources that give an aspect stars; any other source shows information without a rating. */
+const RATED_SOURCES: ReadonlySet<string> = new Set(["criteria", "document-count", "check-aspect"]);
+
+/**
+ * The note after an aspect's name: "informative, not rated" for an aspect that
+ * never gets stars, "not counted" for one that has stars but weight 0.
+ */
+export function aspectNote(aspect: AspectDefinition): string | null {
+  if (!RATED_SOURCES.has(aspect.source.type)) return "informative, not rated";
+  return aspect.weight === 0 ? "not counted" : null;
+}
+
 /** The slug of a category's page in the rating guide. */
 export function categoryDocSlug(category: CriteriaCategory): string | undefined {
   const modelCategory = ASPECT_MODEL.find((entry) => resolveCategory(entry.category) === category)?.category;

@@ -5,6 +5,7 @@ import UsageTable from "@/components/UsageTable";
 import type { AspectDefinition } from "@/lib/aspects";
 import {
   aspectComposition,
+  aspectNote,
   aspectsOfCategory,
   categoryDocSlug,
   documentCountText,
@@ -131,6 +132,7 @@ function AspectRow({
   docSlug?: string;
 }) {
   const headingId = `aspect-rating-${aspect.id}`;
+  const note = aspectNote(aspect);
   return (
     <div role="group" aria-labelledby={headingId} className="space-y-2">
       <div className="grid gap-2 sm:grid-cols-[12rem_1fr_11rem] sm:items-center">
@@ -138,7 +140,7 @@ function AspectRow({
           aspect={aspect}
           docSlug={docSlug}
           headingId={headingId}
-          note={aspect.weight === 0 ? "not counted" : null}
+          note={note}
         />
         <AspectBar title={aspect.title} rating={aspectRating?.rating ?? null} />
         <AspectValue aspect={aspect} aspectRating={aspectRating} />
@@ -183,7 +185,7 @@ function InformativeAspectRow({
   const headingId = `aspect-rating-${aspect.id}`;
   return (
     <div role="group" aria-labelledby={headingId} className="space-y-2">
-      <AspectHeading aspect={aspect} docSlug={docSlug} headingId={headingId} note="informative, not rated" />
+      <AspectHeading aspect={aspect} docSlug={docSlug} headingId={headingId} note={aspectNote(aspect)} />
       <p className="text-xs text-gray-600">
         Each source is shown on its own, with its date and caveat. The figures are not added up, rated or compared
         with other components.
