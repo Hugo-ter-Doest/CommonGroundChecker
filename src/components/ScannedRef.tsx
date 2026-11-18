@@ -1,4 +1,4 @@
-import { formatScanned, type ScanRefKind } from "@/lib/scanRef";
+import { formatScanned, SCAN_REF_KINDS } from "@/lib/scanRef";
 
 interface ScannedRefProps {
   scannedRef?: string | null;
@@ -7,12 +7,10 @@ interface ScannedRefProps {
   warning?: string | null;
 }
 
-const KINDS: ScanRefKind[] = ["default-branch", "branch", "release", "tag"];
-
 /** "Scanned: development @ abc1234", plus the warning when the requested ref was not used. */
 export default function ScannedRef({ scannedRef, kind, commit, warning }: ScannedRefProps) {
   if (!scannedRef) return null;
-  const knownKind = KINDS.find((value) => value === kind) ?? null;
+  const knownKind = SCAN_REF_KINDS.find((value) => value === kind) ?? null;
 
   return (
     <>

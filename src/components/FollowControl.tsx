@@ -2,7 +2,7 @@
 
 import { useId, useState } from "react";
 import { putRepositoryFollow } from "@/lib/apiClient";
-import { LATEST_RELEASE_REF } from "@/lib/scanRef";
+import { DEFAULT_BRANCH_REF, LATEST_RELEASE_REF } from "@/lib/scanRef";
 
 export const CHECK_INTERVAL_OPTIONS = [
   { hours: 24, label: "Daily" },
@@ -12,11 +12,18 @@ export const CHECK_INTERVAL_OPTIONS = [
 
 const DEFAULT_INTERVAL_HOURS = 168;
 
-type ScanRefMode = "default" | "latest-release" | "named";
+type ScanRefMode = "auto" | "default-branch" | "latest-release" | "named";
 
 function scanRefMode(scanRef: string | null): ScanRefMode {
-  if (!scanRef) return "default";
+  if (!scanRef) return "auto";
+  if (scanRef === DEFAULT_BRANCH_REF) return "default-branch";
   return scanRef === LATEST_RELEASE_REF ? "latest-release" : "named";
+}
+
+function scanRefFor(mode: ScanRefMode, namedRef: string): string | null {
+  if (mode === "auto") return null;
+  if (mode === "named") return namedRef.trim();
+  return mode === "default-branch" ? DEFAULT_BRANCH_REF : LATEST_RELEASE_REF;
 }
 
 interface FollowControlProps {
@@ -65,12 +72,7 @@ export default function FollowControl({
         {
           followed,
           checkIntervalHours: intervalHours,
-          scanRef:
-            refMode === "default"
-              ? null
-              : refMode === "latest-release"
-              ? LATEST_RELEASE_REF
-              : namedRef.trim(),
+          scanRef: scanRefFor(refMode, namedRef),
         },
         adminToken
       );
@@ -151,7 +153,8 @@ export default function FollowControl({
             onChange={(event) => setRefMode(event.target.value as ScanRefMode)}
             className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
           >
-            <option value="default">Default branch</option>
+            <option value="auto">Released version (declared version, else latest release)</option>
+            <option value="default-branch">Default branch</option>
             <option value="latest-release">Latest release</option>
             <option value="named">Branch or tag</option>
           </select>

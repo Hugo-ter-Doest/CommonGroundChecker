@@ -108,7 +108,7 @@ describe("FollowControl", () => {
       />
     );
 
-    expect((screen.getByLabelText("What to scan") as HTMLSelectElement).value).toBe("default");
+    expect((screen.getByLabelText("What to scan") as HTMLSelectElement).value).toBe("auto");
     fireEvent.change(screen.getByLabelText("What to scan"), { target: { value: "named" } });
     fireEvent.change(screen.getByLabelText("Branch or tag name"), {
       target: { value: " development " },
@@ -155,6 +155,39 @@ describe("FollowControl", () => {
     await waitFor(() => {
       expect(mockedPut.mock.calls[0][1]).toMatchObject({ scanRef: "latest-release" });
     });
+  });
+
+  it("saves default-branch to force the default branch", async () => {
+    mockedPut.mockResolvedValueOnce({
+      id: "repo-id",
+      followed: true,
+      checkIntervalHours: 168,
+      scanRef: "default-branch",
+      lastCheckedAt: null,
+      nextCheckAt: null,
+    });
+
+    render(
+      <FollowControl
+        repoId="repo-id"
+        initialFollowed
+        initialCheckIntervalHours={168}
+        initialNextCheckAt={null}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText("What to scan"), {
+      target: { value: "default-branch" },
+    });
+    fireEvent.change(screen.getByLabelText("Admin token"), { target: { value: "secret" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(mockedPut.mock.calls[0][1]).toMatchObject({ scanRef: "default-branch" });
+    });
+    expect((screen.getByLabelText("What to scan") as HTMLSelectElement).value).toBe(
+      "default-branch"
+    );
   });
 
   it("fills in a stored branch name", () => {

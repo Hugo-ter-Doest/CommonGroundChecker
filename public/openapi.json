@@ -480,7 +480,7 @@
               "string",
               "null"
             ],
-            "description": "The branch or tag scheduled scans use: null for the default branch, \"latest-release\" for the newest stable release, or a branch or tag name"
+            "description": "The branch or tag scheduled scans use: null for the released version (the tag of the publiccode.yml softwareVersion, else the latest release), \"default-branch\", \"latest-release\", or a branch or tag name"
           }
         },
         "required": [
@@ -509,7 +509,7 @@
               "string",
               "null"
             ],
-            "description": "The branch or tag scheduled scans use: null for the default branch, \"latest-release\" for the newest stable release, or a branch or tag name"
+            "description": "The branch or tag scheduled scans use: null for the released version (the tag of the publiccode.yml softwareVersion, else the latest release), \"default-branch\", \"latest-release\", or a branch or tag name"
           },
           "lastCheckedAt": {
             "type": [
@@ -596,7 +596,7 @@
               "string",
               "null"
             ],
-            "description": "The branch or tag scheduled scans use: null for the default branch, \"latest-release\" for the newest stable release, or a branch or tag name"
+            "description": "The branch or tag scheduled scans use: null for the released version (the tag of the publiccode.yml softwareVersion, else the latest release), \"default-branch\", \"latest-release\", or a branch or tag name"
           },
           "lastCheckedAt": {
             "type": [
@@ -755,7 +755,7 @@
           },
           "ref": {
             "type": "string",
-            "description": "The branch or tag to scan; empty for the default branch, or \"latest-release\" for the newest stable release"
+            "description": "The branch or tag to scan. Empty scans the released version: the tag of the publiccode.yml softwareVersion, else the newest stable release or semver tag, else the default branch with a warning. \"default-branch\" scans the default branch, \"latest-release\" the newest stable release"
           }
         },
         "required": [
@@ -793,7 +793,7 @@
               "string",
               "null"
             ],
-            "description": "How the scanned ref was chosen: default-branch, branch, release, or tag (the newest semver tag when there is no release)"
+            "description": "Why the scanned ref was chosen: declared-version (the tag of the publiccode.yml softwareVersion), release (the newest stable release), tag (the newest stable semver tag), branch (named in the request), default-branch (asked for), or default-branch-fallback (no release found)"
           },
           "scannedCommit": {
             "type": [
@@ -855,7 +855,7 @@
               "string",
               "null"
             ],
-            "description": "How the scanned ref was chosen: default-branch, branch, release, or tag (the newest semver tag when there is no release)"
+            "description": "Why the scanned ref was chosen: declared-version (the tag of the publiccode.yml softwareVersion), release (the newest stable release), tag (the newest stable semver tag), branch (named in the request), default-branch (asked for), or default-branch-fallback (no release found)"
           },
           "scannedCommit": {
             "type": [
@@ -924,7 +924,7 @@
                   "string",
                   "null"
                 ],
-                "description": "The branch or tag scheduled scans use: null for the default branch, \"latest-release\" for the newest stable release, or a branch or tag name"
+                "description": "The branch or tag scheduled scans use: null for the released version (the tag of the publiccode.yml softwareVersion, else the latest release), \"default-branch\", \"latest-release\", or a branch or tag name"
               },
               "lastCheckedAt": {
                 "type": [
@@ -1236,7 +1236,7 @@
           },
           "scannedRefKind": {
             "type": "string",
-            "description": "How the scanned ref was chosen: default-branch, branch, release, or tag (the newest semver tag when there is no release)"
+            "description": "Why the scanned ref was chosen: declared-version (the tag of the publiccode.yml softwareVersion), release (the newest stable release), tag (the newest stable semver tag), branch (named in the request), default-branch (asked for), or default-branch-fallback (no release found)"
           },
           "scannedCommit": {
             "type": [
@@ -1247,7 +1247,7 @@
           },
           "scanRefWarning": {
             "type": "string",
-            "description": "Set when the requested ref could not be used as asked, for example when there is no release to scan"
+            "description": "Set when no released version was found and the default branch was scanned instead"
           },
           "repoMeta": {
             "$ref": "#/components/schemas/RepoMeta"

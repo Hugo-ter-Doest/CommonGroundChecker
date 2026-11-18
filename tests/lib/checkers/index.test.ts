@@ -311,10 +311,29 @@ describe("runChecks", () => {
     expect(report.repoMeta.defaultBranch).toBe("main");
   });
 
-  it("scans the default branch when no ref is requested", async () => {
-    useScanRefProvider();
+  it("scans the tag of the declared softwareVersion when no ref is requested", async () => {
+    const refsAtRead: Array<string | undefined> = [];
+    const { context } = useScanRefProvider({
+      listTags: vi.fn(async () => ["v1.1.0", "v1.0.0"]),
+      getFileContent: vi.fn(async (ctx: { ref?: string }, path: string) => {
+        refsAtRead.push(ctx.ref);
+        return path === "publiccode.yml" ? "softwareVersion: 1.0.0\n" : null;
+      }),
+    });
 
     const report = await runChecks("https://github.com/org/repo", {});
+
+    expect(refsAtRead[0]).toBeUndefined();
+    expect(mocks.getRepoTree).toHaveBeenCalledWith(context, "v100".padEnd(40, "0"));
+    expect(cloneArgs()).toEqual(expect.arrayContaining(["--branch", "v1.0.0"]));
+    expect(report).toMatchObject({ scannedRef: "v1.0.0", scannedRefKind: "declared-version" });
+    expect(report.scanRefWarning).toBeUndefined();
+  });
+
+  it("scans the default branch for default-branch", async () => {
+    useScanRefProvider({ listTags: vi.fn(async () => ["v1.0.0"]) });
+
+    const report = await runChecks("https://github.com/org/repo", { ref: "default-branch" });
 
     expect(cloneArgs()).toEqual(expect.arrayContaining(["--branch", "main"]));
     expect(report).toMatchObject({
@@ -336,9 +355,9 @@ describe("runChecks", () => {
 
     childProcessMocks.spawn.mockClear();
     useScanRefProvider();
-    const fallback = await runChecks("https://github.com/org/repo", { ref: "latest-release" });
-    expect(fallback).toMatchObject({ scannedRef: "main", scannedRefKind: "default-branch" });
-    expect(fallback.scanRefWarning).toContain("No stable release or semver tag");
+    const fallback = await runChecks("https://github.com/org/repo", {});
+    expect(fallback).toMatchObject({ scannedRef: "main", scannedRefKind: "default-branch-fallback" });
+    expect(fallback.scanRefWarning).toContain("no stable release or semver tag");
   });
 
   it("refuses to scan a branch that does not exist", async () => {

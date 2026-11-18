@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  findVersionTag,
   formatScanned,
   normalizeRequestedRef,
   pickLatestStableRelease,
@@ -15,8 +16,10 @@ function contextWith(options: {
   commits?: Record<string, string>;
   releases?: RepositoryRelease[] | Error;
   tags?: string[] | Error;
+  files?: Record<string, string>;
 }): RepoContext {
   const provider = {
+    getFileContent: vi.fn(async (_context: RepoContext, path: string) => options.files?.[path] ?? null),
     getCommitSha: vi.fn(async (_context: RepoContext, ref: string) => options.commits?.[ref] ?? null),
     listReleases: vi.fn(async () => {
       if (options.releases instanceof Error) throw options.releases;
@@ -47,8 +50,9 @@ describe("normalizeRequestedRef", () => {
     expect(normalizeRequestedRef("  ")).toBeNull();
   });
 
-  it("accepts latest-release and branch or tag names", () => {
+  it("accepts latest-release, default-branch and branch or tag names", () => {
     expect(normalizeRequestedRef("latest-release")).toBe("latest-release");
+    expect(normalizeRequestedRef("default-branch")).toBe("default-branch");
     expect(normalizeRequestedRef(" development ")).toBe("development");
     expect(normalizeRequestedRef("release/2.x")).toBe("release/2.x");
   });
@@ -86,11 +90,86 @@ describe("pickLatestStableRelease", () => {
   });
 });
 
-describe("resolveScanRef", () => {
-  it("scans the default branch when no ref is requested", async () => {
-    const context = contextWith({ commits: { main: SHA } });
+describe("resolveScanRef without a requested ref", () => {
+  it("1. scans the tag of the publiccode.yml softwareVersion, matching with a leading v", async () => {
+    const context = contextWith({
+      files: { "publiccode.yml": 'publiccodeYmlVersion: "0.2"\nsoftwareVersion: "1.2.2"\n' },
+      tags: ["v1.3.0", "v1.2.2", "v1.2.1"],
+      releases: [release("v1.3.0", "2026-11-01T00:00:00Z")],
+      commits: { "v1.2.2": SHA },
+    });
 
     await expect(resolveScanRef(context, "main", null)).resolves.toEqual({
+      ref: "v1.2.2",
+      kind: "declared-version",
+      commit: SHA,
+    });
+  });
+
+  it("1. matches a declared v-version to a tag without the v, and reads publiccode.yaml", async () => {
+    const context = contextWith({
+      files: { "publiccode.yaml": "softwareVersion: v1.31.0 # current\n" },
+      tags: ["1.31.2", "1.31.0"],
+      commits: { "1.31.0": SHA },
+    });
+
+    await expect(resolveScanRef(context, "main", null)).resolves.toMatchObject({
+      ref: "1.31.0",
+      kind: "declared-version",
+    });
+  });
+
+  it("2. scans the newest stable release when no tag matches the declared version", async () => {
+    const context = contextWith({
+      files: { "publiccode.yml": "softwareVersion: 2.0.0\n" },
+      tags: ["v1.0.0", "v1.1.0"],
+      releases: [release("v1.1.0", "2026-11-01T00:00:00Z"), release("v1.0.0", "2026-10-01T00:00:00Z")],
+      commits: { "v1.1.0": SHA },
+    });
+
+    await expect(resolveScanRef(context, "main", null)).resolves.toEqual({
+      ref: "v1.1.0",
+      kind: "release",
+      commit: SHA,
+    });
+  });
+
+  it("2. scans the newest stable semver tag without publiccode.yml or a release", async () => {
+    const context = contextWith({ tags: ["v1.2.7-unstable.1", "v1.2.2", "v1.2.0"], commits: { "v1.2.2": SHA } });
+
+    await expect(resolveScanRef(context, "main", null)).resolves.toEqual({
+      ref: "v1.2.2",
+      kind: "tag",
+      commit: SHA,
+    });
+  });
+
+  it("3. falls back to the default branch with a warning when nothing is released", async () => {
+    const context = contextWith({
+      files: { "publiccode.yml": "softwareVersion: 0.1.4\n" },
+      tags: ["nightly"],
+      releases: new Error("GitHub API 404"),
+      commits: { main: SHA },
+    });
+
+    const resolved = await resolveScanRef(context, "main", null);
+
+    expect(resolved).toMatchObject({ ref: "main", kind: "default-branch-fallback", commit: SHA });
+    expect(resolved.warning).toBe(
+      "No tag matches the publiccode.yml softwareVersion 0.1.4 and no stable release or semver tag was found, so the default branch main was scanned instead of a released version."
+    );
+  });
+});
+
+describe("resolveScanRef with a requested ref", () => {
+  it("scans the default branch for default-branch, ignoring the declared version", async () => {
+    const context = contextWith({
+      commits: { main: SHA },
+      files: { "publiccode.yml": "softwareVersion: 1.0.0\n" },
+      tags: ["1.0.0"],
+    });
+
+    await expect(resolveScanRef(context, "main", "default-branch")).resolves.toEqual({
       ref: "main",
       kind: "default-branch",
       commit: SHA,
@@ -103,29 +182,24 @@ describe("resolveScanRef", () => {
       new Error("GitHub API 500")
     );
 
-    await expect(resolveScanRef(context, "main", null)).resolves.toEqual({
+    await expect(resolveScanRef(context, "main", "default-branch")).resolves.toEqual({
       ref: "main",
       kind: "default-branch",
       commit: null,
     });
   });
 
-  it("scans a named branch at its commit", async () => {
-    const context = contextWith({ commits: { development: SHA }, tags: ["v1.0.0"] });
+  it("scans a named branch or tag at its commit", async () => {
+    const context = contextWith({ commits: { development: SHA, "v1.0.0": SHA }, tags: ["v1.0.0"] });
 
     await expect(resolveScanRef(context, "main", "development")).resolves.toEqual({
       ref: "development",
       kind: "branch",
       commit: SHA,
     });
-  });
-
-  it("marks a named tag as a tag", async () => {
-    const context = contextWith({ commits: { "v1.0.0": SHA }, tags: ["v1.0.0"] });
-
     await expect(resolveScanRef(context, "main", "v1.0.0")).resolves.toMatchObject({
       ref: "v1.0.0",
-      kind: "tag",
+      kind: "branch",
     });
   });
 
@@ -138,15 +212,16 @@ describe("resolveScanRef", () => {
     );
   });
 
-  it("scans the newest stable release for latest-release", async () => {
+  it("scans the newest stable release for latest-release, ignoring the declared version", async () => {
     const context = contextWith({
       commits: { "v1.2.0": SHA },
+      files: { "publiccode.yml": "softwareVersion: 1.1.0\n" },
       releases: [
         release("v1.3.0-rc.1", "2026-11-10T00:00:00Z"),
         release("v1.2.0", "2026-11-01T00:00:00Z"),
         release("v1.1.0", "2026-10-01T00:00:00Z"),
       ],
-      tags: ["v9.9.9"],
+      tags: ["v1.1.0", "v9.9.9"],
     });
 
     await expect(resolveScanRef(context, "main", "latest-release")).resolves.toEqual({
@@ -156,7 +231,7 @@ describe("resolveScanRef", () => {
     });
   });
 
-  it("falls back to the newest semver tag when there is no release", async () => {
+  it("falls back to the newest semver tag for latest-release when there is no release", async () => {
     const context = contextWith({
       commits: { "2.4.1": SHA },
       releases: new Error("GitHub API 404"),
@@ -170,23 +245,40 @@ describe("resolveScanRef", () => {
     });
   });
 
-  it("falls back to the default branch with a warning without a release or semver tag", async () => {
+  it("falls back to the default branch with a warning for latest-release without a release or tag", async () => {
     const context = contextWith({ commits: { development: SHA }, tags: ["nightly"] });
 
     const resolved = await resolveScanRef(context, "development", "latest-release");
 
-    expect(resolved).toMatchObject({ ref: "development", kind: "default-branch", commit: SHA });
+    expect(resolved).toMatchObject({
+      ref: "development",
+      kind: "default-branch-fallback",
+      commit: SHA,
+    });
     expect(resolved.warning).toBe(
       "No stable release or semver tag was found, so the default branch development was scanned instead of the latest release."
     );
   });
 });
 
+describe("findVersionTag", () => {
+  it("prefers the exact tag and matches with or without a leading v", () => {
+    expect(findVersionTag(["v1.2.2", "1.2.2"], "1.2.2")).toBe("1.2.2");
+    expect(findVersionTag(["v1.2.2"], "1.2.2")).toBe("v1.2.2");
+    expect(findVersionTag(["1.2.2"], "v1.2.2")).toBe("1.2.2");
+    expect(findVersionTag(["v1.2.20"], "1.2.2")).toBeNull();
+  });
+});
+
 describe("formatScanned", () => {
-  it("names the ref by how it was chosen, with the short commit", () => {
+  it("says why the ref was chosen, with the short commit", () => {
+    expect(formatScanned("v1.2.2", "declared-version", SHA)).toBe("declared version v1.2.2 @ 0123456");
+    expect(formatScanned("v1.2.0", "release", SHA)).toBe("latest release v1.2.0 @ 0123456");
+    expect(formatScanned("v1.2.0", "tag", null)).toBe("newest tag v1.2.0");
     expect(formatScanned("development", "branch", SHA)).toBe("development @ 0123456");
-    expect(formatScanned("v1.2.0", "release", SHA)).toBe("release v1.2.0 @ 0123456");
-    expect(formatScanned("v1.2.0", "tag", null)).toBe("tag v1.2.0");
     expect(formatScanned("main", "default-branch", SHA)).toBe("main (default branch) @ 0123456");
+    expect(formatScanned("main", "default-branch-fallback", null)).toBe(
+      "main (default branch, no release found)"
+    );
   });
 });

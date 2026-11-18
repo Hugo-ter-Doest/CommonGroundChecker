@@ -1,14 +1,36 @@
-import type { RepoContext, RepositoryRelease } from "./providers/types";
+import type { RepoContext } from "./providers/types";
 
 /** The requested ref that scans the newest stable release instead of a branch. */
 export const LATEST_RELEASE_REF = "latest-release";
 
+/** The requested ref that always scans the default branch. */
+export const DEFAULT_BRANCH_REF = "default-branch";
+
 /**
- * How the scanned ref was chosen: the repository's default branch, a branch
- * or tag named in the request, the newest stable release, or the newest
- * stable semver tag when the repository has no release.
+ * Why the scanned ref was chosen:
+ * - `declared-version`: the tag matching publiccode.yml `softwareVersion`;
+ * - `release`: the newest stable release;
+ * - `tag`: the newest stable semver tag, when there is no release;
+ * - `branch`: a branch or tag named in the request;
+ * - `default-branch`: the default branch, because it was asked for;
+ * - `default-branch-fallback`: the default branch, because no release was found.
  */
-export type ScanRefKind = "default-branch" | "branch" | "release" | "tag";
+export type ScanRefKind =
+  | "declared-version"
+  | "release"
+  | "tag"
+  | "branch"
+  | "default-branch"
+  | "default-branch-fallback";
+
+export const SCAN_REF_KINDS: ScanRefKind[] = [
+  "declared-version",
+  "release",
+  "tag",
+  "branch",
+  "default-branch",
+  "default-branch-fallback",
+];
 
 export interface ResolvedScanRef {
   /** Branch or tag name that is scanned. */
@@ -24,17 +46,17 @@ export interface ResolvedScanRef {
 export class ScanRefError extends Error {}
 
 /**
- * Reads a requested ref. An empty or missing value means the default branch
- * and is returned as null; otherwise the value is `latest-release` or a
- * branch or tag name that follows git's ref-name rules. Returns `undefined`
- * for any other value.
+ * Reads a requested ref. An empty or missing value lets the checker choose
+ * (see resolveScanRef) and is returned as null; otherwise the value is
+ * `default-branch`, `latest-release` or a branch or tag name that follows
+ * git's ref-name rules. Returns `undefined` for any other value.
  */
 export function normalizeRequestedRef(value: unknown): string | null | undefined {
   if (value === undefined || value === null) return null;
   if (typeof value !== "string") return undefined;
   const trimmed = value.trim();
   if (!trimmed) return null;
-  if (trimmed === LATEST_RELEASE_REF) return trimmed;
+  if (trimmed === LATEST_RELEASE_REF || trimmed === DEFAULT_BRANCH_REF) return trimmed;
   const valid =
     trimmed.length <= 255 &&
     !/[\s~^:?*[\\\x00-\x1f\x7f]/.test(trimmed) &&
@@ -95,13 +117,72 @@ async function commitOrNull(context: RepoContext, ref: string): Promise<string |
   }
 }
 
+async function orEmpty<T>(read: () => Promise<T[]>): Promise<T[]> {
+  try {
+    return await read();
+  } catch {
+    return [];
+  }
+}
+
+const PUBLICCODE_FILES = ["publiccode.yml", "publiccode.yaml"];
+
+/** The `softwareVersion` that publiccode.yml declares on the default branch, or null. */
+export async function readDeclaredVersion(context: RepoContext): Promise<string | null> {
+  for (const file of PUBLICCODE_FILES) {
+    let content: string | null = null;
+    try {
+      content = await context.provider.getFileContent(context, file);
+    } catch {
+      content = null;
+    }
+    if (!content) continue;
+    const match = content.match(/^softwareVersion:[ \t]*["']?([^"'\s#]+)/m);
+    return match?.[1] ?? null;
+  }
+  return null;
+}
+
+/** The tag that names a version, with or without a leading "v". */
+export function findVersionTag(tags: string[], version: string): string | null {
+  const bare = version.replace(/^v/i, "");
+  return tags.find((tag) => tag === version) ?? tags.find((tag) => tag.replace(/^v/i, "") === bare) ?? null;
+}
+
+async function latestReleaseOrTag(context: RepoContext, tags: string[] | null) {
+  const release = pickLatestStableRelease(await orEmpty(() => context.provider.listReleases(context)));
+  if (release) return { ref: release, kind: "release" as const };
+  const tag = pickNewestStableSemverTag(tags ?? (await orEmpty(() => context.provider.listTags(context))));
+  if (tag) return { ref: tag, kind: "tag" as const };
+  return null;
+}
+
+async function fallBackToDefaultBranch(
+  context: RepoContext,
+  defaultBranch: string,
+  warning: string
+): Promise<ResolvedScanRef> {
+  return {
+    ref: defaultBranch,
+    kind: "default-branch-fallback",
+    commit: await commitOrNull(context, defaultBranch),
+    warning,
+  };
+}
+
 /**
  * Works out which ref a check scans and the commit it points at.
  *
- * - no ref: the default branch;
+ * - no ref: the tag matching publiccode.yml `softwareVersion` on the default
+ *   branch, else the newest stable release, else the newest stable semver
+ *   tag, else the default branch with a warning;
+ * - `default-branch`: the default branch;
  * - `latest-release`: the newest stable release, else the newest stable
  *   semver tag, else the default branch with a warning;
  * - a branch or tag name: that ref, or a ScanRefError when it does not exist.
+ *
+ * `context.defaultBranch` must be set and `context.ref` unset, so file reads
+ * come from the default branch.
  */
 export async function resolveScanRef(
   context: RepoContext,
@@ -110,7 +191,7 @@ export async function resolveScanRef(
 ): Promise<ResolvedScanRef> {
   const { provider } = context;
 
-  if (!requested) {
+  if (requested === DEFAULT_BRANCH_REF) {
     return {
       ref: defaultBranch,
       kind: "default-branch",
@@ -118,25 +199,37 @@ export async function resolveScanRef(
     };
   }
 
+  if (!requested) {
+    const tags = await orEmpty(() => provider.listTags(context));
+    const declared = await readDeclaredVersion(context);
+    const declaredTag = declared ? findVersionTag(tags, declared) : null;
+    if (declaredTag) {
+      return {
+        ref: declaredTag,
+        kind: "declared-version",
+        commit: await commitOrNull(context, declaredTag),
+      };
+    }
+
+    const released = await latestReleaseOrTag(context, tags);
+    if (released) return { ...released, commit: await commitOrNull(context, released.ref) };
+
+    return fallBackToDefaultBranch(
+      context,
+      defaultBranch,
+      `No tag matches the publiccode.yml softwareVersion${declared ? ` ${declared}` : ""} and no stable release or semver tag was found, so the default branch ${defaultBranch} was scanned instead of a released version.`
+    );
+  }
+
   if (requested === LATEST_RELEASE_REF) {
-    const releases = await provider.listReleases(context).catch((): RepositoryRelease[] => []);
-    const release = pickLatestStableRelease(releases);
-    if (release) {
-      return { ref: release, kind: "release", commit: await commitOrNull(context, release) };
-    }
+    const released = await latestReleaseOrTag(context, null);
+    if (released) return { ...released, commit: await commitOrNull(context, released.ref) };
 
-    const tags = await provider.listTags(context).catch((): string[] => []);
-    const tag = pickNewestStableSemverTag(tags);
-    if (tag) {
-      return { ref: tag, kind: "tag", commit: await commitOrNull(context, tag) };
-    }
-
-    return {
-      ref: defaultBranch,
-      kind: "default-branch",
-      commit: await commitOrNull(context, defaultBranch),
-      warning: `No stable release or semver tag was found, so the default branch ${defaultBranch} was scanned instead of the latest release.`,
-    };
+    return fallBackToDefaultBranch(
+      context,
+      defaultBranch,
+      `No stable release or semver tag was found, so the default branch ${defaultBranch} was scanned instead of the latest release.`
+    );
   }
 
   const commit = await provider.getCommitSha(context, requested);
@@ -145,15 +238,20 @@ export async function resolveScanRef(
       `Branch or tag "${requested}" was not found in ${context.projectPath}.`
     );
   }
-  const tags = await provider.listTags(context).catch((): string[] => []);
-  return { ref: requested, kind: tags.includes(requested) ? "tag" : "branch", commit };
+  return { ref: requested, kind: "branch", commit };
 }
 
-/** How a scanned ref reads on a page, for example `development` or `release v1.2.0`. */
+/**
+ * How a scanned ref reads on a page, with why it was chosen: for example
+ * `declared version v1.2.2`, `latest release v1.2.0` or `main (default
+ * branch, no release found)`.
+ */
 export function formatScannedRef(ref: string, kind: ScanRefKind | null | undefined): string {
-  if (kind === "release") return `release ${ref}`;
-  if (kind === "tag") return `tag ${ref}`;
+  if (kind === "declared-version") return `declared version ${ref}`;
+  if (kind === "release") return `latest release ${ref}`;
+  if (kind === "tag") return `newest tag ${ref}`;
   if (kind === "default-branch") return `${ref} (default branch)`;
+  if (kind === "default-branch-fallback") return `${ref} (default branch, no release found)`;
   return ref;
 }
 

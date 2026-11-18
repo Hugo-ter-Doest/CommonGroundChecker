@@ -336,14 +336,14 @@ export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
 
         <div>
           <label htmlFor="scan-ref" className="block text-xs text-gray-500 mb-1">
-            Branch or tag to scan (optional; empty is the default branch, latest-release is the newest stable release)
+            Branch or tag to scan (optional; empty scans the released version: the tag of the publiccode.yml softwareVersion, else the latest release; default-branch scans the default branch)
           </label>
           <input
             id="scan-ref"
             type="text"
             value={scanRef}
             onChange={(e) => setScanRef(e.target.value)}
-            placeholder="development, v1.2.0 or latest-release"
+            placeholder="development, v1.2.0, latest-release or default-branch"
             className="w-full sm:w-80 px-4 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-cg-lightblue focus:border-transparent disabled:opacity-60"
             disabled={loading}
           />

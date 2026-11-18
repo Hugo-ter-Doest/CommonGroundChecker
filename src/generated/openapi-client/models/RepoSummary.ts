@@ -21,7 +21,7 @@ export type RepoSummary = {
      */
     checkIntervalHours: number;
     /**
-     * The branch or tag scheduled scans use: null for the default branch, "latest-release" for the newest stable release, or a branch or tag name
+     * The branch or tag scheduled scans use: null for the released version (the tag of the publiccode.yml softwareVersion, else the latest release), "default-branch", "latest-release", or a branch or tag name
      */
     scanRef: string | null;
     /**

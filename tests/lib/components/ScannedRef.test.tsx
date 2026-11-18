@@ -18,23 +18,23 @@ describe("ScannedRef", () => {
     expect(screen.getByText("Scanned: development @ abc1234")).toBeTruthy();
   });
 
-  it("names a release scan", () => {
-    render(<ScannedRef scannedRef="v1.2.0" kind="release" commit={SHA} />);
+  it("says why a tag was scanned", () => {
+    render(<ScannedRef scannedRef="v1.2.2" kind="declared-version" commit={SHA} />);
 
-    expect(screen.getByText("Scanned: release v1.2.0 @ abc1234")).toBeTruthy();
+    expect(screen.getByText("Scanned: declared version v1.2.2 @ abc1234")).toBeTruthy();
   });
 
   it("shows the warning when the requested ref was not used", () => {
     render(
       <ScannedRef
         scannedRef="main"
-        kind="default-branch"
+        kind="default-branch-fallback"
         commit={null}
         warning="No stable release or semver tag was found"
       />
     );
 
-    expect(screen.getByText("Scanned: main (default branch)")).toBeTruthy();
+    expect(screen.getByText("Scanned: main (default branch, no release found)")).toBeTruthy();
     expect(screen.getByRole("alert").textContent).toContain("No stable release");
   });
 

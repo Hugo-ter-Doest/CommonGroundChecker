@@ -24,7 +24,7 @@ export const $RepoAnalysisInput = {
         },
         scannedRefKind: {
             type: 'string',
-            description: `How the scanned ref was chosen: default-branch, branch, release, or tag (the newest semver tag when there is no release)`,
+            description: `Why the scanned ref was chosen: declared-version (the tag of the publiccode.yml softwareVersion), release (the newest stable release), tag (the newest stable semver tag), branch (named in the request), default-branch (asked for), or default-branch-fallback (no release found)`,
             isNullable: true,
         },
         scannedCommit: {

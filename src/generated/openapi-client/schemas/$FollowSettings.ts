@@ -20,7 +20,7 @@ export const $FollowSettings = {
         },
         scanRef: {
             type: 'string',
-            description: `The branch or tag scheduled scans use: null for the default branch, "latest-release" for the newest stable release, or a branch or tag name`,
+            description: `The branch or tag scheduled scans use: null for the released version (the tag of the publiccode.yml softwareVersion, else the latest release), "default-branch", "latest-release", or a branch or tag name`,
             isRequired: true,
             isNullable: true,
         },
