@@ -5,6 +5,7 @@ import { spawn } from "node:child_process";
 import type { CheckResult, MeasurementGroup, MeasurementRow, StarLevel, StarRating } from "../types";
 import { STAR_LEVELS } from "../types";
 import { formatStars, ratingToStars } from "../stars";
+import { PASSING_MAINTAINABILITY_STARS } from "../ratings";
 
 const SCRIPT_PATH = path.join(process.cwd(), "scripts", "maintainability", "check_maintainability.py");
 const TIMEOUT_MS = (Number(process.env.MAINTAINABILITY_TIMEOUT_SECONDS) || 600) * 1000;
@@ -312,7 +313,7 @@ export function mapMaintainabilityReport(report: MaintainabilityReport): CheckRe
   const [low, high] = overall.range;
   const rating = (low + high) / 2;
   const starRating = ratingToStars(rating);
-  const status = starRating >= 4 ? "pass" : starRating === 3 ? "warn" : "fail";
+  const status = starRating >= PASSING_MAINTAINABILITY_STARS ? "pass" : starRating === 3 ? "warn" : "fail";
   const measurements = maintainabilityMeasurements(report);
 
   const evidence = Object.entries(report.rating.properties)

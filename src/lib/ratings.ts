@@ -1,12 +1,16 @@
 import type { AspectRating, CheckResult, CheckStatus, Endorsement, RequirementLevel } from "./types";
 import { CATEGORY_ORDER, CATEGORY_WEIGHTS } from "./criteria";
 import { ASPECT_MODEL, resolveCategory, type AspectDefinition, type CategoryAspects } from "./aspects";
-import { formatStars, ratingToStars } from "./stars";
+import { formatStars, minimumRatingFor, ratingToStars } from "./stars";
 
 export const MIN_RATING = 0.5;
 export const MAX_RATING = 5.5;
 /** The overall rating a component needs to be suitable for Common Ground. */
 export const PASSING_RATING = 2.5;
+/** The maintainability stars a component needs to be suitable for Common Ground: the SIG/TÜViT certification level. */
+export const PASSING_MAINTAINABILITY_STARS = 4;
+/** The maintainability rating where those stars start. */
+export const PASSING_MAINTAINABILITY_RATING = minimumRatingFor(PASSING_MAINTAINABILITY_STARS);
 
 /** Ratings of a criterion that has no scale of its own: the ends and the middle of the scale. */
 const RATING_BY_STATUS: Partial<Record<CheckStatus, number>> = {
@@ -198,11 +202,13 @@ export function computeRatings(
 
 /**
  * A component is suitable for Common Ground when no mandatory criterion fails,
- * its overall rating is at least 2.5, and it is maintained. The verdict is
- * advice for a buyer, not a condition for being listed. The reasons name each
- * failing mandatory criterion, a rating that is too low, and, in the words of
- * the Maintained criterion, why there is no valid maintenance contract. A scan
- * without the maintenance criterion is not judged on it.
+ * its overall rating is at least 2.5, it is maintained, and its estimated
+ * maintainability is at least 4 stars (3.5). The verdict is advice for a
+ * buyer, not a condition for being listed. The reasons name each failing
+ * mandatory criterion, a rating that is too low, in the words of the
+ * Maintained criterion why there is no valid maintenance contract, and a
+ * maintainability below 4 stars or not measured. A scan without the
+ * maintenance criterion is not judged on it.
  */
 export function computeEndorsement(
   results: RatingInput[],
@@ -229,7 +235,21 @@ export function computeEndorsement(
     );
   }
 
+  const maintainability = maintainabilityRating(results.find((result) => result.id === "maintainability"));
+  if (maintainability === null) {
+    reasons.push("Maintainability not measured");
+  } else if (maintainability < PASSING_MAINTAINABILITY_RATING) {
+    reasons.push(`Maintainability below ${PASSING_MAINTAINABILITY_STARS} stars (${maintainability.toFixed(2)})`);
+  }
+
   return { passed: reasons.length === 0, reasons };
+}
+
+/** The measured maintainability estimate: its continuous rating, else its stars; null when it was not rated. */
+function maintainabilityRating(result: RatingInput | undefined): number | null {
+  if (!result || result.status === "info") return null;
+  if (isRating(result.rating)) return result.rating;
+  return typeof result.starRating === "number" ? result.starRating : null;
 }
 
 function parseStoredResults(raw: unknown): RatingInput[] {
