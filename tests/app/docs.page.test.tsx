@@ -92,6 +92,15 @@ describe("RatingGuidePage", () => {
     expect(screen.getByRole("heading", { level: 2, name: "How ratings work" })).toBeTruthy();
     expect(screen.getByText(/not a SIG rating and not a certification/)).toBeTruthy();
   });
+
+  it("calls suitable for Common Ground the programme's threshold, not advice and not a listing condition", () => {
+    render(<RatingGuidePage />);
+
+    const text = document.body.textContent ?? "";
+    expect(text).toMatch(/threshold the Common Ground programme uses to decide whether to adopt\s+a component as supported/);
+    expect(text).toMatch(/It is not a condition for being listed/);
+    expect(text).not.toMatch(/advice/i);
+  });
 });
 
 describe("CategoryDocPage", () => {
