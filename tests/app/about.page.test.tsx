@@ -12,6 +12,8 @@ import {
   COMPONENT_STATES,
   LEAVING_STABLE,
   LIFECYCLE_RELATION,
+  ALV_AGENDA_URL,
+  ALV_STANDARD_URL,
   CHECKLIST_OUTCOMES,
   CHECKLIST_SOURCES,
   INFORMATION_ONLY,
@@ -42,14 +44,12 @@ function allText(): string[] {
 }
 
 describe("about docs data", () => {
-  it("names the seven Common Ground states in order", () => {
+  it("names the five Common Ground states in order", () => {
     expect(CG_STATES.map((state) => state.name)).toEqual([
       "Listed",
       "Measured",
       "Suitable for Common Ground",
-      "Approved",
-      "In remedy",
-      "Out of support",
+      "Maintained",
       "Retired",
     ]);
   });
@@ -59,12 +59,9 @@ describe("about docs data", () => {
       "listed>measured",
       "measured>suitable",
       "suitable>measured",
-      "suitable>approved",
-      "approved>in-remedy",
-      "in-remedy>approved",
-      "in-remedy>out-of-support",
-      "approved>out-of-support",
-      "out-of-support>approved",
+      "suitable>maintained",
+      "maintained>suitable",
+      "maintained>measured",
       "any>retired",
     ]);
     const ids = new Set(CG_STATES.map((state) => state.id));
@@ -79,21 +76,26 @@ describe("about docs data", () => {
     expect(status.listed).toBeUndefined();
     expect(status.measured).toBeUndefined();
     expect(status.suitable).toEqual(PATH_SECTIONS.find((section) => section.id === "verdict")!.status);
-    expect(status.approved).toEqual({ kind: "in-development" });
-    expect(status["in-remedy"]).toEqual({ kind: "in-development" });
-    expect(status["out-of-support"]).toEqual({ kind: "proposed" });
+    expect(status.maintained).toEqual({ kind: "in-development" });
     expect(status.retired).toEqual({ kind: "proposed" });
   });
 
-  it("states the suitable verdict and the approval conditions", () => {
+  it("states the suitable verdict and the Maintained conditions", () => {
     const text = (id: string) => CG_STATES.find((state) => state.id === id)!.text;
     expect(text("suitable")).toMatch(/no mandatory criterion fails.*at least 2\.5.*valid maintenance contract.*at least 4 stars/);
-    expect(text("approved")).toMatch(/developmentStatus stable, at least two users listed under usedBy in publiccode\.yml, and an SLA from VNG/);
-    expect(text("out-of-support")).toMatch(/fewer users than required/);
-    expect(text("out-of-support")).toMatch(/no longer stable/);
-    expect(text("in-remedy")).toMatch(/stays approved during the term/);
-    expect(text("out-of-support")).toMatch(/can come back/);
+    expect(text("maintained")).toMatch(
+      /developmentStatus stable, at least one user listed under usedBy in publiccode\.yml, and a valid SLA with a maintainer, on the VNG model contract/
+    );
+    expect(text("maintained")).toMatch(/stays Maintained during the term/);
     expect(text("retired")).toMatch(/history stays visible/);
+  });
+
+  it("keeps a fix term a note on Maintained, not a state", () => {
+    expect(CG_STATES.find((state) => state.id === "maintained")!.note!.join(" ")).toBe(
+      "A drop starts a fix term: the maintainer must fix it in time."
+    );
+    for (const state of CG_STATES) expect(state.name, state.name).not.toMatch(/remedy|out of support/i);
+    for (const text of allText()) expect(text, text).not.toMatch(/in remedy|out of support|\bapprov/i);
   });
 
   it("lists developmentStatus from concept to obsolete and covers each in the relation", () => {
@@ -102,20 +104,20 @@ describe("about docs data", () => {
     expect(LIFECYCLE_RELATION.flatMap((row) => row.statuses)).toEqual(names);
   });
 
-  it("lets only a stable component be approved", () => {
+  it("lets only a stable component be Maintained", () => {
     const transition = (key: string) => CG_TRANSITIONS.find((candidate) => transitionKey(candidate) === key)!;
-    expect(transition("suitable>approved").text).toMatch(/^The software is stable/);
-    expect(transition("out-of-support>approved").text).toMatch(/suitable and stable again/);
-    expect(transition("approved>out-of-support").text).toMatch(/from stable to beta, development or concept/);
+    expect(transition("suitable>maintained").text).toMatch(/^The software is stable/);
+    expect(transition("maintained>suitable").text).toMatch(/SLA ended.*fewer organisations.*from stable to beta, development or concept.*fix term passed/);
+    expect(transition("maintained>measured").text).toMatch(/verdict no longer holds/);
     expect(transition("any>retired").text).toMatch(/developmentStatus becomes obsolete/);
     const effect = (status: string) => LIFECYCLE_RELATION.find((row) => row.statuses.includes(status))!.effect;
-    for (const status of ["concept", "development", "beta"]) expect(effect(status), status).toMatch(/Cannot be approved/);
-    expect(effect("stable")).toMatch(/Only a stable component can be approved/);
+    for (const status of ["concept", "development", "beta"]) expect(effect(status), status).toMatch(/Cannot be Maintained/);
+    expect(effect("stable")).toMatch(/Only a stable component can be Maintained/);
   });
 
-  it("moves an approved component that leaves stable to out of support, or to retired when obsolete", () => {
+  it("moves a Maintained component that leaves stable back to suitable, or to retired when obsolete", () => {
     expect(LEAVING_STABLE).toEqual([
-      { to: ["beta", "development", "concept"], state: "out-of-support" },
+      { to: ["beta", "development", "concept"], state: "suitable" },
       { to: ["obsolete"], state: "retired" },
     ]);
     const others = COMPONENT_STATES.map((state) => state.id).filter((id) => id !== "stable");
@@ -124,8 +126,8 @@ describe("about docs data", () => {
 
   it("names each state, and any state", () => {
     expect(stateName("any")).toBe("Any state");
-    expect(stateName("in-remedy")).toBe("In remedy");
-    expect(() => stateName("nope")).toThrow();
+    expect(stateName("maintained")).toBe("Maintained");
+    expect(() => stateName("in-remedy")).toThrow();
   });
 
   it("links the setup points to the path page sections that exist", () => {
@@ -180,10 +182,24 @@ describe("about docs data", () => {
     expect(source("component-checker").title).toMatch(/Hugo ter Doest's proposal for the original Component Checker/);
     expect(source("component-checker").text).toMatch(/what a repository contains/);
     expect(source("sig").text).toMatch(/certifiable by SIG and TÜViT.*at least 4 stars for maintainability/);
+    expect(source("sig").title).toBe("The SIG ratings, as the Common Ground programme currently uses them");
     expect(source("alv").status).toEqual({ kind: "proposed" });
-    expect(source("alv").text).toMatch(/^Proposed to the ALV of 11 December 2026.*Its content follows/);
+    expect(source("alv").title).toBe("The Common Ground standard v1.0, put to the VNG autumn ALV of 11 December 2026");
+    expect(source("alv").text).toMatch(/proven in practice by one or more municipalities/);
+    expect(source("alv").text).toMatch(/Haven or Haven\+/);
+    expect(source("alv").text).toMatch(/The checker is such a validation service/);
+    expect(source("alv").links!.map((link) => link.href)).toEqual([ALV_STANDARD_URL, ALV_AGENDA_URL]);
     expect(source("sig").status).toBeUndefined();
-    expect(CHECKLIST_OUTCOMES.map((outcome) => outcome.name)).toEqual(["Suitable for Common Ground", "Approved"]);
+    expect(CHECKLIST_OUTCOMES.map((outcome) => outcome.name)).toEqual(["Suitable for Common Ground", "Maintained"]);
+  });
+
+  it("follows the ALV change process for the checklist", () => {
+    const text = SETUP_POINTS.find((point) => point.id === "checklist")!.paragraphs.join(" ");
+    expect(text).toMatch(/Anyone proposes a change through the issue form/);
+    expect(text).toMatch(/decides within the mandate of the ALV/);
+    expect(text).toMatch(/Commissie Informatiesamenleving/);
+    expect(text).toMatch(/College voor Dienstverleningszaken/);
+    for (const all of allText()) expect(all, all).not.toMatch(/Forum Standaardisatie|management organisation/);
   });
 
   it("adds no conditions of its own and lists what is information only", () => {
@@ -257,7 +273,7 @@ describe("LifecycleDiagram layouts", () => {
   });
 
   it("splits only long names over two lines", () => {
-    expect(nameLines("Out of support")).toEqual(["Out of support"]);
+    expect(nameLines("Maintained")).toEqual(["Maintained"]);
     expect(nameLines("Suitable for Common Ground")).toEqual(["Suitable for", "Common Ground"]);
   });
 });
@@ -321,7 +337,7 @@ describe("AboutPage", () => {
     for (const image of images) {
       expect(image.querySelectorAll("[data-node]")).toHaveLength(6);
       expect(image.querySelectorAll("[data-edge]")).toHaveLength(5);
-      expect(image.querySelector('[data-node="alv"]')!.textContent).toBe("Proposal to the VNG ALVof 11 December 2026Proposed");
+      expect(image.querySelector('[data-node="alv"]')!.textContent).toBe("Common Ground standard v1.0VNG ALV, 11 December 2026Proposed");
     }
     const sources = within(section).getByRole("list", { name: "The three sources" });
     expect(within(sources).getAllByRole("listitem")).toHaveLength(3);
@@ -340,7 +356,10 @@ describe("AboutPage", () => {
     for (const image of images) {
       expect(image.querySelectorAll("[data-state]")).toHaveLength(CG_STATES.length);
       expect(image.querySelectorAll("[data-transition]")).toHaveLength(CG_TRANSITIONS.length);
-      expect(image.querySelector('[data-state="approved"]')!.textContent).toBe("ApprovedIn development");
+      expect(image.querySelector('[data-state="maintained"]')!.textContent).toBe(
+        "MaintainedA drop starts a fix term:the maintainer must fixit in time.In development"
+      );
+      expect(image.querySelectorAll("[data-note]")).toHaveLength(3);
     }
   });
 
@@ -365,12 +384,12 @@ describe("AboutPage", () => {
     expect(within(flow).getAllByRole("listitem")).toHaveLength(COMPONENT_STATES.length);
 
     const relation = document.getElementById("lifecycles-relation")!;
-    expect(within(relation).getByText(/A stable component can still be out of support\. An obsolete component leads to retired\./)).toBeTruthy();
-    expect(within(relation).getByText(/only a stable component can be approved/)).toBeTruthy();
+    expect(within(relation).getByText(/A stable component can still be only suitable, for example without a valid SLA\. An obsolete component leads to retired\./)).toBeTruthy();
+    expect(within(relation).getByText(/only a stable component can be Maintained/)).toBeTruthy();
     expect(within(relation).queryByText(/open question/)).toBeNull();
-    const leaving = within(relation).getByRole("table", { name: "When an approved component leaves stable" });
+    const leaving = within(relation).getByRole("table", { name: "When a Maintained component leaves stable" });
     expect(within(leaving).getAllByRole("row").slice(1).map((row) => row.textContent)).toEqual([
-      "beta, development, conceptOut of support",
+      "beta, development, conceptSuitable for Common Ground",
       "obsoleteRetired",
     ]);
     expect(within(relation).getAllByRole("row")).toHaveLength(LIFECYCLE_RELATION.length + 1 + LEAVING_STABLE.length + 1);

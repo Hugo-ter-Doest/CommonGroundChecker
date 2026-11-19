@@ -113,7 +113,7 @@ export default function AboutPage() {
         </h2>
         <p className="text-gray-700">
           The checklist rests on three sources. What the checklist asks decides whether a component is suitable for
-          Common Ground and whether it can be approved.
+          Common Ground and whether it can be Maintained.
         </p>
         <ChecklistSourcesDiagram layout={WIDE_SOURCES_LAYOUT} className="hidden lg:block w-full h-auto" />
         <ChecklistSourcesDiagram layout={NARROW_SOURCES_LAYOUT} className="lg:hidden block w-full max-w-sm h-auto mx-auto" />
@@ -126,6 +126,13 @@ export default function AboutPage() {
             <li key={source.id}>
               <span className="font-semibold text-gray-800">{source.title}.</span> {source.text}
               <StatusBadge status={source.status} />
+              {source.links?.map((link) => (
+                <span key={link.href} className="block text-sm">
+                  <a href={link.href} target="_blank" rel="noopener noreferrer" className="text-cg-lightblue hover:underline">
+                    {link.text}
+                  </a>
+                </span>
+              ))}
             </li>
           ))}
         </ol>
@@ -154,7 +161,7 @@ export default function AboutPage() {
           ))}
         </ul>
         <p className="text-gray-700">
-          The number of organisations listed under usedBy in publiccode.yml counts only towards approval.
+          The number of organisations listed under usedBy in publiccode.yml counts only towards Maintained.
         </p>
       </section>
 
@@ -242,8 +249,8 @@ export default function AboutPage() {
         </h2>
         <p className="text-gray-700">
           The two lifecycles are separate. The maintainer decides the developmentStatus. The programme decides the
-          status in Common Ground. They meet at one rule: only a stable component can be approved. A stable component
-          can still be out of support. An obsolete component leads to retired.
+          status in Common Ground. They meet at one rule: only a stable component can be Maintained. A stable component
+          can still be only suitable, for example without a valid SLA. An obsolete component leads to retired.
         </p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left text-gray-700">
@@ -264,10 +271,11 @@ export default function AboutPage() {
           </table>
         </div>
         <h3 id="leaving-stable-heading" className="text-lg font-semibold text-gray-800">
-          When an approved component leaves stable
+          When a Maintained component leaves stable
         </h3>
         <p className="text-gray-700">
-          A component that leaves stable leaves approved. Which state it moves to depends on the new developmentStatus.
+          A component that leaves stable leaves Maintained. Which state it moves to depends on the new developmentStatus.
+          It goes back to Suitable for Common Ground while the verdict still holds, and to Measured when it does not.
         </p>
         <div className="overflow-x-auto">
           <table aria-labelledby="leaving-stable-heading" className="w-full text-sm text-left text-gray-700">

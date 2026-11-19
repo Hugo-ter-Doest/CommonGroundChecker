@@ -36,14 +36,14 @@ export const WIDE_SOURCES_LAYOUT: SourcesLayout = {
     alv: { x: 10, y: 214, width: 400, height: 76 },
     checklist: { x: 500, y: 112, width: 200, height: 76 },
     suitable: { x: 800, y: 50, width: 230, height: 76 },
-    approved: { x: 800, y: 174, width: 230, height: 76 },
+    maintained: { x: 800, y: 174, width: 230, height: 76 },
   },
   edges: {
     "component-checker": "M410 48 H455 V140 H500",
     sig: "M410 150 H500",
     alv: "M410 252 H455 V160 H500",
     suitable: "M700 140 H750 V88 H800",
-    approved: "M700 160 H750 V212 H800",
+    maintained: "M700 160 H750 V212 H800",
   },
 };
 
@@ -59,14 +59,14 @@ export const NARROW_SOURCES_LAYOUT: SourcesLayout = {
     alv: { x: 10, y: 202, width: 260, height: 76 },
     checklist: { x: 60, y: 310, width: 200, height: 60 },
     suitable: { x: 10, y: 420, width: 145, height: 76 },
-    approved: { x: 165, y: 420, width: 145, height: 76 },
+    maintained: { x: 165, y: 420, width: 145, height: 76 },
   },
   edges: {
     "component-checker": "M270 48 H295 V340 H260",
     sig: "M270 144 H295 V340 H260",
     alv: "M270 240 H295 V340 H260",
     suitable: "M110 370 V395 H82 V420",
-    approved: "M210 370 V395 H237 V420",
+    maintained: "M210 370 V395 H237 V420",
   },
 };
 
@@ -105,9 +105,9 @@ export default function ChecklistSourcesDiagram({ layout, className }: { layout:
     >
       <title id={titleId}>Where the checklist comes from</title>
       <desc id={descId}>
-        Three sources feed the checklist: Hugo ter Doest&apos;s proposal, the SIG ratings and the proposal to the VNG
-        ALV of 11 December 2026. The checklist decides suitable for Common Ground and approved. The list below the
-        diagram gives the same as text.
+        Three sources feed the checklist: Hugo ter Doest&apos;s proposal, the SIG ratings and the Common Ground
+        standard v1.0, put to the VNG ALV of 11 December 2026. The checklist decides suitable for Common Ground and
+        Maintained. The list below the diagram gives the same as text.
       </desc>
       <defs>
         <marker id={arrowId} viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
