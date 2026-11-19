@@ -131,7 +131,7 @@ function AspectRow({
   const note = aspectNote(aspect);
   return (
     <div role="group" aria-labelledby={headingId} className="space-y-2">
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-[12rem_1fr_11rem] sm:items-center">
+      <div className="grid gap-2 sm:grid-cols-[12rem_1fr_11rem] sm:items-center">
         <h5 id={headingId} className="text-sm font-semibold text-gray-800">
           {docSlug ? (
             <a href={aspectDocHref(docSlug, aspect.id)} className={LINK_CLASS}>
