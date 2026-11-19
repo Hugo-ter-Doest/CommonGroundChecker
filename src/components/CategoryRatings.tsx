@@ -51,7 +51,7 @@ function CriterionTable({
   documents: boolean;
 }) {
   return (
-    <div className="overflow-x-auto" role="region" aria-label={caption} tabIndex={0}>
+    <div className="relative overflow-x-auto" role="region" aria-label={caption} tabIndex={0}>
       <table className="min-w-full text-xs text-left border border-gray-200">
         <caption className="text-left text-gray-600 pb-1">{caption}</caption>
         <thead className="bg-cg-gray">

@@ -76,7 +76,10 @@ describe("CategoryRatings", () => {
     renderRatings();
 
     const table = screen.getByRole("table", { name: "What Testability is made of" });
-    expect(screen.getByRole("region", { name: "What Testability is made of" }).getAttribute("tabindex")).toBe("0");
+    const measurements = screen.getByRole("region", { name: "What Testability is made of" });
+    expect(measurements.getAttribute("tabindex")).toBe("0");
+    // Positioned, so the visually hidden star text in its cells is clipped by it rather than widening the page
+    expect(measurements.className).toContain("relative");
     const headers = within(table).getAllByRole("columnheader").map((header) => header.textContent);
     expect(headers).toEqual([
       "Measured",
@@ -136,6 +139,7 @@ describe("CategoryRatings", () => {
     const region = screen.getByRole("region", { name: "What Licensing is made of" });
     expect(region.getAttribute("tabindex")).toBe("0");
     expect(region.className).toContain("overflow-x-auto");
+    expect(region.className).toContain("relative");
     expect(within(region).getByRole("table", { name: "What Licensing is made of" })).toBeTruthy();
     for (const link of within(region).getAllByRole("link")) {
       expect(link.className).toContain("min-h-[44px]");
