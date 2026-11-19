@@ -12,6 +12,8 @@ An online automatic compliance checker for [Common Ground](https://commonground.
 
 Criteria are grouped into five categories. Each criterion has a requirement level (mandatory / recommended / informative) and a configurable weight that influences the overall score.
 
+The rating guide at `/docs` ("Rating guide" in the site navigation) explains per category and aspect what the 1 to 5 star ratings mean, how the checker measures them and which sources they are based on. The content lives in `src/lib/ratingDocs.ts`; every aspect has a stable anchor, `/docs/<category-slug>#<aspect-id>`.
+
 ### Governance
 
 | # | Criterion | Level | Standard |
@@ -60,6 +62,11 @@ Criteria are grouped into five categories. Each criterion has a requirement leve
 | 22 | **Cyclomatic complexity (Lizard)** — average complexity (AvgCCN) is measured and compared against an admin-configurable threshold | Mandatory | [lizard](https://github.com/terryyin/lizard) |
 | 23 | **Code metrics** — repository metrics such as lines of code and function count are collected as informative context | Informative | [commonground.nl](https://www.commonground.nl) |
 | 24 | **Semantic versioning** — releases or tags following MAJOR.MINOR.PATCH | Recommended | [semver.org](https://semver.org/) |
+| 25 | **Maintainability (ISO 25010)** — unit size, unit complexity, unit interfacing, duplication, module coupling and component structure, each rated from 1 to 5 stars, with an estimated overall maintainability rating | Recommended | [Maintainability model](https://github.com/Software-Improvement-Group/sigridci/blob/main/docs/reference/sig-quality-models.md) |
+
+**Stars:** every criterion also shows 1 to 5 stars. Maintainability has its own scale (4 stars or more passes, 3 stars warns). The other criteria map pass, warn and fail to 5, 3 and 1 stars. The component as a whole and each category also get a rating; see [Ratings](#ratings).
+
+The maintainability analysis runs `scripts/maintainability/check_maintainability.py`, which needs `python3`, lizard 1.24.3 and jscpd 4.0.5. The Docker image installs them. `MAINTAINABILITY_TIMEOUT_SECONDS` (default 600) caps how long one analysis may run. `node scripts/sync-maintainability.mjs [commit]` refreshes the vendored script from its upstream; `scripts/maintainability/UPSTREAM` records the commit.
 
 **Note:** Mandatory criteria are included in the overall score. Recommended criteria still contribute when enabled, while informative criteria are only shown as contextual information and are not used in scoring.
 
@@ -293,6 +300,47 @@ Status scores: **Pass** = 1.0 · **Warn / Info** = 0.5 · **Fail** = 0.
 | ≥ 80 | ✅ Compliant |
 | 50–79 | ⚠️ Partial |
 | < 50 | ❌ Non-compliant |
+
+Above the detailed results, the live report and the stored analysis page list
+what is missing in two blocks:
+
+- **Errors**: mandatory criteria with status Fail, and an overall rating below
+  2.5 (it links to the overall rating), so the count matches the reasons the
+  component does not pass.
+- **Warnings**: recommended criteria with status Fail or Warn, and mandatory
+  criteria with status Warn (present but incomplete).
+
+Informative criteria and results with status Info appear in neither block. Each
+entry links to its result card, which opens when followed.
+
+## Ratings
+
+Next to the 0-100 compliance score, every analysis gets an **overall rating**, a **rating per category** and a **rating per aspect**, on a continuous scale from 0.5 to 5.5 shown as 1 to 5 stars (for example ★★★☆☆ 3.4). The overall rating is the headline of a report.
+
+Each category consists of aspects, defined in `src/lib/aspects.ts`:
+
+| Category | Aspects |
+|---|---|
+| Governance | licensing, ownership, community documents |
+| Security | vulnerabilities, dependency freshness, activity, licences and management, secrets, secure coding, supply chain |
+| Architecture | API, layering (shown, not counted) |
+| Maintainability | analysability, modifiability, testability, modularity, reusability, testing |
+| Deployment & Operations | containerisation, release management |
+
+- **Criterion rating:** the criterion's continuous rating when it has one, otherwise its stars, otherwise its status: pass = 5.5, warn = 3, fail = 0.5, the ends and the middle of the scale. Mandatory and recommended criteria count with their criterion weight; informative criteria, criteria with weight 0 and results that were not measured (`info`) are left out.
+- **Aspect rating:** the weighted mean of its criteria. Some aspects are rated by a check itself, such as the maintainability sub-characteristics. A document-count aspect (community documents, containerisation) rates the share of its documents that pass: all 5.5, at least 80% 4, 60% 3, 40% 2, otherwise 1, and shows the count, for example "4 of 5".
+- **Category rating:** the mean of its rated aspects.
+- **Overall rating:** the weighted mean of the rated categories with the category weights. Categories with weight 0 don't count.
+
+Ratings are rounded to one decimal; stars round x.5 up. A component **passes** when no mandatory criterion fails and its overall rating is at least 2.5. Analyses stored before ratings existed are rated from their stored results with the active scoring config.
+
+The live report and the stored analysis page show the rating of one component from top to bottom: the overall rating with whether it passes (and why not) and the compliance score, the errors and warnings blocks, and then one section per category. Each category and aspect title links to its page in the rating guide. Every aspect has a bar from 0.5 to 5.5 with marks where the stars change (1.5, 2.5, 3.5 and 4.5), and under it a table of what the aspect is made of:
+
+- **Measured aspects** (the maintainability sub-characteristics): the measured share per property, language and bound, against the thresholds for 5, 4, 3 and 2 stars, and the stars it earns. A check provides these in the `measurements` field of its result; for maintainability they come from the analysis script's report, including its `bands`.
+- **Document aspects:** one row per document, found or missing.
+- **Other aspects:** one row per criterion with its status and stars, linking to its result card.
+
+The PDF export lists every aspect with its rating.
 
 > **Note:** Automated analysis is indicative only. Architecture checks rely on heuristics. For official certification, contact [commonground.nl](https://commonground.nl).
 

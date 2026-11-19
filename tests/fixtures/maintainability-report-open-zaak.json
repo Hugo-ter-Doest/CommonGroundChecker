@@ -1,0 +1,515 @@
+{
+  "files": 375,
+  "skipped_files": [],
+  "languages": {
+    "javascript": {
+      "files": 33,
+      "units": 104,
+      "unit_loc": 1179,
+      "unit_size": [
+        {
+          "above": 15,
+          "share": 0.6395,
+          "loc": 754,
+          "limit": 0.48,
+          "ok": false,
+          "stars": 2
+        },
+        {
+          "above": 30,
+          "share": 0.3147,
+          "loc": 371,
+          "limit": 0.242,
+          "ok": false,
+          "stars": 3
+        },
+        {
+          "above": 60,
+          "share": 0.1213,
+          "loc": 143,
+          "limit": 0.091,
+          "ok": false,
+          "stars": 3
+        }
+      ],
+      "unit_complexity": [
+        {
+          "above": 5,
+          "share": 0.05,
+          "loc": 59,
+          "limit": 0.207,
+          "ok": true,
+          "stars": 5
+        },
+        {
+          "above": 10,
+          "share": 0.0,
+          "loc": 0,
+          "limit": 0.075,
+          "ok": true,
+          "stars": 5
+        },
+        {
+          "above": 25,
+          "share": 0.0,
+          "loc": 0,
+          "limit": 0.011,
+          "ok": true,
+          "stars": 5
+        }
+      ],
+      "unit_interfacing": [
+        {
+          "above": 2,
+          "share": 0.0288,
+          "loc": 34,
+          "limit": 0.154,
+          "ok": true,
+          "stars": 5
+        },
+        {
+          "above": 4,
+          "share": 0.0,
+          "loc": 0,
+          "limit": 0.034,
+          "ok": true,
+          "stars": 5
+        },
+        {
+          "above": 6,
+          "share": 0.0,
+          "loc": 0,
+          "limit": 0.009,
+          "ok": true,
+          "stars": 5
+        }
+      ],
+      "duplication": {
+        "code_lines": 1415,
+        "redundant_lines": 59,
+        "share": 0.0417,
+        "limit": 0.058,
+        "ok": true,
+        "stars": 4
+      }
+    },
+    "python": {
+      "files": 342,
+      "units": 1424,
+      "unit_loc": 16796,
+      "unit_size": [
+        {
+          "above": 15,
+          "share": 0.5881,
+          "loc": 9877,
+          "limit": 0.48,
+          "ok": false,
+          "stars": 3
+        },
+        {
+          "above": 30,
+          "share": 0.3471,
+          "loc": 5830,
+          "limit": 0.242,
+          "ok": false,
+          "stars": 2
+        },
+        {
+          "above": 60,
+          "share": 0.1188,
+          "loc": 1995,
+          "limit": 0.091,
+          "ok": false,
+          "stars": 3
+        }
+      ],
+      "unit_complexity": [
+        {
+          "above": 5,
+          "share": 0.3479,
+          "loc": 5843,
+          "limit": 0.207,
+          "ok": false,
+          "stars": 1
+        },
+        {
+          "above": 10,
+          "share": 0.1336,
+          "loc": 2244,
+          "limit": 0.075,
+          "ok": false,
+          "stars": 1
+        },
+        {
+          "above": 25,
+          "share": 0.0087,
+          "loc": 146,
+          "limit": 0.011,
+          "ok": true,
+          "stars": 4
+        }
+      ],
+      "unit_interfacing": [
+        {
+          "above": 2,
+          "share": 0.2273,
+          "loc": 3817,
+          "limit": 0.154,
+          "ok": false,
+          "stars": 2
+        },
+        {
+          "above": 4,
+          "share": 0.0604,
+          "loc": 1015,
+          "limit": 0.034,
+          "ok": false,
+          "stars": 2
+        },
+        {
+          "above": 6,
+          "share": 0.0016,
+          "loc": 27,
+          "limit": 0.009,
+          "ok": true,
+          "stars": 5
+        }
+      ],
+      "duplication": {
+        "code_lines": 39718,
+        "redundant_lines": 2631,
+        "share": 0.0662,
+        "limit": 0.058,
+        "ok": false,
+        "stars": 3
+      }
+    }
+  },
+  "structure": {
+    "python": {
+      "modules": 342,
+      "module_loc": 39718,
+      "module_coupling": [
+        {
+          "above": 10,
+          "share": 0.078,
+          "loc": 3099,
+          "limit": 0.097,
+          "ok": true,
+          "stars": 4
+        },
+        {
+          "above": 20,
+          "share": 0.0152,
+          "loc": 604,
+          "limit": 0.053,
+          "ok": true,
+          "stars": 5
+        },
+        {
+          "above": 50,
+          "share": 0.0026,
+          "loc": 104,
+          "limit": 0.018,
+          "ok": true,
+          "stars": 5
+        }
+      ],
+      "component_independence": {
+        "hidden_share": 0.8114,
+        "hidden_loc": 32229,
+        "limit_min": 0.945,
+        "ok": false,
+        "stars": "<4"
+      },
+      "component_entanglement": {
+        "communication_lines": 42,
+        "connected_pairs": 33,
+        "connected_components": 15,
+        "communication_density": 2.8,
+        "violation_degree": 0.2239,
+        "violations": {
+          "cyclic": 10,
+          "indirect-cyclic": 4,
+          "transitive": 5
+        },
+        "limit": 0.075,
+        "ok": null,
+        "stars": "<4"
+      }
+    }
+  },
+  "rating": {
+    "note": "Estimate of SIG's maintainability rating, 0.5 to 5.5. SIG publishes 4-star limits only and no power-mean exponent, so the overall rating is a range over p = 1 and p = -1.",
+    "overall": {
+      "p1": 2.58,
+      "p-1": 2.47,
+      "range": [
+        2.47,
+        2.58
+      ]
+    },
+    "subcharacteristics": {
+      "analysability": 2.94,
+      "modifiability": 3.15,
+      "testability": 1.76,
+      "modularity": 2.71,
+      "reusability": 2.32
+    },
+    "properties": {
+      "duplication": {
+        "rating": 3.39,
+        "languages": {
+          "javascript": {
+            "rating": 4.21,
+            "loc": 1415
+          },
+          "python": {
+            "rating": 3.36,
+            "loc": 39718
+          }
+        }
+      },
+      "unit_size": {
+        "rating": 2.5,
+        "languages": {
+          "javascript": {
+            "rating": 2.46,
+            "loc": 1179
+          },
+          "python": {
+            "rating": 2.5,
+            "loc": 16796
+          }
+        }
+      },
+      "unit_complexity": {
+        "rating": 1.74,
+        "languages": {
+          "javascript": {
+            "rating": 5.18,
+            "loc": 1179
+          },
+          "python": {
+            "rating": 1.5,
+            "loc": 16796
+          }
+        }
+      },
+      "unit_interfacing": {
+        "rating": 2.14,
+        "languages": {
+          "javascript": {
+            "rating": 5.27,
+            "loc": 1179
+          },
+          "python": {
+            "rating": 1.93,
+            "loc": 16796
+          }
+        }
+      },
+      "module_coupling": {
+        "rating": 4.32,
+        "languages": {
+          "python": {
+            "rating": 4.32,
+            "loc": 39718
+          }
+        }
+      },
+      "component_independence": {
+        "rating": 1.79,
+        "languages": {
+          "python": {
+            "rating": 1.79,
+            "loc": 39718
+          }
+        }
+      },
+      "component_entanglement": {
+        "rating": 2.01,
+        "languages": {
+          "python": {
+            "rating": 2.01,
+            "loc": 39718
+          }
+        }
+      }
+    },
+    "levers": [
+      {
+        "property": "unit_complexity",
+        "language": "python",
+        "fixable_loc": 5843,
+        "fixed_loc": 1000,
+        "gain_per_kloc": {
+          "p1": 0.1306,
+          "p-1": 0.1659
+        },
+        "rank": {
+          "p1": 2,
+          "p-1": 1
+        },
+        "sure": true,
+        "loc_for_half_star": 649
+      },
+      {
+        "property": "duplication",
+        "language": "python",
+        "fixable_loc": 2631,
+        "fixed_loc": 1000,
+        "gain_per_kloc": {
+          "p1": 0.1339,
+          "p-1": 0.0828
+        },
+        "rank": {
+          "p1": 1,
+          "p-1": 4
+        },
+        "sure": false,
+        "loc_for_half_star": 706
+      },
+      {
+        "property": "unit_interfacing",
+        "language": "python",
+        "fixable_loc": 3817,
+        "fixed_loc": 1000,
+        "gain_per_kloc": {
+          "p1": 0.1029,
+          "p-1": 0.0992
+        },
+        "rank": {
+          "p1": 4,
+          "p-1": 2
+        },
+        "sure": false,
+        "loc_for_half_star": 693
+      }
+    ]
+  },
+  "bands": {
+    "unit_size": {
+      "bounds": [
+        15,
+        30,
+        60
+      ],
+      "5": [
+        0.36,
+        0.17,
+        0.055
+      ],
+      "4": [
+        0.48,
+        0.242,
+        0.091
+      ],
+      "3": [
+        0.63,
+        0.347,
+        0.154
+      ],
+      "2": [
+        0.847,
+        0.49,
+        0.253
+      ]
+    },
+    "unit_complexity": {
+      "bounds": [
+        5,
+        10,
+        25
+      ],
+      "5": [
+        0.158,
+        0.044,
+        0.005
+      ],
+      "4": [
+        0.207,
+        0.075,
+        0.011
+      ],
+      "3": [
+        0.277,
+        0.106,
+        0.017
+      ],
+      "2": [
+        0.346,
+        0.132,
+        0.027
+      ]
+    },
+    "unit_interfacing": {
+      "bounds": [
+        2,
+        4,
+        6
+      ],
+      "5": [
+        0.125,
+        0.025,
+        0.006
+      ],
+      "4": [
+        0.154,
+        0.034,
+        0.009
+      ],
+      "3": [
+        0.183,
+        0.048,
+        0.014
+      ],
+      "2": [
+        0.26,
+        0.072,
+        0.021
+      ]
+    },
+    "module_coupling": {
+      "bounds": [
+        10,
+        20,
+        50
+      ],
+      "5": [
+        0.074,
+        0.033,
+        0.012
+      ],
+      "4": [
+        0.097,
+        0.053,
+        0.018
+      ],
+      "3": [
+        0.107,
+        0.059,
+        0.023
+      ],
+      "2": [
+        0.13,
+        0.08,
+        0.038
+      ]
+    },
+    "duplication": {
+      "5": 0.035,
+      "4": 0.058,
+      "3": 0.116,
+      "2": 0.23
+    },
+    "component_independence": {
+      "5": 0.973,
+      "4": 0.945
+    },
+    "component_entanglement": {
+      "5": 0.0375,
+      "4": 0.075
+    }
+  }
+}
