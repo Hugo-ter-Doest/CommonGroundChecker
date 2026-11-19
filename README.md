@@ -240,12 +240,29 @@ These local Next.js endpoints either run the checker or proxy storage and config
 | `GET` | `/api/openapi` | Retrieve the machine-readable OpenAPI specification |
 | `POST` | `/api/repositories` | Create or update repository metadata via the remote API |
 | `POST` | `/api/repositories/{repoId}/analyses` | Persist a new analysis result for an existing repository via the remote API |
+| `PUT` | `/api/repositories/{repoId}/follow` | Follow or unfollow a repository for scheduled rescans via the remote API, forwarding the admin bearer token |
 | `POST` | `/api/check` | Run full analysis and persist result through the remote API |
 | `POST` | `/api/check/stream` | Stream progress/events during analysis |
 | `GET` | `/api/admin/scoring` | Retrieve current scoring configuration from the remote API |
 | `POST` | `/api/admin/scoring` | Save new scoring configuration snapshot to the remote API |
 | `GET` | `/api/repositories` | List known repositories with latest summary via the remote API |
 | `GET` | `/api/repo-history` | Return analysis runs/history for repositories via the remote API |
+
+### Following a repository (Admin)
+
+A repository's history page has a collapsed **Follow this repository (admin)** section. An admin chooses whether to follow the repository and how often it is rescanned (daily, weekly or monthly), and confirms with the backend's admin token (the backend's `ADMIN_TOKEN` environment variable). The token is sent with that one request and is not stored. The History index marks followed repositories with a **Followed** badge and shows their next check.
+
+### Choosing the branch or release to scan
+
+By default a check scans the released version, chosen in this order:
+
+1. the tag that matches the `softwareVersion` in publiccode.yml on the default branch (with or without a leading `v`);
+2. otherwise the newest stable release (drafts, pre-releases and `-rc`-style tags are skipped), and without a release the newest stable semver tag;
+3. otherwise the default branch, and the result carries a warning saying no release was found.
+
+`POST /api/check` and `/api/check/stream` accept an optional `ref` to choose otherwise: `default-branch` scans the default branch, `latest-release` skips step 1, and a branch or tag name such as `development` scans that ref. A branch or tag that does not exist is refused with `400`. The checker form has an optional **Branch or tag to scan** field, and the follow section has a **What to scan** setting (released version, default branch, latest release, or a branch or tag) that scheduled rescans use.
+
+The tree, every file read, the clone used by the code tools and the API rules all read the same commit. Each result records `scannedRef`, `scannedRefKind` (why that ref was chosen: `declared-version`, `release`, `tag`, `branch`, `default-branch` or `default-branch-fallback`) and `scannedCommit`, and the result and history pages show it, for example "Scanned: declared version v1.2.2 @ abc1234", "Scanned: latest release v1.2.0 @ abc1234" or "Scanned: main (default branch, no release found)".
 
 ### ADR Spectral ruleset source (Admin)
 

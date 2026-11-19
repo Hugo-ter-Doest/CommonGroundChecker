@@ -234,6 +234,89 @@
         }
       }
     },
+    "/api/repositories/{repoId}/follow": {
+      "put": {
+        "summary": "Follow or unfollow a repository for scheduled rescans",
+        "description": "Admin only. Requires `Authorization: Bearer <ADMIN_TOKEN>`. Disabled with 503 when the backend has no ADMIN_TOKEN configured.",
+        "security": [
+          {
+            "adminToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "repoId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FollowSettingsInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Follow settings saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FollowSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid follow settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid admin token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Repository not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Admin actions are disabled because ADMIN_TOKEN is not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/repo-history": {
       "get": {
         "summary": "Return analysis history for a repository",
@@ -360,6 +443,13 @@
     }
   },
   "components": {
+    "securitySchemes": {
+      "adminToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "The backend's ADMIN_TOKEN environment variable"
+      }
+    },
     "schemas": {
       "ErrorResponse": {
         "type": "object",
@@ -370,6 +460,81 @@
         },
         "required": [
           "error"
+        ]
+      },
+      "FollowSettingsInput": {
+        "type": "object",
+        "properties": {
+          "followed": {
+            "type": "boolean"
+          },
+          "checkIntervalHours": {
+            "type": [
+              "integer",
+              null
+            ],
+            "description": "24 (daily), 168 (weekly) or 720 (monthly). Defaults to the stored interval, or 168 when following for the first time"
+          },
+          "scanRef": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The branch or tag scheduled scans use: null for the released version (the tag of the publiccode.yml softwareVersion, else the latest release), \"default-branch\", \"latest-release\", or a branch or tag name"
+          }
+        },
+        "required": [
+          "followed"
+        ]
+      },
+      "FollowSettings": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "followed": {
+            "type": "boolean",
+            "description": "Whether the repository is rescanned on a schedule"
+          },
+          "checkIntervalHours": {
+            "type": [
+              "integer",
+              null
+            ],
+            "description": "Hours between scheduled checks: 24 (daily), 168 (weekly) or 720 (monthly)"
+          },
+          "scanRef": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The branch or tag scheduled scans use: null for the released version (the tag of the publiccode.yml softwareVersion, else the latest release), \"default-branch\", \"latest-release\", or a branch or tag name"
+          },
+          "lastCheckedAt": {
+            "type": [
+              "string",
+              null
+            ],
+            "format": "date-time",
+            "description": "When the latest analysis was stored"
+          },
+          "nextCheckAt": {
+            "type": [
+              "string",
+              null
+            ],
+            "format": "date-time",
+            "description": "When the repository is next due for a scheduled check"
+          }
+        },
+        "required": [
+          "id",
+          "followed",
+          "checkIntervalHours",
+          "scanRef",
+          "lastCheckedAt",
+          "nextCheckAt"
         ]
       },
       "RepoSummary": {
@@ -415,6 +580,40 @@
             "type": "string",
             "format": "date-time"
           },
+          "followed": {
+            "type": "boolean",
+            "description": "Whether the repository is rescanned on a schedule"
+          },
+          "checkIntervalHours": {
+            "type": [
+              "integer",
+              null
+            ],
+            "description": "Hours between scheduled checks: 24 (daily), 168 (weekly) or 720 (monthly)"
+          },
+          "scanRef": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The branch or tag scheduled scans use: null for the released version (the tag of the publiccode.yml softwareVersion, else the latest release), \"default-branch\", \"latest-release\", or a branch or tag name"
+          },
+          "lastCheckedAt": {
+            "type": [
+              "string",
+              null
+            ],
+            "format": "date-time",
+            "description": "When the latest analysis was stored"
+          },
+          "nextCheckAt": {
+            "type": [
+              "string",
+              null
+            ],
+            "format": "date-time",
+            "description": "When the repository is next due for a scheduled check"
+          },
           "analysisCount": {
             "type": "integer"
           },
@@ -444,6 +643,11 @@
           "apiSpecificationLocations",
           "documentationLocations",
           "updatedAt",
+          "followed",
+          "checkIntervalHours",
+          "scanRef",
+          "lastCheckedAt",
+          "nextCheckAt",
           "analysisCount",
           "latestAnalysis"
         ]
@@ -548,6 +752,10 @@
           },
           "isRegister": {
             "type": "boolean"
+          },
+          "ref": {
+            "type": "string",
+            "description": "The branch or tag to scan. Empty scans the released version: the tag of the publiccode.yml softwareVersion, else the newest stable release or semver tag, else the default branch with a warning. \"default-branch\" scans the default branch, \"latest-release\" the newest stable release"
           }
         },
         "required": [
@@ -572,6 +780,27 @@
               "string",
               "null"
             ]
+          },
+          "scannedRef": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The branch or tag name that was scanned, for example development or v1.2.0"
+          },
+          "scannedRefKind": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why the scanned ref was chosen: declared-version (the tag of the publiccode.yml softwareVersion), release (the newest stable release), tag (the newest stable semver tag), branch (named in the request), default-branch (asked for), or default-branch-fallback (no release found)"
+          },
+          "scannedCommit": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The commit SHA that was scanned"
           },
           "score": {
             "type": "integer"
@@ -613,6 +842,27 @@
               "string",
               "null"
             ]
+          },
+          "scannedRef": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The branch or tag name that was scanned, for example development or v1.2.0"
+          },
+          "scannedRefKind": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why the scanned ref was chosen: declared-version (the tag of the publiccode.yml softwareVersion), release (the newest stable release), tag (the newest stable semver tag), branch (named in the request), default-branch (asked for), or default-branch-fallback (no release found)"
+          },
+          "scannedCommit": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The commit SHA that was scanned"
           },
           "score": {
             "type": "integer"
@@ -658,6 +908,40 @@
               "metadata": {
                 "$ref": "#/components/schemas/RepoMeta"
               },
+              "followed": {
+                "type": "boolean",
+                "description": "Whether the repository is rescanned on a schedule"
+              },
+              "checkIntervalHours": {
+                "type": [
+                  "integer",
+                  null
+                ],
+                "description": "Hours between scheduled checks: 24 (daily), 168 (weekly) or 720 (monthly)"
+              },
+              "scanRef": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The branch or tag scheduled scans use: null for the released version (the tag of the publiccode.yml softwareVersion, else the latest release), \"default-branch\", \"latest-release\", or a branch or tag name"
+              },
+              "lastCheckedAt": {
+                "type": [
+                  "string",
+                  null
+                ],
+                "format": "date-time",
+                "description": "When the latest analysis was stored"
+              },
+              "nextCheckAt": {
+                "type": [
+                  "string",
+                  null
+                ],
+                "format": "date-time",
+                "description": "When the repository is next due for a scheduled check"
+              },
               "createdAt": {
                 "type": "string",
                 "format": "date-time"
@@ -673,6 +957,11 @@
               "owner",
               "name",
               "metadata",
+              "followed",
+              "checkIntervalHours",
+              "scanRef",
+              "lastCheckedAt",
+              "nextCheckAt",
               "createdAt",
               "updatedAt"
             ]
@@ -941,6 +1230,25 @@
               "$ref": "#/components/schemas/CheckResult"
             }
           },
+          "scannedRef": {
+            "type": "string",
+            "description": "The branch or tag name that was scanned"
+          },
+          "scannedRefKind": {
+            "type": "string",
+            "description": "Why the scanned ref was chosen: declared-version (the tag of the publiccode.yml softwareVersion), release (the newest stable release), tag (the newest stable semver tag), branch (named in the request), default-branch (asked for), or default-branch-fallback (no release found)"
+          },
+          "scannedCommit": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The commit SHA that was scanned"
+          },
+          "scanRefWarning": {
+            "type": "string",
+            "description": "Set when no released version was found and the default branch was scanned instead"
+          },
           "repoMeta": {
             "$ref": "#/components/schemas/RepoMeta"
           }
@@ -952,7 +1260,10 @@
           "checkedAt",
           "score",
           "results",
-          "repoMeta"
+          "repoMeta",
+          "scannedRef",
+          "scannedRefKind",
+          "scannedCommit"
         ]
       }
     }
