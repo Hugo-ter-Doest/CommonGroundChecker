@@ -12,6 +12,7 @@ import {
   WHY_BOTH,
   type ToolGroup,
 } from "@/lib/toolsDocs";
+import { PATH_DOC_HREF } from "@/lib/pathDocs";
 
 export const metadata: Metadata = {
   title: "Tools and models | Rating guide",
@@ -73,6 +74,14 @@ export default function ToolsAndModelsPage() {
           This page names the tools the checker uses for each measure, what each of them proves and what it does
           not, and where the checker deviates from the SIG/TÜV NORD maintainability model, with the reason.
           Parts marked in review are built but not merged yet.
+        </p>
+        <p className="text-gray-700">
+          How a component becomes a Common Ground component, from the version that is measured to approval, is
+          explained in{" "}
+          <Link href={PATH_DOC_HREF} className="text-cg-lightblue hover:underline">
+            The path to Common Ground
+          </Link>
+          .
         </p>
         <p className="text-gray-700 font-semibold">
           The estimate track is not calibrated against real SIG audits. There are no Sigrid results to compare
