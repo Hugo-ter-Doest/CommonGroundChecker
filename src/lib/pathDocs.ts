@@ -53,7 +53,7 @@ export const AUDIENCES: { id: string; title: string; text: string }[] = [
   {
     id: "buyer",
     title: "A buyer",
-    text: "You want to know if you can use a component with confidence. Look at the verdict and the level. Suitable means the code is good enough and someone maintains it under a contract. Maintained adds that the software is stable, that other organisations use it and that VNG has an SLA with the maintainer.",
+    text: "You want to know if you can use a component with confidence. Look at the verdict and the level. Suitable means the code is good enough and someone maintains it under a contract. Maintained adds that the software is stable, that at least one organisation uses it in practice and that there is a valid SLA with a maintainer, on the VNG model contract.",
   },
   {
     id: "maintainer",
@@ -63,7 +63,7 @@ export const AUDIENCES: { id: string; title: string; text: string }[] = [
   {
     id: "municipality",
     title: "A municipality",
-    text: "You use components and want a say in what counts. List your organisation under usedBy in the publiccode.yml of a component you use, so it counts towards Maintained. Propose changes to the checklist, and take part in the consultation and in the management organisation that decides.",
+    text: "You use components and want a say in what counts. List your organisation under usedBy in the publiccode.yml of a component you use, so it counts towards Maintained. Propose changes to the checklist through the issue form. VNG, as regievoerder, organises the input of municipalities before it decides.",
   },
 ];
 
@@ -74,7 +74,7 @@ export const PATH_STEPS: string[] = [
   "Fix every mandatory criterion and reach an overall rating of at least 2.5.",
   "Make the component maintainable: at least 4 stars for maintainability in the estimate.",
   "Name a maintenance contract in publiccode.yml. The component is now suitable for Common Ground.",
-  "Mark the component stable in publiccode.yml. At least two organisations are listed as users under usedBy, and VNG agrees an SLA with a maintainer. The component is now Maintained.",
+  "Mark the component stable in publiccode.yml. At least one organisation is listed as a user under usedBy, and there is a valid SLA with a maintainer, on the VNG model contract. The component is now Maintained.",
   "Stay there: the checker measures every night, and a drop below a criterion is fixed within the agreed fix term.",
 ];
 
@@ -169,7 +169,7 @@ export const PATH_SECTIONS: PathSection[] = [
         title: "Maintained",
         status: { kind: "in-development" },
         paragraphs: [
-          "A component is Maintained when it is suitable, its developmentStatus in publiccode.yml is stable, at least two organisations are listed as users under usedBy in publiccode.yml, and VNG has an SLA with a maintainer. A component that leaves stable leaves Maintained and goes back to Suitable for Common Ground. The SLA rests on the hard criteria and the KPIs below. A component with one user is not yet a shared component. The number two is a proposal.",
+          "A component is Maintained when it is suitable, its developmentStatus in publiccode.yml is stable, at least one organisation is listed as a user under usedBy in publiccode.yml, and there is a valid SLA with a maintainer, on the VNG model contract. A component that leaves stable leaves Maintained and goes back to Suitable for Common Ground. The SLA rests on the hard criteria and the KPIs below. One user follows the Common Ground standard put to the VNG ALV: a component is proven in practice by one or more municipalities. VNG does not contract the maintainer. Municipalities do, on the VNG model contracts and framework agreements.",
         ],
       },
     ],
@@ -229,7 +229,7 @@ export const PATH_SECTIONS: PathSection[] = [
     id: "checklist",
     title: "The checklist as a standard",
     paragraphs: [
-      "What the checker measures decides which component is called suitable. Buyers, suppliers and municipalities act on it, so the checklist works as a standard. No single person or supplier decides what is in it. The community does, through a fixed and public process.",
+      "What the checker measures decides which component is called suitable. Buyers, suppliers and municipalities act on it, so the checklist works as a standard. No single person or supplier decides what is in it. It changes through the change process of the Common Ground standard v1.0, put to the VNG autumn ALV of 11 December 2026.",
     ],
     parts: [
       {
@@ -237,9 +237,10 @@ export const PATH_SECTIONS: PathSection[] = [
         status: { kind: "proposed" },
         paragraphs: [
           "Propose. Anyone can propose a change: a new criterion, another threshold or another weight. This goes through an issue with a fixed template. The proposal says what changes, why, and which measured components pass or fail because of it.",
-          "Consult. A proposal is open for comments for a fixed period, for example six weeks. The checker shows what the proposal does to the measured components.",
-          "Decide. A management organisation decides on the content. Municipalities, suppliers, VNG and Developer Overheid sit in it. Every decision gets a public report: which comments came in and how they were weighed.",
-          "Recognise. When the checklist is stable, it is put forward to the Forum Standaardisatie for the list 'pas toe of leg uit' (comply or explain). The Forum checks that the standard is open and well managed.",
+          "Consult. VNG, as regievoerder, organises the input of municipalities. The checker shows what the proposal does to the measured components.",
+          "Decide. VNG decides as regievoerder, within the mandate the ALV gave it. A change outside that mandate goes to the ALV. Every decision gets a public report: which comments came in and how they were weighed.",
+          "Prioritise. The VNG board sets the priorities, advised by the Commissie Informatiesamenleving.",
+          "Standardise. The College voor Dienstverleningszaken assesses new standards. It is the route to national standardisation.",
         ],
       },
       {
@@ -255,7 +256,7 @@ export const PATH_SECTIONS: PathSection[] = [
     id: "governance",
     title: "Who decides that a component is Maintained",
     paragraphs: [
-      "Maintained needs more than technology. It needs a governance decision: who decides that a component is Maintained, who sets the fix terms and the targets, and what happens when a maintainer does not meet them. The setup does not make that decision. It refers to it once it exists, and the checker shows the outcome.",
+      "Maintained needs more than technology. Under the Common Ground standard, supervision and validation are tasks of VNG as regievoerder. The checker is such a validation service: it shows the outcome. Who sets the fix terms and the targets, and what happens when a maintainer does not meet them, still needs a governance decision. The setup does not make that decision. It refers to it once it exists.",
     ],
   },
 ];
@@ -270,7 +271,14 @@ export const PATH_DOC_SOURCES: DocSource[] = [
     url: "https://publiccodeyml.github.io/v0/schema.core.html#section-maintenance",
   },
   { title: "CHAOSS metrics", url: "https://chaoss.community/kb-metrics-and-metrics-models/" },
-  { title: "Forum Standaardisatie", url: "https://www.forumstandaardisatie.nl" },
+  {
+    title: "The Common Ground standard v1.0, put to the VNG autumn ALV of 11 December 2026",
+    url: "https://vng.nl/sites/default/files/2026-11/08b-bijlage-2-notitie-common-ground-standaard.pdf",
+  },
+  {
+    title: "Agenda and papers of the VNG autumn ALV of 11 December 2026",
+    url: "https://vng.nl/artikelen/agenda-en-stukken-najaars-alv-11-december-2026",
+  },
 ];
 
 /** Where the tools page explains the three kinds of result in more detail. */

@@ -194,7 +194,9 @@ describe("CommonGroundPathPage", () => {
     expect(within(verdict).getByText(/maintenance\.type: contract/)).toBeTruthy();
 
     const levels = document.getElementById("levels")!;
-    expect(within(levels).getByText(/at least two organisations are listed as users under usedBy in publiccode\.yml, and VNG has an SLA with a maintainer/)).toBeTruthy();
+    expect(within(levels).getByText(/at least one organisation is listed as a user under usedBy in publiccode\.yml, and there is a valid SLA with a maintainer, on the VNG model contract/)).toBeTruthy();
+    expect(within(levels).getByText(/proven in practice by one or more municipalities/)).toBeTruthy();
+    expect(levels.textContent).not.toMatch(/is a proposal/);
   });
 
   it("explains maintenance, usage, the checklist process and that the governance decision is referenced", () => {
@@ -204,9 +206,12 @@ describe("CommonGroundPathPage", () => {
     expect(within(document.getElementById("maintenance")!).getByText(/first made maintainable/)).toBeTruthy();
     expect(within(document.getElementById("usage")!).getByText(/declared number/)).toBeTruthy();
     const checklist = document.getElementById("checklist")!;
-    expect(within(checklist).getByText(/pas toe of leg uit/)).toBeTruthy();
+    expect(within(checklist).getByText(/within the mandate the ALV gave it/)).toBeTruthy();
+    expect(within(checklist).getByText(/College voor Dienstverleningszaken/)).toBeTruthy();
+    expect(checklist.textContent).not.toMatch(/Forum Standaardisatie|management organisation/);
     expect(within(checklist).getByText(/shows it as a warning, not as a fail/)).toBeTruthy();
     expect(within(document.getElementById("governance")!).getByText(/does not make that decision/)).toBeTruthy();
+    expect(within(document.getElementById("governance")!).getByText(/validation are tasks of VNG as regievoerder/)).toBeTruthy();
   });
 
   it("shows the SLA and the response and fix times as a table", () => {
