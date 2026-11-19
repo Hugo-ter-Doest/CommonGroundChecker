@@ -1,6 +1,8 @@
 import Link from "next/link";
 import RepoMeta from "@/components/RepoMeta";
+import RatingBadge from "@/components/RatingBadge";
 import { getRepoHistory } from "@/lib/apiClient";
+import { loadStoredRatings } from "@/lib/storedRatings";
 import type { CheckReport } from "@/lib/types";
 import type { RepoMeta as RepoMetaType } from "@/generated/openapi-client";
 
@@ -107,6 +109,7 @@ export default async function RepoHistoryPage({ params }: HistoryPageProps) {
 
   const repoMeta = normalizeRepoMeta(repository.metadata);
   const analyses = repositoryResponse?.analyses ?? [];
+  const ratings = await loadStoredRatings(analyses);
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10 space-y-6">
@@ -151,7 +154,7 @@ export default async function RepoHistoryPage({ params }: HistoryPageProps) {
           <p className="text-sm text-gray-500">No analyses stored yet.</p>
         ) : (
           <div className="space-y-3">
-            {analyses.map((analysis) => {
+            {analyses.map((analysis, index) => {
               const stats = summarizeStatuses(analysis.results);
               return (
                 <div
@@ -172,6 +175,7 @@ export default async function RepoHistoryPage({ params }: HistoryPageProps) {
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
+                    <RatingBadge rating={ratings[index].rating} />
                     <span
                       className={`inline-flex items-center text-sm font-bold border rounded-full px-3 py-1 ${badgeClass(
                         analysis.score
