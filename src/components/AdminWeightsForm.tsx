@@ -62,6 +62,13 @@ const CRITERION_CATEGORIES: CriterionCategory[] = [
         explanation:
           "Checks whether a SECURITY.md file exists, explaining how vulnerabilities should be reported privately and how security handling works.",
       },
+      {
+        id: "projecthealth",
+        label: "Project health (CHAOSS)",
+        explanation:
+          "Shows six CHAOSS metrics from the GitHub or GitLab API: contributor absence factor, organisational diversity, change request closure ratio, time to first response, issue response time and release frequency. This criterion is informative and does not contribute to the score.",
+        requirementLevel: "informative",
+      },
     ],
   },
   {
@@ -131,6 +138,12 @@ const CRITERION_CATEGORIES: CriterionCategory[] = [
         label: "Cyclomatic complexity",
         explanation:
           "Clones the analyzed repository and runs Lizard locally. The criterion passes when average cyclomatic complexity (AvgCCN) stays within the configured threshold, and the maximum cyclomatic complexity stays within the configured threshold.",
+      },
+      {
+        id: "maintainability",
+        label: "Maintainability (ISO 25010)",
+        explanation:
+          "Clones the analyzed repository and rates unit size, unit complexity, unit interfacing, duplication, module coupling and component structure from 1 to 5 stars. The criterion passes at an estimated rating of 4 stars or more and warns at 3 stars.",
       },
       {
         id: "codemetrics",
