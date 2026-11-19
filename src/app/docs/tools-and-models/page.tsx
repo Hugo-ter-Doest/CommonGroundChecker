@@ -76,7 +76,7 @@ export default function ToolsAndModelsPage() {
           Parts marked in review are built but not merged yet.
         </p>
         <p className="text-gray-700">
-          How a component becomes a Common Ground component, from the version that is measured to approval, is
+          How a component becomes a Common Ground component, from the version that is measured to Maintained, is
           explained in{" "}
           <Link href={PATH_DOC_HREF} className="text-cg-lightblue hover:underline">
             The path to Common Ground

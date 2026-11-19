@@ -55,7 +55,7 @@ describe("path docs data", () => {
   });
 
   it("marks the parts other lanes are building as in development", () => {
-    for (const title of ["Approved", "Nightly measurement and fix terms", "Versions and a transition period", "Counting usage"]) {
+    for (const title of ["Maintained", "Nightly measurement and fix terms", "Versions and a transition period", "Counting usage"]) {
       expect(statusOf(title), title).toEqual({ kind: "in-development" });
     }
   });
@@ -77,12 +77,12 @@ describe("path docs data", () => {
     expect(version.parts?.[0].paragraphs.join(" ")).toMatch(/scannedRef.*scannedCommit/);
   });
 
-  it("asks a stable developmentStatus for approval wherever the approval conditions are listed", () => {
-    const approved = PATH_SECTIONS.find((section) => section.id === "levels")!.parts!.find((part) => part.title === "Approved")!;
-    expect(approved.paragraphs[0]).toMatch(/developmentStatus in publiccode\.yml is stable/);
-    expect(approved.paragraphs[0]).toMatch(/A component that leaves stable leaves approved/);
-    expect(PATH_STEPS.find((step) => step.includes("now approved"))).toMatch(/stable in publiccode\.yml/);
-    expect(AUDIENCES.find((audience) => audience.id === "buyer")!.text).toMatch(/Approved adds that the software is stable/);
+  it("asks a stable developmentStatus for Maintained wherever its conditions are listed", () => {
+    const maintained = PATH_SECTIONS.find((section) => section.id === "levels")!.parts!.find((part) => part.title === "Maintained")!;
+    expect(maintained.paragraphs[0]).toMatch(/developmentStatus in publiccode\.yml is stable/);
+    expect(maintained.paragraphs[0]).toMatch(/A component that leaves stable leaves Maintained and goes back to Suitable for Common Ground/);
+    expect(PATH_STEPS.find((step) => step.includes("now Maintained"))).toMatch(/stable in publiccode\.yml/);
+    expect(AUDIENCES.find((audience) => audience.id === "buyer")!.text).toMatch(/Maintained adds that the software is stable/);
   });
 
   it("counts declared users under usedBy and asks no confirmation", () => {
@@ -100,11 +100,11 @@ describe("path docs data", () => {
     expect(PATH_DOC_SOURCES[0].title).toBe("The setup behind the checker (issue #54)");
   });
 
-  it("proposes what an SLA for an approved component at least covers", () => {
+  it("proposes what an SLA for a Maintained component at least covers", () => {
     expect(statusOf("What an SLA covers")).toEqual({ kind: "proposed" });
     const sla = PATH_SECTIONS.flatMap((section) => section.parts ?? []).find((part) => part.title === "What an SLA covers")!;
     expect(sla.items).toHaveLength(2);
-    expect(sla.items![0]).toMatch(/above the level of Approved.*within the fix term/);
+    expect(sla.items![0]).toMatch(/above the Suitable for Common Ground level.*within the fix term/);
     expect(sla.items![1]).toMatch(/response and fix times below, as KPIs/);
   });
 
@@ -180,9 +180,9 @@ describe("CommonGroundPathPage", () => {
     render(<CommonGroundPathPage />);
 
     expect(screen.getByRole("heading", { level: 2, name: "Which version is measured In review (#68)" })).toBeTruthy();
-    expect(screen.getByRole("heading", { level: 3, name: "Approved In development" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 3, name: "Maintained In development" })).toBeTruthy();
     expect(screen.getByRole("heading", { level: 3, name: "How the checklist changes Proposed" })).toBeTruthy();
-    expect(screen.getByRole("heading", { level: 2, name: "Who decides on approval" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 2, name: "Who decides that a component is Maintained" })).toBeTruthy();
   });
 
   it("names the four verdict conditions and the two levels", () => {

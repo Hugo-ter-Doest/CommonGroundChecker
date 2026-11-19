@@ -53,7 +53,7 @@ export const AUDIENCES: { id: string; title: string; text: string }[] = [
   {
     id: "buyer",
     title: "A buyer",
-    text: "You want to know if you can use a component with confidence. Look at the verdict and the level. Suitable means the code is good enough and someone maintains it under a contract. Approved adds that the software is stable, that other organisations use it and that VNG has an SLA with the maintainer.",
+    text: "You want to know if you can use a component with confidence. Look at the verdict and the level. Suitable means the code is good enough and someone maintains it under a contract. Maintained adds that the software is stable, that other organisations use it and that VNG has an SLA with the maintainer.",
   },
   {
     id: "maintainer",
@@ -63,24 +63,24 @@ export const AUDIENCES: { id: string; title: string; text: string }[] = [
   {
     id: "municipality",
     title: "A municipality",
-    text: "You use components and want a say in what counts. List your organisation under usedBy in the publiccode.yml of a component you use, so it counts towards approval. Propose changes to the checklist, and take part in the consultation and in the management organisation that decides.",
+    text: "You use components and want a say in what counts. List your organisation under usedBy in the publiccode.yml of a component you use, so it counts towards Maintained. Propose changes to the checklist, and take part in the consultation and in the management organisation that decides.",
   },
 ];
 
-/** The path from a public repository to an approved Common Ground component. */
+/** The path from a public repository to a Maintained Common Ground component. */
 export const PATH_STEPS: string[] = [
   "Publish the component in a public repository with a publiccode.yml.",
   "The checker measures the version you released, not work in progress.",
   "Fix every mandatory criterion and reach an overall rating of at least 2.5.",
   "Make the component maintainable: at least 4 stars for maintainability in the estimate.",
   "Name a maintenance contract in publiccode.yml. The component is now suitable for Common Ground.",
-  "Mark the component stable in publiccode.yml. At least two organisations are listed as users under usedBy, and VNG agrees an SLA with a maintainer. The component is now approved.",
+  "Mark the component stable in publiccode.yml. At least two organisations are listed as users under usedBy, and VNG agrees an SLA with a maintainer. The component is now Maintained.",
   "Stay there: the checker measures every night, and a drop below a criterion is fixed within the agreed fix term.",
 ];
 
-/** What an SLA for an approved component at least says. A proposal. */
+/** What an SLA for a Maintained component at least says. A proposal. */
 export const SLA_TERMS: string[] = [
-  "The maintainer keeps the component above the level of Approved. When it drops below a criterion, the maintainer fixes it within the fix term.",
+  "The maintainer keeps the component above the Suitable for Common Ground level. When it drops below a criterion, the maintainer fixes it within the fix term.",
   "The maintainer meets the response and fix times below, as KPIs.",
 ];
 
@@ -134,7 +134,7 @@ export const PATH_SECTIONS: PathSection[] = [
     items: [
       "Information only: project health, usage and ecosystem, size and the comparison with SonarQube. Shown, never rated, never part of the verdict.",
       "The improvement rating: 1 to 5 stars per aspect, per category and overall. It shows a supplier where a component can improve.",
-      "The verdict: suitable for Common Ground or not. It is advice for a buyer.",
+      "The verdict: suitable for Common Ground or not. It is the threshold the Common Ground programme uses to decide whether to adopt a component as supported. It is not a condition for being listed.",
     ],
   },
   {
@@ -153,23 +153,23 @@ export const PATH_SECTIONS: PathSection[] = [
         title: "A valid maintenance contract",
         status: { kind: "in-review", pr: 55 },
         paragraphs: [
-          "The criterion Maintained reads maintenance in publiccode.yml. It passes on maintenance.type: contract with at least one contractor that has a name and an until date that has not passed. The types none, internal and community are not a contract. When something is missing or wrong, the checker says exactly what: no name, no end date, an end date that is not a date, an expired contract or an invalid email address.",
+          "The criterion Maintenance contract reads maintenance in publiccode.yml. It passes on maintenance.type: contract with at least one contractor that has a name and an until date that has not passed. The types none, internal and community are not a contract. When something is missing or wrong, the checker says exactly what: no name, no end date, an end date that is not a date, an expired contract or an invalid email address.",
         ],
       },
     ],
   },
   {
     id: "levels",
-    title: "Two levels: suitable and approved",
+    title: "Two levels: Suitable for Common Ground and Maintained",
     paragraphs: [
-      "Suitable for Common Ground means the checker finds that the component meets the technical conditions above. It is advice, not a condition for being listed. A component that is not suitable stays visible.",
+      "Suitable for Common Ground means the checker finds that the component meets the technical conditions above. It is the threshold the Common Ground programme uses to decide whether to adopt a component as supported. It is not a condition for being listed: a component that is not yet suitable is still listed.",
     ],
     parts: [
       {
-        title: "Approved",
+        title: "Maintained",
         status: { kind: "in-development" },
         paragraphs: [
-          "A component is approved when it is suitable, its developmentStatus in publiccode.yml is stable, at least two organisations are listed as users under usedBy in publiccode.yml, and VNG has an SLA with a maintainer. A component that leaves stable leaves approved. The SLA rests on the hard criteria and the KPIs below. A component with one user is not yet a shared component. The number two is a proposal.",
+          "A component is Maintained when it is suitable, its developmentStatus in publiccode.yml is stable, at least two organisations are listed as users under usedBy in publiccode.yml, and VNG has an SLA with a maintainer. A component that leaves stable leaves Maintained and goes back to Suitable for Common Ground. The SLA rests on the hard criteria and the KPIs below. A component with one user is not yet a shared component. The number two is a proposal.",
         ],
       },
     ],
@@ -197,7 +197,7 @@ export const PATH_SECTIONS: PathSection[] = [
       {
         title: "What an SLA covers",
         status: { kind: "proposed" },
-        paragraphs: ["We propose that an SLA for an approved component at least says this:"],
+        paragraphs: ["We propose that an SLA for a Maintained component at least says this:"],
         items: SLA_TERMS,
       },
       {
@@ -222,7 +222,7 @@ export const PATH_SECTIONS: PathSection[] = [
     status: { kind: "in-development" },
     paragraphs: [
       "The checker counts the organisations under usedBy in publiccode.yml. That is the declared number of users. There is no separate confirmation step for now.",
-      "Every measurement stores the number, so the history shows whether use grows or shrinks. Usage gives no stars and no ranking. It only counts towards approval.",
+      "Every measurement stores the number, so the history shows whether use grows or shrinks. Usage gives no stars and no ranking. It only counts towards Maintained.",
     ],
   },
   {
@@ -253,9 +253,9 @@ export const PATH_SECTIONS: PathSection[] = [
   },
   {
     id: "governance",
-    title: "Who decides on approval",
+    title: "Who decides that a component is Maintained",
     paragraphs: [
-      "Approval needs more than technology. It needs a governance decision: who approves, who sets the fix terms and the targets, and what happens when a maintainer does not meet them. The setup does not make that decision. It refers to it once it exists, and the checker shows the outcome.",
+      "Maintained needs more than technology. It needs a governance decision: who decides that a component is Maintained, who sets the fix terms and the targets, and what happens when a maintainer does not meet them. The setup does not make that decision. It refers to it once it exists, and the checker shows the outcome.",
     ],
   },
 ];

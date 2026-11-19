@@ -64,7 +64,7 @@ export default function RatingGuidePage() {
           <Link href={PATH_DOC_HREF} className="text-cg-lightblue hover:underline">
             The path to Common Ground
           </Link>{" "}
-          explains which version the checker measures, when a component is suitable or approved, how maintenance
+          explains which version the checker measures, when a component is suitable or Maintained, how maintenance
           is measured and who decides what is in the checklist.
         </p>
       </section>
