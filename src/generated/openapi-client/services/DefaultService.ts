@@ -4,6 +4,8 @@
 /* eslint-disable */
 import type { CheckReport } from '../models/CheckReport';
 import type { CheckRequest } from '../models/CheckRequest';
+import type { FollowSettings } from '../models/FollowSettings';
+import type { FollowSettingsInput } from '../models/FollowSettingsInput';
 import type { RepoAnalysisInput } from '../models/RepoAnalysisInput';
 import type { RepoAnalysisOutput } from '../models/RepoAnalysisOutput';
 import type { RepoHistoryResponse } from '../models/RepoHistoryResponse';
@@ -28,11 +30,13 @@ export class DefaultService {
     /**
      * List known repositories with latest summary
      * @param limit Maximum number of repositories to return
+     * @param q Case-insensitive search term matched against owner, name, description and repository URL, and exactly (lowercased) against topics. Omit or leave blank to list all repositories.
      * @returns any Repository summary list
      * @throws ApiError
      */
     public getApiRepositories(
         limit: number = 12,
+        q?: string,
     ): CancelablePromise<{
         repositories?: Array<RepoSummary>;
     }> {
@@ -41,6 +45,7 @@ export class DefaultService {
             url: '/api/repositories',
             query: {
                 'limit': limit,
+                'q': q,
             },
         });
     }
@@ -123,6 +128,34 @@ export class DefaultService {
             errors: {
                 400: `Invalid analysis payload`,
                 404: `Repository not found`,
+            },
+        });
+    }
+    /**
+     * Follow or unfollow a repository for scheduled rescans
+     * Admin only. Requires `Authorization: Bearer <ADMIN_TOKEN>`. Disabled with 503 when the backend has no ADMIN_TOKEN configured.
+     * @param repoId
+     * @param requestBody
+     * @returns FollowSettings Follow settings saved
+     * @throws ApiError
+     */
+    public putApiRepositoriesFollow(
+        repoId: string,
+        requestBody: FollowSettingsInput,
+    ): CancelablePromise<FollowSettings> {
+        return this.httpRequest.request({
+            method: 'PUT',
+            url: '/api/repositories/{repoId}/follow',
+            path: {
+                'repoId': repoId,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                400: `Invalid follow settings`,
+                401: `Missing or invalid admin token`,
+                404: `Repository not found`,
+                503: `Admin actions are disabled because ADMIN_TOKEN is not configured`,
             },
         });
     }
