@@ -74,7 +74,8 @@ describe("about docs data", () => {
   it("states the suitable verdict and the approval conditions", () => {
     const text = (id: string) => CG_STATES.find((state) => state.id === id)!.text;
     expect(text("suitable")).toMatch(/no mandatory criterion fails.*at least 2\.5.*valid maintenance contract.*at least 4 stars/);
-    expect(text("approved")).toMatch(/developmentStatus stable, at least two confirmed users, and an SLA from VNG/);
+    expect(text("approved")).toMatch(/developmentStatus stable, at least two users listed under usedBy in publiccode\.yml, and an SLA from VNG/);
+    expect(text("out-of-support")).toMatch(/fewer users than required/);
     expect(text("out-of-support")).toMatch(/no longer stable/);
     expect(text("in-remedy")).toMatch(/stays approved during the term/);
     expect(text("out-of-support")).toMatch(/can come back/);
@@ -119,6 +120,10 @@ describe("about docs data", () => {
       if (!point.link.href.startsWith(PATH_DOC_HREF)) continue;
       expect(sectionIds.has(point.link.href.split("#")[1]), point.link.href).toBe(true);
     }
+  });
+
+  it("counts declared users and asks no confirmation", () => {
+    for (const text of allText()) expect(text, text).not.toMatch(/confirm/i);
   });
 
   it("uses no em or en dashes", () => {

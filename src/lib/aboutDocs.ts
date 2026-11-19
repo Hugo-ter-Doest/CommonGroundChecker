@@ -53,7 +53,7 @@ export const PLAN_POINTS: PlanPoint[] = [
     id: "levels",
     title: pathSection("levels").title,
     paragraphs: [
-      "Suitable for Common Ground means the checker finds that the component meets the technical conditions, including a valid maintenance contract. Approved adds that the software is stable, that at least two organisations confirm they use it, and that VNG has an SLA with a maintainer.",
+      "Suitable for Common Ground means the checker finds that the component meets the technical conditions, including a valid maintenance contract. Approved adds that the software is stable, that at least two organisations are listed as users under usedBy in publiccode.yml, and that VNG has an SLA with a maintainer. The number two is a proposal.",
     ],
     status: pathSection("levels").status,
     link: pathLink("levels"),
@@ -118,7 +118,7 @@ export const CG_STATES: LifecycleState[] = [
   {
     id: "approved",
     name: "Approved",
-    text: "Suitable, developmentStatus stable, at least two confirmed users, and an SLA from VNG with a maintainer. The component is in the support of the programme.",
+    text: "Suitable, developmentStatus stable, at least two users listed under usedBy in publiccode.yml, and an SLA from VNG with a maintainer. The number two is a proposal. The component is in the support of the programme.",
     status: { kind: "in-development" },
   },
   {
@@ -130,7 +130,7 @@ export const CG_STATES: LifecycleState[] = [
   {
     id: "out-of-support",
     name: "Out of support",
-    text: "The fix term passed, the SLA ended or was not renewed, there are fewer confirmed users than required, or the software is no longer stable. The component can come back.",
+    text: "The fix term passed, the SLA ended or was not renewed, there are fewer users than required, or the software is no longer stable. The component can come back.",
     status: { kind: "proposed" },
   },
   {
@@ -149,7 +149,7 @@ export const CG_TRANSITIONS: LifecycleTransition[] = [
     from: "suitable",
     to: "approved",
     label: "stable, 2 users + SLA",
-    text: "The software is stable, at least two organisations confirm they use it, and VNG agrees an SLA with a maintainer.",
+    text: "The software is stable, at least two organisations are listed as users under usedBy, and VNG agrees an SLA with a maintainer.",
   },
   {
     from: "approved",
@@ -163,7 +163,7 @@ export const CG_TRANSITIONS: LifecycleTransition[] = [
     from: "approved",
     to: "out-of-support",
     label: "no SLA, too few users or not stable",
-    text: "The SLA ended or was not renewed, fewer organisations confirm they use it than required, or developmentStatus went back from stable to beta, development or concept.",
+    text: "The SLA ended or was not renewed, fewer organisations are listed as users than required, or developmentStatus went back from stable to beta, development or concept.",
   },
   {
     from: "out-of-support",
