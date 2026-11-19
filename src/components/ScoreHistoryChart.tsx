@@ -117,117 +117,121 @@ export default function ScoreHistoryChart({ analyses, analysisHref }: ScoreHisto
 
   return (
     <div className="space-y-2">
-      <svg
-        viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
-        className="w-full h-auto"
-        aria-labelledby="score-history-title score-history-desc"
-      >
-        <title id="score-history-title">Overall score over time</title>
-        <desc id="score-history-desc">{description}</desc>
-
-        <g aria-hidden="true">
-          {bands.map((band) => (
-            <rect
-              key={band.from}
-              x={PLOT_LEFT}
-              y={scaleScore(band.to)}
-              width={PLOT_RIGHT - PLOT_LEFT}
-              height={scaleScore(band.from) - scaleScore(band.to)}
-              className={band.className}
-            />
-          ))}
-          {[0, ...THRESHOLDS, 100].map((value) => (
-            <g key={value}>
-              <line
-                x1={PLOT_LEFT}
-                x2={PLOT_RIGHT}
-                y1={scaleScore(value)}
-                y2={scaleScore(value)}
-                stroke="#e5e7eb"
-                strokeDasharray={THRESHOLDS.includes(value) ? "4 4" : undefined}
+      <div className="overflow-x-auto" role="region" aria-label="Score graph" tabIndex={0}>
+        <svg
+          viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
+          className="w-full h-auto max-sm:min-w-[400px]"
+          aria-labelledby="score-history-title score-history-desc"
+        >
+          <title id="score-history-title">Overall score over time</title>
+          <desc id="score-history-desc">{description}</desc>
+  
+          <g aria-hidden="true">
+            {bands.map((band) => (
+              <rect
+                key={band.from}
+                x={PLOT_LEFT}
+                y={scaleScore(band.to)}
+                width={PLOT_RIGHT - PLOT_LEFT}
+                height={scaleScore(band.from) - scaleScore(band.to)}
+                className={band.className}
               />
-              <text
-                x={PLOT_LEFT - 6}
-                y={scaleScore(value)}
-                textAnchor="end"
-                dominantBaseline="middle"
-                className="fill-gray-500 text-[10px]"
-              >
-                {value}
-              </text>
-            </g>
-          ))}
-          <text x={PLOT_LEFT} y={CHART_HEIGHT - 8} className="fill-gray-500 text-[10px]">
-            {formatDay(first.checkedAt)}
-          </text>
-          <text x={PLOT_RIGHT} y={CHART_HEIGHT - 8} textAnchor="end" className="fill-gray-500 text-[10px]">
-            {formatDay(last.checkedAt)}
-          </text>
-          <path d={linePath} fill="none" className="stroke-cg-blue" strokeWidth="2" strokeLinejoin="round" />
-        </g>
-
-        {points.map((point) => {
-          const tooltip = tooltipPosition(point);
-          const label = `${formatDate(point.checkedAt)}, score ${point.score}`;
-          return (
-            <a
-              key={point.id}
-              href={analysisHref(point.id)}
-              aria-label={`Open analysis of ${label}`}
-              className="group focus:outline-none"
-            >
-              <circle cx={point.x} cy={point.y} r="12" fill="transparent" />
-              <circle
-                cx={point.x}
-                cy={point.y}
-                r="5"
-                className={`${pointClass(point.score)} stroke-white group-hover:stroke-cg-blue group-focus:stroke-cg-blue`}
-                strokeWidth="2"
-              />
-              <g
-                aria-hidden="true"
-                className="opacity-0 group-hover:opacity-100 group-focus:opacity-100 pointer-events-none"
-              >
-                <rect
-                  x={tooltip.x}
-                  y={tooltip.y}
-                  width={TOOLTIP_WIDTH}
-                  height={TOOLTIP_HEIGHT}
-                  rx="6"
-                  className="fill-white stroke-gray-300"
+            ))}
+            {[0, ...THRESHOLDS, 100].map((value) => (
+              <g key={value}>
+                <line
+                  x1={PLOT_LEFT}
+                  x2={PLOT_RIGHT}
+                  y1={scaleScore(value)}
+                  y2={scaleScore(value)}
+                  stroke="#e5e7eb"
+                  strokeDasharray={THRESHOLDS.includes(value) ? "4 4" : undefined}
                 />
                 <text
-                  x={tooltip.x + TOOLTIP_WIDTH / 2}
-                  y={tooltip.y + TOOLTIP_HEIGHT / 2}
-                  textAnchor="middle"
+                  x={PLOT_LEFT - 6}
+                  y={scaleScore(value)}
+                  textAnchor="end"
                   dominantBaseline="middle"
-                  className="fill-gray-800 text-[11px] font-semibold"
+                  className="fill-gray-500 text-[10px] max-sm:text-[20px]"
                 >
-                  {label}
+                  {value}
                 </text>
               </g>
-            </a>
-          );
-        })}
-      </svg>
+            ))}
+            <text x={PLOT_LEFT} y={CHART_HEIGHT - 8} className="fill-gray-500 text-[10px] max-sm:text-[20px]">
+              {formatDay(first.checkedAt)}
+            </text>
+            <text x={PLOT_RIGHT} y={CHART_HEIGHT - 8} textAnchor="end" className="fill-gray-500 text-[10px] max-sm:text-[20px]">
+              {formatDay(last.checkedAt)}
+            </text>
+            <path d={linePath} fill="none" className="stroke-cg-blue" strokeWidth="2" strokeLinejoin="round" />
+          </g>
+  
+          {points.map((point) => {
+            const tooltip = tooltipPosition(point);
+            const label = `${formatDate(point.checkedAt)}, score ${point.score}`;
+            return (
+              <a
+                key={point.id}
+                href={analysisHref(point.id)}
+                aria-label={`Open analysis of ${label}`}
+                className="group focus:outline-none"
+              >
+                <circle cx={point.x} cy={point.y} r="12" fill="transparent" />
+                <circle
+                  cx={point.x}
+                  cy={point.y}
+                  r="5"
+                  className={`${pointClass(point.score)} stroke-white group-hover:stroke-cg-blue group-focus:stroke-cg-blue`}
+                  strokeWidth="2"
+                />
+                <g
+                  aria-hidden="true"
+                  className="opacity-0 group-hover:opacity-100 group-focus:opacity-100 pointer-events-none"
+                >
+                  <rect
+                    x={tooltip.x}
+                    y={tooltip.y}
+                    width={TOOLTIP_WIDTH}
+                    height={TOOLTIP_HEIGHT}
+                    rx="6"
+                    className="fill-white stroke-gray-300"
+                  />
+                  <text
+                    x={tooltip.x + TOOLTIP_WIDTH / 2}
+                    y={tooltip.y + TOOLTIP_HEIGHT / 2}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    className="fill-gray-800 text-[11px] font-semibold"
+                  >
+                    {label}
+                  </text>
+                </g>
+              </a>
+            );
+          })}
+        </svg>
+      </div>
 
-      <table className="sr-only">
-        <caption>Overall score per analysis, oldest first</caption>
-        <thead>
-          <tr>
-            <th scope="col">Date</th>
-            <th scope="col">Score</th>
-          </tr>
-        </thead>
-        <tbody>
-          {points.map((point) => (
-            <tr key={point.id}>
-              <td>{formatDate(point.checkedAt)}</td>
-              <td>{point.score}</td>
+      <div className="sr-only">
+        <table>
+          <caption>Overall score per analysis, oldest first</caption>
+          <thead>
+            <tr>
+              <th scope="col">Date</th>
+              <th scope="col">Score</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {points.map((point) => (
+              <tr key={point.id}>
+                <td>{formatDate(point.checkedAt)}</td>
+                <td>{point.score}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
