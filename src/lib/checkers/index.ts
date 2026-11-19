@@ -3,7 +3,7 @@ import type { CheckReport, CheckResult } from "../types";
 import type { RepoContext } from "../providers/types";
 import { checkOpenApi } from "./openapi";
 import { checkLicense } from "./license";
-import { checkPublicCode } from "./publiccode";
+import { analysePublicCode } from "./publiccode";
 import { checkDocker } from "./docker";
 import { checkDockerImage } from "./dockerImage";
 import { checkCiConfig } from "./ciConfig";
@@ -12,11 +12,13 @@ import { checkHelmChart } from "./helmchart";
 import { checkSbom } from "./sbom";
 import { checkDocumentation } from "./documentation";
 import { checkChangelog } from "./changelog";
+import { checkMaintenance } from "./maintenance";
 import { checkContributing } from "./contributing";
 import { checkCodeOfConduct } from "./codeofconduct";
 import { checkSecurity } from "./security";
 import { checkTests } from "./tests";
 import { checkComplexity } from "./complexity";
+import { checkMaintainability } from "./maintainability";
 import { checkCodeMetrics } from "./codeMetrics";
 import { checkCoverage } from "./coverage";
 import { checkAdrValidator } from "./adrValidator";
@@ -25,9 +27,13 @@ import { checkSemver } from "./semver";
 import { checkCopyrightOwner } from "./copyrightOwner";
 import { checkOwaspSecureCoding } from "./owaspSecureCoding";
 import { checkEuplLicense } from "./eupl";
+import { checkUsage } from "./usage";
+import { USAGE_CHECK_ID } from "../usage";
 import {
   getActiveScoringConfig,
 } from "./config";
+import { statusToStars } from "../stars";
+import { computeEndorsement, computeRatings } from "../ratings";
 import { CATEGORY_WEIGHTS, RESULT_CATEGORY_BY_ID, type CriteriaCategory } from "../criteria";
 import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
@@ -148,10 +154,16 @@ export async function runChecks(
     openApiCheckPromise,
     checkLicense(context, meta, tree),
     checkCopyrightOwner(context, meta, tree),
-    checkPublicCode(context, tree),
+    analysePublicCode(context, tree),
+    checkMaintenance(context, tree),
     checkFiveLayer(context, tree, meta),
     checkHelmChart(context, tree, options?.helmChartLocations ?? []),
   ]);
+  const usagePromise = networkChecksPromise.then(([, , , publiccodeAnalysis]) =>
+    checkUsage(context, meta, tree, publiccodeAnalysis.result.publiccode, {
+      dockerLocations: options?.dockerLocations,
+    })
+  );
   const complexityPromise = checkComplexity(
     owner,
     repo,
@@ -160,6 +172,7 @@ export async function runChecks(
     localRepoPath,
     cloneUrl
   );
+  const maintainabilityPromise = checkMaintainability(localRepoPath);
   const codeMetricsPromise = checkCodeMetrics(owner, repo, localRepoPath, cloneUrl);
   const owaspSecureCodingPromise = checkOwaspSecureCoding(context, tree, localRepoPath);
   const adrValidatorPromise = checkAdrValidator(
@@ -191,13 +204,16 @@ export async function runChecks(
 
   // Instant checks done; emit next step while slower checks complete in parallel
   onProgress?.("Analysing API specs, licence & deployment files...", 60);
-  const [[openapi, license, copyrightowner, publiccode, fivelayer, helmchart], complexity, codemetrics, owaspsecurecoding, adrvalidator] = await Promise.all([
+  const [[openapi, license, copyrightowner, publiccodeAnalysis, maintenance, fivelayer, helmchart], complexity, maintainability, codemetrics, owaspsecurecoding, adrvalidator, usage] = await Promise.all([
     networkChecksPromise,
     complexityPromise,
+    maintainabilityPromise,
     codeMetricsPromise,
     owaspSecureCodingPromise,
     adrValidatorPromise,
+    usagePromise,
   ]);
+  const publiccode = publiccodeAnalysis.result;
 
   // Always merge code metrics into Actual Source Code result if available
   if (sourcecode && codemetrics) {
@@ -236,6 +252,7 @@ export async function runChecks(
     eupllicense,
     copyrightowner,
     publiccode,
+    maintenance,
     docker,
     dockerimage,
     cicd,
@@ -245,6 +262,7 @@ export async function runChecks(
     tests,
     coverage,
     complexity,
+    maintainability,
     // codemetrics is now merged into sourcecode, so do not include separately
     owaspsecurecoding,
     adrvalidator,
@@ -325,6 +343,7 @@ export async function runChecks(
     eupllicense,
     copyrightowner,
     publiccode,
+    maintenance,
     docker,
     dockerimage,
     cicd,
@@ -334,6 +353,7 @@ export async function runChecks(
     tests,
     coverage,
     complexity,
+    maintainability,
     // codemetrics is now merged into sourcecode, so do not include separately
     owaspsecurecoding,
     adrvalidator,
@@ -343,11 +363,19 @@ export async function runChecks(
     semver,
     fivelayer,
     helmchart,
+    usage,
   ].map((result) => ({
     ...result,
     requirementLevel:
       scoringConfig.criterionConfigByCheckId[result.id]?.requirementLevel ??
       "recommended",
+  }));
+  // Rated before the status stars are filled in, so a criterion without a scale is rated from its status.
+  const { rating, categoryRatings, aspectRatings } = computeRatings(resultsWithRequirementLevels, scoringConfig);
+  const endorsement = computeEndorsement(resultsWithRequirementLevels, rating, scoringConfig);
+  const resultsWithStars = resultsWithRequirementLevels.map((result) => ({
+    ...result,
+    starRating: result.id === USAGE_CHECK_ID ? undefined : (result.starRating ?? statusToStars(result.status)),
   }));
 
   return {
@@ -357,7 +385,11 @@ export async function runChecks(
     checkedAt: new Date().toISOString(),
     scoringConfigId: activeScoringConfig.id,
     score,
-    results: resultsWithRequirementLevels,
+    rating,
+    categoryRatings,
+    aspectRatings,
+    endorsement,
+    results: resultsWithStars,
     repoMeta: {
       description: meta.description ?? null,
       language: meta.language ?? null,
@@ -368,6 +400,7 @@ export async function runChecks(
       license: meta.license?.name ?? null,
       version,
       versionEvidence: versionInfo.evidence,
+      ...publiccodeAnalysis.details,
     },
   };
   } finally {

@@ -1,13 +1,12 @@
-import HistoryPageClient from "@/components/HistoryPageClient";
+import HistoryPageClient, { type SortDirection, type SortKey } from "@/components/HistoryPageClient";
 import { getRepositories, type RepoSummary } from "@/lib/apiClient";
-
-type SortKey = "date" | "score";
-type SortDirection = "asc" | "desc";
+import { normalizeSearchQuery } from "@/lib/historySearch";
 
 interface HistoryHomePageProps {
   searchParams: Promise<{
     sort?: string | string[];
     direction?: string | string[];
+    q?: string | string[];
   }>;
 }
 
@@ -16,8 +15,9 @@ function firstValue(value: string | string[] | undefined): string | undefined {
   return value;
 }
 
+/** Without a sort in the URL, the highest-rated components come first. */
 function normalizeSortKey(value: string | undefined): SortKey {
-  return value === "score" ? "score" : "date";
+  return value === "score" || value === "date" ? value : "rating";
 }
 
 function normalizeSortDirection(value: string | undefined): SortDirection {
@@ -28,12 +28,13 @@ export default async function HistoryHomePage({ searchParams }: HistoryHomePageP
   const query = await searchParams;
   const sortKey = normalizeSortKey(firstValue(query.sort));
   const sortDirection = normalizeSortDirection(firstValue(query.direction));
+  const searchQuery = normalizeSearchQuery(query.q);
 
   let repositories: RepoSummary[] = [];
   let error: string | undefined;
 
   try {
-    repositories = await getRepositories(50);
+    repositories = await getRepositories(50, searchQuery);
   } catch (err) {
     error = err instanceof Error ? err.message : "Unable to connect to repository history API.";
   }
@@ -42,6 +43,7 @@ export default async function HistoryHomePage({ searchParams }: HistoryHomePageP
     <HistoryPageClient
       sort={sortKey}
       direction={sortDirection}
+      query={searchQuery}
       repositories={repositories}
       error={error}
     />

@@ -40,6 +40,7 @@ export interface RepositoryMeta {
   owner?: {
     name?: string;
     login?: string;
+    type?: string;
   };
   [key: string]: unknown;
 }
@@ -53,5 +54,7 @@ export interface RepositoryProvider {
   getFileContent(context: RepoContext, path: string): Promise<string | null>;
   getRepoVersion(context: RepoContext): Promise<RepoVersionResult>;
   getCloneUrl(context: RepoContext): string;
+  /** URL that serves the raw content of a repository file on the given branch */
+  getRawFileUrl(context: RepoContext, branch: string, path: string): string;
   parseRepoTreeUrl?(url: string): ParsedRepoTreeUrl | null;
 }

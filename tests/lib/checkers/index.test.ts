@@ -8,6 +8,7 @@ const ids = [
   "eupllicense",
   "copyrightowner",
   "publiccode",
+  "maintenance",
   "docker",
   "dockerimage",
   "cicd",
@@ -16,6 +17,7 @@ const ids = [
   "changelog",
   "tests",
   "complexity",
+  "maintainability",
   "codemetrics",
   "owaspsecurecoding",
   "adrvalidator",
@@ -37,7 +39,8 @@ const mocks = vi.hoisted(() => ({
   getSupportedProviders: vi.fn(),
   checkOpenApi: vi.fn(),
   checkLicense: vi.fn(),
-  checkPublicCode: vi.fn(),
+  analysePublicCode: vi.fn(),
+  checkMaintenance: vi.fn(),
   checkCopyrightOwner: vi.fn(),
   checkDocker: vi.fn(),
   checkDockerImage: vi.fn(),
@@ -49,10 +52,12 @@ const mocks = vi.hoisted(() => ({
   checkSecurity: vi.fn(),
   checkTests: vi.fn(),
   checkComplexity: vi.fn(),
+  checkMaintainability: vi.fn(),
   checkSourceCode: vi.fn(),
   checkSemver: vi.fn(),
   checkFiveLayer: vi.fn(),
   checkHelmChart: vi.fn(),
+  checkUsage: vi.fn(),
   checkCodeMetrics: vi.fn(),
   checkOwaspSecureCoding: vi.fn(),
   checkEuplLicense: vi.fn(),
@@ -106,7 +111,8 @@ vi.mock("@/lib/providers", () => ({
 vi.mock("@/lib/checkers/openapi", () => ({ checkOpenApi: mocks.checkOpenApi }));
 vi.mock("@/lib/checkers/license", () => ({ checkLicense: mocks.checkLicense }));
 vi.mock("@/lib/checkers/copyrightOwner", () => ({ checkCopyrightOwner: mocks.checkCopyrightOwner }));
-vi.mock("@/lib/checkers/publiccode", () => ({ checkPublicCode: mocks.checkPublicCode }));
+vi.mock("@/lib/checkers/publiccode", () => ({ analysePublicCode: mocks.analysePublicCode }));
+vi.mock("@/lib/checkers/maintenance", () => ({ checkMaintenance: mocks.checkMaintenance }));
 vi.mock("@/lib/checkers/docker", () => ({ checkDocker: mocks.checkDocker }));
 vi.mock("@/lib/checkers/dockerImage", () => ({ checkDockerImage: mocks.checkDockerImage }));
 vi.mock("@/lib/checkers/ciConfig", () => ({ checkCiConfig: mocks.checkCiConfig }));
@@ -117,6 +123,7 @@ vi.mock("@/lib/checkers/codeofconduct", () => ({ checkCodeOfConduct: mocks.check
 vi.mock("@/lib/checkers/security", () => ({ checkSecurity: mocks.checkSecurity }));
 vi.mock("@/lib/checkers/tests", () => ({ checkTests: mocks.checkTests }));
 vi.mock("@/lib/checkers/complexity", () => ({ checkComplexity: mocks.checkComplexity }));
+vi.mock("@/lib/checkers/maintainability", () => ({ checkMaintainability: mocks.checkMaintainability }));
 vi.mock("@/lib/checkers/codeMetrics", () => ({ checkCodeMetrics: mocks.checkCodeMetrics }));
 vi.mock("@/lib/checkers/owaspSecureCoding", () => ({ checkOwaspSecureCoding: mocks.checkOwaspSecureCoding }));
 vi.mock("@/lib/checkers/eupl", () => ({
@@ -127,9 +134,12 @@ vi.mock("@/lib/checkers/sourcecode", () => ({ checkSourceCode: mocks.checkSource
 vi.mock("@/lib/checkers/semver", () => ({ checkSemver: mocks.checkSemver }));
 vi.mock("@/lib/checkers/fiveLayer", () => ({ checkFiveLayer: mocks.checkFiveLayer }));
 vi.mock("@/lib/checkers/helmchart", () => ({ checkHelmChart: mocks.checkHelmChart }));
+vi.mock("@/lib/checkers/usage", () => ({ checkUsage: mocks.checkUsage }));
 vi.mock("@/lib/checkers/config", () => ({ getActiveScoringConfig: mocks.getActiveScoringConfig }));
 
 import { runChecks } from "@/lib/checkers/index";
+import { CATEGORY_ORDER, CATEGORY_WEIGHTS } from "@/lib/criteria";
+import { resolveCategory } from "@/lib/aspects";
 
 function resultFor(id: string, status: CheckResult["status"]): CheckResult {
   return {
@@ -224,7 +234,18 @@ describe("runChecks", () => {
     mocks.checkLicense.mockResolvedValue(resultFor("license", "pass"));
     mocks.checkEuplLicense.mockReturnValue(resultFor("eupllicense", "warn"));
     mocks.checkCopyrightOwner.mockResolvedValue(resultFor("copyrightowner", "pass"));
-    mocks.checkPublicCode.mockResolvedValue(resultFor("publiccode", "pass"));
+    mocks.analysePublicCode.mockResolvedValue({
+      result: resultFor("publiccode", "pass"),
+      details: {
+        displayName: "Test Repo",
+        shortDescription: "Een testrepository",
+        logoUrl: "https://raw.githubusercontent.com/org/repo/main/logo.svg",
+        developmentStatus: "beta",
+        maintenanceType: "community",
+        maintainers: ["Test Team"],
+      },
+    });
+    mocks.checkMaintenance.mockResolvedValue(resultFor("maintenance", "pass"));
     mocks.checkDocker.mockReturnValue(resultFor("docker", "pass"));
     mocks.checkDockerImage.mockReturnValue(resultFor("dockerimage", "pass"));
     mocks.checkCiConfig.mockReturnValue(resultFor("cicd", "pass"));
@@ -232,6 +253,7 @@ describe("runChecks", () => {
     mocks.checkDocumentation.mockReturnValue(resultFor("documentation", "pass"));
     mocks.checkTests.mockReturnValue(resultFor("tests", "pass"));
     mocks.checkComplexity.mockResolvedValue(resultFor("complexity", "pass"));
+    mocks.checkMaintainability.mockResolvedValue({ ...resultFor("maintainability", "warn"), starRating: 3 });
     mocks.checkCodeMetrics.mockResolvedValue(resultFor("codemetrics", "info"));
     mocks.checkOwaspSecureCoding.mockResolvedValue(resultFor("owaspsecurecoding", "pass"));
     mocks.checkAdrValidator.mockResolvedValue(resultFor("adrvalidator", "pass"));
@@ -241,6 +263,7 @@ describe("runChecks", () => {
     mocks.checkSemver.mockReturnValue(resultFor("semver", "pass"));
     mocks.checkFiveLayer.mockResolvedValue(resultFor("fivelayer", "pass"));
     mocks.checkHelmChart.mockResolvedValue(resultFor("helmchart", "pass"));
+    mocks.checkUsage.mockResolvedValue({ ...resultFor("usage", "info"), usage: { sources: [] } });
   });
 
   it("applies weighted scoring and non-register OpenAPI bypass", async () => {
@@ -269,11 +292,78 @@ describe("runChecks", () => {
     expect(report.scoringConfigId).toBe("cfg-1");
     expect(report.score).toBe(25);
     expect(mocks.checkOpenApi).not.toHaveBeenCalled();
-    expect(report.results).toHaveLength(23);
+    expect(report.results).toHaveLength(26);
+    expect(report.results.find((result) => result.id === "maintainability")?.starRating).toBe(3);
+    expect(report.results.find((result) => result.id === "semver")?.starRating).toBe(1);
+    expect(report.results.find((result) => result.id === "tests")?.starRating).toBe(3);
 
     const openApiResult = report.results.find((result) => result.id === "openapi");
     expect(openApiResult?.status).toBe("pass");
     expect(openApiResult?.message).toContain("not marked as a register");
+  });
+
+  it("rates the aspects, the categories and the component, and judges the endorsement", async () => {
+    const configById = criterionConfig(0);
+    configById.maintainability = { weight: 1, requirementLevel: "recommended" };
+    configById.license = { weight: 1, requirementLevel: "mandatory" };
+    configById.coverage = { weight: 0, requirementLevel: "mandatory" };
+
+    mocks.checkMaintainability.mockResolvedValue({
+      ...resultFor("maintainability", "warn"),
+      starRating: 3,
+      rating: 3.4,
+      aspectRatings: { analysability: 3, modifiability: 4, testability: 3, modularity: null, reusability: 4 },
+    });
+
+    mocks.getActiveScoringConfig.mockResolvedValue({
+      id: "cfg-ratings",
+      config: {
+        criterionConfigByCheckId: configById,
+        statusScoreByStatus: { pass: 1, warn: 0.5, info: 0.5, fail: 0 },
+        complexityThreshold: 12,
+        complexityMaxCcnThreshold: 20,
+        spectralRulesetSource: "https://static.developer.overheid.nl/adr/ruleset.yaml",
+      },
+    });
+
+    const report = await runChecks("https://github.com/org/repo", { isRegister: false });
+
+    const governance = resolveCategory("Governance")!;
+    const maintainability = resolveCategory("Maintainability")!;
+    expect(report.aspectRatings.licensing).toEqual({ rating: 5.5 });
+    expect(report.aspectRatings.analysability).toEqual({ rating: 3 });
+    expect(report.aspectRatings.modularity).toEqual({ rating: null });
+    expect(report.categoryRatings[governance]).toBe(5.5);
+    expect(report.categoryRatings[maintainability]).toBe(3.5);
+    expect(Object.keys(report.categoryRatings)).toEqual(CATEGORY_ORDER);
+    const governanceWeight = CATEGORY_WEIGHTS[governance];
+    const maintainabilityWeight = CATEGORY_WEIGHTS[maintainability];
+    expect(report.rating).toBe(
+      Math.round(((5.5 * governanceWeight + 3.5 * maintainabilityWeight) / (governanceWeight + maintainabilityWeight)) * 10) / 10
+    );
+    expect(report.endorsement).toEqual({ passed: false, reasons: ["Maintainability below 4 stars (3.40)"] });
+    expect(report.results.find((result) => result.id === "license")?.starRating).toBe(5);
+  });
+
+  it("does not endorse a component whose mandatory criterion fails", async () => {
+    const configById = criterionConfig(1, "recommended");
+    configById.license = { weight: 1, requirementLevel: "mandatory" };
+    mocks.checkLicense.mockResolvedValue({ ...resultFor("license", "fail"), title: "Open source licence" });
+    mocks.checkMaintainability.mockResolvedValue({ ...resultFor("maintainability", "pass"), starRating: 4, rating: 4.4 });
+    mocks.getActiveScoringConfig.mockResolvedValue({
+      id: "cfg-endorsement",
+      config: {
+        criterionConfigByCheckId: configById,
+        statusScoreByStatus: { pass: 1, warn: 0.5, info: 0.5, fail: 0 },
+        complexityThreshold: 12,
+        complexityMaxCcnThreshold: 20,
+        spectralRulesetSource: "https://static.developer.overheid.nl/adr/ruleset.yaml",
+      },
+    });
+
+    const report = await runChecks("https://github.com/org/repo", { isRegister: false });
+
+    expect(report.endorsement).toEqual({ passed: false, reasons: ["Mandatory criterion fails: Open source licence"] });
   });
 
   it("applies fixed category weights when aggregating mandatory criteria", async () => {
@@ -337,6 +427,43 @@ describe("runChecks", () => {
     });
 
     expect(report.score).toBe(50);
+  });
+
+  it("passes the publiccode.yml data to the usage check and gives its result no stars", async () => {
+    const publiccode = { usedBy: ["Gemeente Utrecht"] };
+    mocks.analysePublicCode.mockResolvedValue({
+      result: { ...resultFor("publiccode", "pass"), publiccode },
+      details: {},
+    });
+
+    const report = await runChecks("https://github.com/org/repo", { dockerLocations: ["org/image"] });
+
+    expect(mocks.checkUsage).toHaveBeenCalledWith(
+      expect.objectContaining({ owner: "org", repo: "repo" }),
+      expect.anything(),
+      expect.any(Array),
+      publiccode,
+      { dockerLocations: ["org/image"] }
+    );
+    const usage = report.results.find((result) => result.id === "usage");
+    expect(usage?.status).toBe("info");
+    expect(usage?.starRating).toBeUndefined();
+    expect(report.aspectRatings["usage-and-ecosystem"]).toEqual({ rating: null });
+  });
+
+  it("adds the publiccode.yml details to the report's repoMeta", async () => {
+    const report = await runChecks("https://github.com/org/repo");
+
+    expect(report.results.find((result) => result.id === "publiccode")?.status).toBe("pass");
+    expect(report.repoMeta).toMatchObject({
+      description: "Test repo",
+      displayName: "Test Repo",
+      shortDescription: "Een testrepository",
+      logoUrl: "https://raw.githubusercontent.com/org/repo/main/logo.svg",
+      developmentStatus: "beta",
+      maintenanceType: "community",
+      maintainers: ["Test Team"],
+    });
   });
 
   it("includes coverage in final report results", async () => {

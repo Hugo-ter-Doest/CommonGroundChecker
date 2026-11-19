@@ -45,6 +45,12 @@ const CRITERION_CATEGORIES: CriterionCategory[] = [
           "A publiccode.yml file in the root of the repository provides standardised metadata (name, description, category, maintenance) used by government software catalogues across Europe.",
       },
       {
+        id: "maintenance",
+        label: "Maintenance contract",
+        explanation:
+          "Reads maintenance from publiccode.yml: passes only on maintenance under contract with at least one valid contractor (a name, an end date that has not passed, a valid email address if given). Any other declaration fails and says what is missing or invalid.",
+      },
+      {
         id: "contributing",
         label: "Contributing guide",
         explanation:
@@ -131,6 +137,12 @@ const CRITERION_CATEGORIES: CriterionCategory[] = [
         label: "Cyclomatic complexity",
         explanation:
           "Clones the analyzed repository and runs Lizard locally. The criterion passes when average cyclomatic complexity (AvgCCN) stays within the configured threshold, and the maximum cyclomatic complexity stays within the configured threshold.",
+      },
+      {
+        id: "maintainability",
+        label: "Maintainability (ISO 25010)",
+        explanation:
+          "Clones the analyzed repository and rates unit size, unit complexity, unit interfacing, duplication, module coupling and component structure from 1 to 5 stars. The criterion passes at an estimated rating of 4 stars or more and warns at 3 stars.",
       },
       {
         id: "codemetrics",
