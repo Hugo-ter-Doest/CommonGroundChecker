@@ -1,4 +1,5 @@
 import Link from "next/link";
+import IssueBlocks from "@/components/IssueBlocks";
 import ResultCard from "@/components/ResultCard";
 import { getRepoHistory } from "@/lib/apiClient";
 import type { CheckReport, CheckResult } from "@/lib/types";
@@ -175,6 +176,8 @@ export default async function AnalysisDetailPage({ params }: AnalysisDetailPageP
           </span>
         </div>
       </section>
+
+      {results.length > 0 && <IssueBlocks results={results} />}
 
       <section className="space-y-1">
         <h3 className="font-semibold text-sm uppercase tracking-wide text-gray-600">
