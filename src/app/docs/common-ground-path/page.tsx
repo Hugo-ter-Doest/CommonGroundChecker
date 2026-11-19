@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import DocTable from "@/components/DocTable";
 import {
   AUDIENCES,
   PATH_DOC_SOURCES,
@@ -28,8 +29,8 @@ export default function CommonGroundPathPage() {
         </p>
         <h1 className="text-3xl font-bold text-cg-blue">The path to Common Ground</h1>
         <p className="text-gray-700">
-          This page explains how the checker measures and judges a component, and how a component becomes a
-          Common Ground component. Parts marked in review are built but not merged yet. Parts marked in
+          This page explains the setup behind the checker: how the checker measures and judges a component, and
+          how a component becomes a Common Ground component. Parts marked in review are built but not merged yet. Parts marked in
           development are being built. Parts marked proposed wait for a decision by the community.
         </p>
       </section>
@@ -92,6 +93,19 @@ export default function CommonGroundPathPage() {
               {part.paragraphs.map((paragraph) => (
                 <p key={paragraph} className="text-gray-700">
                   {paragraph}
+                </p>
+              ))}
+              {part.items && (
+                <ul className="list-disc pl-6 space-y-2 text-gray-700">
+                  {part.items.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              )}
+              {part.table && <DocTable table={part.table} />}
+              {part.notes?.map((note) => (
+                <p key={note} className="text-gray-700">
+                  {note}
                 </p>
               ))}
             </div>
