@@ -125,6 +125,25 @@ describe("FollowControl", () => {
     });
   });
 
+  it("keeps the scan choice and branch name usable on a phone", () => {
+    render(
+      <FollowControl
+        repoId="repo-id"
+        initialFollowed
+        initialCheckIntervalHours={168}
+        initialNextCheckAt={null}
+      />
+    );
+
+    const select = screen.getByLabelText("What to scan");
+    expect(select.className).toContain("max-w-full");
+    fireEvent.change(select, { target: { value: "named" } });
+    for (const target of [select, screen.getByLabelText("Branch or tag name")]) {
+      expect(target.className).toContain("min-h-[44px]");
+      expect(target.className).toContain("lg:min-h-0");
+    }
+  });
+
   it("shows and saves latest-release as the latest release", async () => {
     mockedPut.mockResolvedValueOnce({
       id: "repo-id",

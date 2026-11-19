@@ -344,7 +344,7 @@ export default function CheckerForm({ onSubmit, loading }: CheckerFormProps) {
             value={scanRef}
             onChange={(e) => setScanRef(e.target.value)}
             placeholder="development, v1.2.0, latest-release or default-branch"
-            className="w-full sm:w-80 px-4 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-cg-lightblue focus:border-transparent disabled:opacity-60"
+            className="min-h-[44px] lg:min-h-0 w-full sm:w-80 px-4 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-cg-lightblue focus:border-transparent disabled:opacity-60"
             disabled={loading}
           />
         </div>

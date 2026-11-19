@@ -151,7 +151,7 @@ export default function FollowControl({
             id={`${idPrefix}-ref-mode`}
             value={refMode}
             onChange={(event) => setRefMode(event.target.value as ScanRefMode)}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            className="max-w-full min-h-[44px] lg:min-h-0 rounded-lg border border-gray-300 px-3 py-2 text-sm"
           >
             <option value="auto">Released version (declared version, else latest release)</option>
             <option value="default-branch">Default branch</option>
@@ -170,7 +170,7 @@ export default function FollowControl({
                 value={namedRef}
                 onChange={(event) => setNamedRef(event.target.value)}
                 placeholder="development"
-                className="w-full max-w-md rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="min-h-[44px] lg:min-h-0 w-full max-w-md rounded-lg border border-gray-300 px-3 py-2 text-sm"
               />
             </div>
           ) : null}
