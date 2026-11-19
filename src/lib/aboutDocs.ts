@@ -53,7 +53,7 @@ export const PLAN_POINTS: PlanPoint[] = [
     id: "levels",
     title: pathSection("levels").title,
     paragraphs: [
-      "Suitable for Common Ground means the checker finds that the component meets the technical conditions, including a valid maintenance contract. Approved adds that at least two organisations confirm they use it, and that VNG has an SLA with a maintainer.",
+      "Suitable for Common Ground means the checker finds that the component meets the technical conditions, including a valid maintenance contract. Approved adds that the software is stable, that at least two organisations confirm they use it, and that VNG has an SLA with a maintainer.",
     ],
     status: pathSection("levels").status,
     link: pathLink("levels"),
@@ -118,7 +118,7 @@ export const CG_STATES: LifecycleState[] = [
   {
     id: "approved",
     name: "Approved",
-    text: "Suitable, at least two confirmed users, and an SLA from VNG with a maintainer. The component is in the support of the programme.",
+    text: "Suitable, developmentStatus stable, at least two confirmed users, and an SLA from VNG with a maintainer. The component is in the support of the programme.",
     status: { kind: "in-development" },
   },
   {
@@ -130,7 +130,7 @@ export const CG_STATES: LifecycleState[] = [
   {
     id: "out-of-support",
     name: "Out of support",
-    text: "The fix term passed, the SLA ended or was not renewed, or there are fewer confirmed users than required. The component can come back.",
+    text: "The fix term passed, the SLA ended or was not renewed, there are fewer confirmed users than required, or the software is no longer stable. The component can come back.",
     status: { kind: "proposed" },
   },
   {
@@ -148,8 +148,8 @@ export const CG_TRANSITIONS: LifecycleTransition[] = [
   {
     from: "suitable",
     to: "approved",
-    label: "2 users + SLA",
-    text: "At least two organisations confirm they use it, and VNG agrees an SLA with a maintainer.",
+    label: "stable, 2 users + SLA",
+    text: "The software is stable, at least two organisations confirm they use it, and VNG agrees an SLA with a maintainer.",
   },
   {
     from: "approved",
@@ -162,20 +162,20 @@ export const CG_TRANSITIONS: LifecycleTransition[] = [
   {
     from: "approved",
     to: "out-of-support",
-    label: "SLA ended or too few users",
-    text: "The SLA ended or was not renewed, or fewer organisations confirm they use it than required.",
+    label: "no SLA, too few users or not stable",
+    text: "The SLA ended or was not renewed, fewer organisations confirm they use it than required, or developmentStatus went back from stable to beta, development or concept.",
   },
   {
     from: "out-of-support",
     to: "approved",
-    label: "suitable + new SLA",
-    text: "The component is suitable again and has a new SLA.",
+    label: "suitable, stable + new SLA",
+    text: "The component is suitable and stable again, and has a new SLA.",
   },
   {
     from: "any",
     to: "retired",
     label: "obsolete or retired",
-    text: "The component is obsolete, or the programme retires it.",
+    text: "developmentStatus becomes obsolete, or the programme retires the component.",
   },
 ];
 
@@ -192,13 +192,19 @@ export const COMPONENT_STATES: LifecycleState[] = [
 export const LIFECYCLE_RELATION: { statuses: string[]; effect: string }[] = [
   {
     statuses: ["concept", "development", "beta"],
-    effect: "Can be listed and measured. Whether it can be approved is an open question for the community.",
+    effect: "Can be listed, measured and suitable for Common Ground. Cannot be approved.",
   },
   {
     statuses: ["stable"],
-    effect: "Can be in any state of the Common Ground lifecycle. A stable component can be out of support.",
+    effect: "Can be in any state of the Common Ground lifecycle. Only a stable component can be approved. A stable component can still be out of support.",
   },
   { statuses: ["obsolete"], effect: "Leads to retired. The history stays visible." },
+];
+
+/** What happens to an approved component whose developmentStatus leaves stable. */
+export const LEAVING_STABLE: { to: string[]; state: string }[] = [
+  { to: ["beta", "development", "concept"], state: "out-of-support" },
+  { to: ["obsolete"], state: "retired" },
 ];
 
 export function stateName(id: string): string {

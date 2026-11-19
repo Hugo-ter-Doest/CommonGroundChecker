@@ -5,6 +5,7 @@ import {
   CG_STATES,
   CG_TRANSITIONS,
   COMPONENT_STATES,
+  LEAVING_STABLE,
   LIFECYCLE_RELATION,
   PLAN_POINTS,
   stateName,
@@ -181,8 +182,9 @@ export default function AboutPage() {
           How the two relate
         </h2>
         <p className="text-gray-700">
-          The two lifecycles are independent. The maintainer decides the developmentStatus. The programme decides the
-          status in Common Ground. A stable component can be out of support. An obsolete component leads to retired.
+          The two lifecycles are separate. The maintainer decides the developmentStatus. The programme decides the
+          status in Common Ground. They meet at one rule: only a stable component can be approved. A stable component
+          can still be out of support. An obsolete component leads to retired.
         </p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left text-gray-700">
@@ -202,10 +204,30 @@ export default function AboutPage() {
             </tbody>
           </table>
         </div>
+        <h3 id="leaving-stable-heading" className="text-lg font-semibold text-gray-800">
+          When an approved component leaves stable
+        </h3>
         <p className="text-gray-700">
-          Whether only stable components can be approved is an open question for the community. This page does not
-          decide it.
+          A component that leaves stable leaves approved. Which state it moves to depends on the new developmentStatus.
         </p>
+        <div className="overflow-x-auto">
+          <table aria-labelledby="leaving-stable-heading" className="w-full text-sm text-left text-gray-700">
+            <thead className="border-b border-gray-200 text-gray-800">
+              <tr>
+                <th scope="col" className="py-2 pr-3">New developmentStatus</th>
+                <th scope="col" className="py-2">New state</th>
+              </tr>
+            </thead>
+            <tbody>
+              {LEAVING_STABLE.map((row) => (
+                <tr key={row.state} className="border-b border-gray-100 align-top">
+                  <td className="py-2 pr-3 font-mono">{row.to.join(", ")}</td>
+                  <td className="py-2">{stateName(row.state)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <section className="text-sm text-gray-500 border-t border-gray-200 pt-4 space-y-1">

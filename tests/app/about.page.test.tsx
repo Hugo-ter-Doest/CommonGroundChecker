@@ -9,6 +9,7 @@ import {
   CG_STATES,
   CG_TRANSITIONS,
   COMPONENT_STATES,
+  LEAVING_STABLE,
   LIFECYCLE_RELATION,
   PLAN_ISSUE_URL,
   PLAN_POINTS,
@@ -73,7 +74,8 @@ describe("about docs data", () => {
   it("states the suitable verdict and the approval conditions", () => {
     const text = (id: string) => CG_STATES.find((state) => state.id === id)!.text;
     expect(text("suitable")).toMatch(/no mandatory criterion fails.*at least 2\.5.*valid maintenance contract.*at least 4 stars/);
-    expect(text("approved")).toMatch(/at least two confirmed users, and an SLA from VNG/);
+    expect(text("approved")).toMatch(/developmentStatus stable, at least two confirmed users, and an SLA from VNG/);
+    expect(text("out-of-support")).toMatch(/no longer stable/);
     expect(text("in-remedy")).toMatch(/stays approved during the term/);
     expect(text("out-of-support")).toMatch(/can come back/);
     expect(text("retired")).toMatch(/history stays visible/);
@@ -83,6 +85,26 @@ describe("about docs data", () => {
     const names = COMPONENT_STATES.map((state) => state.name);
     expect(names).toEqual(["concept", "development", "beta", "stable", "obsolete"]);
     expect(LIFECYCLE_RELATION.flatMap((row) => row.statuses)).toEqual(names);
+  });
+
+  it("lets only a stable component be approved", () => {
+    const transition = (key: string) => CG_TRANSITIONS.find((candidate) => transitionKey(candidate) === key)!;
+    expect(transition("suitable>approved").text).toMatch(/^The software is stable/);
+    expect(transition("out-of-support>approved").text).toMatch(/suitable and stable again/);
+    expect(transition("approved>out-of-support").text).toMatch(/from stable to beta, development or concept/);
+    expect(transition("any>retired").text).toMatch(/developmentStatus becomes obsolete/);
+    const effect = (status: string) => LIFECYCLE_RELATION.find((row) => row.statuses.includes(status))!.effect;
+    for (const status of ["concept", "development", "beta"]) expect(effect(status), status).toMatch(/Cannot be approved/);
+    expect(effect("stable")).toMatch(/Only a stable component can be approved/);
+  });
+
+  it("moves an approved component that leaves stable to out of support, or to retired when obsolete", () => {
+    expect(LEAVING_STABLE).toEqual([
+      { to: ["beta", "development", "concept"], state: "out-of-support" },
+      { to: ["obsolete"], state: "retired" },
+    ]);
+    const others = COMPONENT_STATES.map((state) => state.id).filter((id) => id !== "stable");
+    expect(LEAVING_STABLE.flatMap((row) => row.to).sort()).toEqual(others.sort());
   });
 
   it("names each state, and any state", () => {
@@ -181,18 +203,24 @@ describe("AboutPage", () => {
     const table = within(section).getByRole("table", { name: "The transitions" });
     const rows = within(table).getAllByRole("row").slice(1);
     expect(rows).toHaveLength(CG_TRANSITIONS.length);
-    expect(rows[rows.length - 1].textContent).toBe("Any stateRetiredThe component is obsolete, or the programme retires it.");
+    expect(rows[rows.length - 1].textContent).toBe("Any stateRetireddevelopmentStatus becomes obsolete, or the programme retires the component.");
   });
 
-  it("shows the component lifecycle and how the two relate, leaving the stable question open", () => {
+  it("shows the component lifecycle and how the two relate, with the stable rule", () => {
     render(<AboutPage />);
 
     const flow = screen.getByRole("list", { name: "developmentStatus in publiccode.yml, in order" });
     expect(within(flow).getAllByRole("listitem")).toHaveLength(COMPONENT_STATES.length);
 
     const relation = document.getElementById("lifecycles-relation")!;
-    expect(within(relation).getByText(/A stable component can be out of support\. An obsolete component leads to retired\./)).toBeTruthy();
-    expect(within(relation).getByText(/Whether only stable components can be approved is an open question for the community/)).toBeTruthy();
-    expect(within(relation).getAllByRole("row")).toHaveLength(LIFECYCLE_RELATION.length + 1);
+    expect(within(relation).getByText(/A stable component can still be out of support\. An obsolete component leads to retired\./)).toBeTruthy();
+    expect(within(relation).getByText(/only a stable component can be approved/)).toBeTruthy();
+    expect(within(relation).queryByText(/open question/)).toBeNull();
+    const leaving = within(relation).getByRole("table", { name: "When an approved component leaves stable" });
+    expect(within(leaving).getAllByRole("row").slice(1).map((row) => row.textContent)).toEqual([
+      "beta, development, conceptOut of support",
+      "obsoleteRetired",
+    ]);
+    expect(within(relation).getAllByRole("row")).toHaveLength(LIFECYCLE_RELATION.length + 1 + LEAVING_STABLE.length + 1);
   });
 });
