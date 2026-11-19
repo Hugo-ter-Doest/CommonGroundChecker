@@ -160,7 +160,7 @@ export default function IssueBlocks({ results }: IssueBlocksProps) {
   if (errors.length === 0 && warnings.length === 0) return null;
 
   return (
-    <div className="grid grid-cols-1 gap-4">
+    <div className="grid gap-4">
       <IssueBlock kind="errors" entries={errors} />
       <IssueBlock kind="warnings" entries={warnings} />
     </div>
