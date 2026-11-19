@@ -47,7 +47,7 @@ export const AUDIENCES: { id: string; title: string; text: string }[] = [
   {
     id: "municipality",
     title: "A municipality",
-    text: "You use components and want a say in what counts. Confirm that you use a component, so it counts towards approval. Propose changes to the checklist, and take part in the consultation and in the management organisation that decides.",
+    text: "You use components and want a say in what counts. List your organisation under usedBy in the publiccode.yml of a component you use, so it counts towards approval. Propose changes to the checklist, and take part in the consultation and in the management organisation that decides.",
   },
 ];
 
@@ -58,7 +58,7 @@ export const PATH_STEPS: string[] = [
   "Fix every mandatory criterion and reach an overall rating of at least 2.5.",
   "Make the component maintainable: at least 4 stars for maintainability in the estimate.",
   "Name a maintenance contract in publiccode.yml. The component is now suitable for Common Ground.",
-  "Mark the component stable in publiccode.yml. At least two organisations confirm they use it, and VNG agrees an SLA with a maintainer. The component is now approved.",
+  "Mark the component stable in publiccode.yml. At least two organisations are listed as users under usedBy, and VNG agrees an SLA with a maintainer. The component is now approved.",
   "Stay there: the checker measures every night, and a drop below a criterion is fixed within the agreed fix term.",
 ];
 
@@ -129,7 +129,7 @@ export const PATH_SECTIONS: PathSection[] = [
         title: "Approved",
         status: { kind: "in-development" },
         paragraphs: [
-          "A component is approved when it is suitable, its developmentStatus in publiccode.yml is stable, at least two organisations confirm they use it, and VNG has an SLA with a maintainer. A component that leaves stable leaves approved. The SLA rests on the hard criteria and the KPIs below. A component with one user is not yet a shared component. The number two is a proposal.",
+          "A component is approved when it is suitable, its developmentStatus in publiccode.yml is stable, at least two organisations are listed as users under usedBy in publiccode.yml, and VNG has an SLA with a maintainer. A component that leaves stable leaves approved. The SLA rests on the hard criteria and the KPIs below. A component with one user is not yet a shared component. The number two is a proposal.",
         ],
       },
     ],
@@ -168,7 +168,7 @@ export const PATH_SECTIONS: PathSection[] = [
     title: "Counting usage",
     status: { kind: "in-development" },
     paragraphs: [
-      "The checker counts the organisations under usedBy in publiccode.yml. That is the declared number. An organisation counts as confirmed when it confirms this itself, or when a register names it as a user. Both numbers are shown.",
+      "The checker counts the organisations under usedBy in publiccode.yml. That is the declared number of users. There is no separate confirmation step for now.",
       "Every measurement stores the number, so the history shows whether use grows or shrinks. Usage gives no stars and no ranking. It only counts towards approval.",
     ],
   },

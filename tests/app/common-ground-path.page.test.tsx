@@ -79,6 +79,14 @@ describe("path docs data", () => {
     expect(AUDIENCES.find((audience) => audience.id === "buyer")!.text).toMatch(/Approved adds that the software is stable/);
   });
 
+  it("counts declared users under usedBy and asks no confirmation", () => {
+    const usage = PATH_SECTIONS.find((section) => section.id === "usage")!;
+    expect(usage.paragraphs[0]).toMatch(/organisations under usedBy in publiccode\.yml\. That is the declared number of users/);
+    expect(usage.paragraphs[0]).toMatch(/no separate confirmation step for now/);
+    const others = allText().filter((text) => text !== usage.paragraphs[0]);
+    for (const text of others) expect(text, text).not.toMatch(/confirm/i);
+  });
+
   it("uses every section id once", () => {
     const ids = ["audiences", "steps", ...PATH_SECTIONS.map((section) => section.id), "sources"];
     expect(new Set(ids).size).toBe(ids.length);
@@ -151,7 +159,7 @@ describe("CommonGroundPathPage", () => {
     expect(within(verdict).getByText(/maintenance\.type: contract/)).toBeTruthy();
 
     const levels = document.getElementById("levels")!;
-    expect(within(levels).getByText(/at least two organisations confirm they use it, and VNG has an SLA with a maintainer/)).toBeTruthy();
+    expect(within(levels).getByText(/at least two organisations are listed as users under usedBy in publiccode\.yml, and VNG has an SLA with a maintainer/)).toBeTruthy();
   });
 
   it("explains maintenance, usage, the checklist process and that the governance decision is referenced", () => {
