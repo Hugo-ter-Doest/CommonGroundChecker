@@ -6,9 +6,8 @@ import {
   PATH_SECTIONS,
   PATH_STEPS,
   THREE_SYSTEMS_HREF,
-  pathStatusLabel,
-  type PathStatus,
 } from "@/lib/pathDocs";
+import StatusBadge from "@/components/StatusBadge";
 
 export const metadata: Metadata = {
   title: "The path to Common Ground | Rating guide",
@@ -17,18 +16,6 @@ export const metadata: Metadata = {
 
 const SECTION = "bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4 scroll-mt-6";
 const H2 = "text-2xl font-bold text-cg-blue";
-
-function StatusBadge({ status }: { status?: PathStatus }) {
-  if (!status) return null;
-  return (
-    <>
-      {" "}
-      <span className="ml-1 inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 align-middle text-xs font-semibold text-amber-800">
-        {pathStatusLabel(status)}
-      </span>
-    </>
-  );
-}
 
 export default function CommonGroundPathPage() {
   return (
