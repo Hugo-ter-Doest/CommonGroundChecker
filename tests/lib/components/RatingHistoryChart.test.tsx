@@ -177,8 +177,12 @@ describe("RatingHistoryChart rendering", () => {
     render(<RatingHistoryChart runs={runs} selectedId="c" analysisHref={hrefFor} />);
 
     const table = screen.getByRole("table", { name: /Overall rating per run/ });
-    // A table ignores width and overflow, so the visually hidden wrapper keeps it off the page width
-    expect(table.parentElement?.className).toBe("sr-only");
+    expect(table.className).toContain("sr-only");
+    // A table ignores the 1px width of sr-only; the positioned scroll region clips it instead of the page
+    const region = screen.getByRole("region", { name: "Rating graph" });
+    expect(region.contains(table)).toBe(true);
+    expect(region.className).toContain("relative");
+    expect(region.className).toContain("overflow-x-auto");
     const headers = within(table).getAllByRole("columnheader").map((cell) => cell.textContent);
     expect(headers).toEqual(["Date", "Rating", "Result"]);
     const rows = within(table).getAllByRole("row").slice(1);

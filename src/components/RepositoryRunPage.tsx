@@ -44,7 +44,7 @@ function Navigation() {
 export default function RepositoryRunPage({ owner, repo, result }: RepositoryRunPageProps) {
   if (result.kind !== "found") {
     return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 space-y-4">
+      <div className="max-w-4xl mx-auto px-6 py-10 space-y-4">
         <h2 className="text-2xl font-bold text-cg-blue">Component rating</h2>
         <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
           {result.kind === "missing-repository"
@@ -67,7 +67,7 @@ export default function RepositoryRunPage({ owner, repo, result }: RepositoryRun
   const isOlder = selected !== null && selected.id !== latestId;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 space-y-6">
+    <div className="max-w-5xl mx-auto px-6 py-10 space-y-6">
       <Navigation />
 
       <div className="flex items-center justify-between gap-3 flex-wrap">
