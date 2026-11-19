@@ -487,7 +487,7 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-gray-50 pb-20">
-      <div className="max-w-4xl mx-auto px-4">
+      <div className="max-w-4xl mx-auto px-4 pt-10">
         <Disclaimer />
         {/* Hero */}
         <section className="space-y-3">
