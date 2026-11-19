@@ -1,7 +1,15 @@
 import Link from "next/link";
+import CategoryRatings from "@/components/CategoryRatings";
+import IssueBlocks from "@/components/IssueBlocks";
 import ResultCard from "@/components/ResultCard";
+import RatingBadge from "@/components/RatingBadge";
+import RatingSummary from "@/components/RatingSummary";
+import { statusToStars } from "@/lib/stars";
 import { getRepoHistory } from "@/lib/apiClient";
-import type { CheckReport, CheckResult } from "@/lib/types";
+import { parseMeasurements } from "@/lib/measurements";
+import { isRating } from "@/lib/ratings";
+import { loadStoredRatings } from "@/lib/storedRatings";
+import type { CheckReport, CheckResult, StarRating } from "@/lib/types";
 import type { RepoMeta } from "@/generated/openapi-client";
 import { CATEGORY_ORDER, RESULT_CATEGORY_BY_ID, RESULT_ORDER_BY_ID } from "@/lib/criteria";
 
@@ -11,12 +19,6 @@ interface AnalysisDetailPageProps {
     repo: string;
     analysisId: string;
   }>;
-}
-
-function badgeClass(score: number): string {
-  if (score >= 80) return "bg-green-100 text-green-700 border-green-300";
-  if (score >= 60) return "bg-yellow-100 text-yellow-700 border-yellow-300";
-  return "bg-red-100 text-red-700 border-red-300";
 }
 
 function normalizeResults(raw: unknown): CheckResult[] {
@@ -57,6 +59,12 @@ function normalizeResults(raw: unknown): CheckResult[] {
           : [],
         referenceUrl:
           typeof item.referenceUrl === "string" ? item.referenceUrl : undefined,
+        starRating:
+          typeof item.starRating === "number" && Number.isInteger(item.starRating) && item.starRating >= 1 && item.starRating <= 5
+            ? (item.starRating as StarRating)
+            : undefined,
+        rating: isRating(item.rating) ? item.rating : undefined,
+        measurements: parseMeasurements(item.measurements),
       } satisfies CheckResult;
     });
 }
@@ -87,6 +95,12 @@ function normalizeRepoMeta(raw: RepoMeta): CheckReport["repoMeta"] {
           ? raw.versionEvidence.detail
           : "No saved version evidence for this historical record",
     },
+    displayName: raw.displayName ?? null,
+    shortDescription: raw.shortDescription ?? null,
+    logoUrl: raw.logoUrl ?? null,
+    developmentStatus: raw.developmentStatus ?? null,
+    maintenanceType: raw.maintenanceType ?? null,
+    maintainers: Array.isArray(raw.maintainers) ? raw.maintainers : [],
   };
 }
 
@@ -125,6 +139,7 @@ export default async function AnalysisDetailPage({ params }: AnalysisDetailPageP
 
   const results = normalizeResults(analysis.results);
   const repoMeta = normalizeRepoMeta(repository.metadata);
+  const [{ rating, categoryRatings, aspectRatings, endorsement }] = await loadStoredRatings([analysis]);
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10 space-y-6">
@@ -162,19 +177,19 @@ export default async function AnalysisDetailPage({ params }: AnalysisDetailPageP
         <p className="text-xs text-gray-500">
           Checked at {new Date(analysis.checkedAt).toLocaleString("nl-NL")}
         </p>
-        <div className="flex items-center gap-2 flex-wrap">
-          <span
-            className={`inline-flex items-center text-sm font-bold border rounded-full px-3 py-1 ${badgeClass(
-              analysis.score
-            )}`}
-          >
-            Score {analysis.score}
-          </span>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+          <RatingSummary rating={rating} endorsement={endorsement} score={analysis.score} />
           <span className="inline-flex text-xs font-semibold px-2 py-0.5 rounded-full border border-purple-200 text-purple-700 bg-purple-50">
             Version: {analysis.version ?? repoMeta.version ?? "unknown"}
           </span>
         </div>
       </section>
+
+      {results.length > 0 && <IssueBlocks results={results} rating={rating} endorsement={endorsement} />}
+
+      {results.length > 0 && (
+        <CategoryRatings results={results} categoryRatings={categoryRatings} aspectRatings={aspectRatings} />
+      )}
 
       <section className="space-y-1">
         <h3 className="font-semibold text-sm uppercase tracking-wide text-gray-600">
@@ -215,9 +230,12 @@ export default async function AnalysisDetailPage({ params }: AnalysisDetailPageP
 
               return (
                 <div key={category} className="space-y-2">
-                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mt-4 mb-2">
-                    {category}
-                  </h4>
+                  <div className="flex items-center gap-3 mt-4 mb-2">
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                      {category}
+                    </h4>
+                    <RatingBadge rating={categoryRatings[category] ?? null} label={`${category} rating`} />
+                  </div>
                   <div className="space-y-2">
                     {sortedResults.map((result, index) => (
                       <ResultCard
@@ -231,6 +249,7 @@ export default async function AnalysisDetailPage({ params }: AnalysisDetailPageP
                         message={result.message}
                         evidence={result.evidence}
                         referenceUrl={result.referenceUrl}
+                        starRating={result.starRating ?? statusToStars(result.status)}
                       />
                     ))}
                   </div>
