@@ -71,6 +71,14 @@ describe("path docs data", () => {
     expect(version.parts?.[0].paragraphs.join(" ")).toMatch(/scannedRef.*scannedCommit/);
   });
 
+  it("asks a stable developmentStatus for approval wherever the approval conditions are listed", () => {
+    const approved = PATH_SECTIONS.find((section) => section.id === "levels")!.parts!.find((part) => part.title === "Approved")!;
+    expect(approved.paragraphs[0]).toMatch(/developmentStatus in publiccode\.yml is stable/);
+    expect(approved.paragraphs[0]).toMatch(/A component that leaves stable leaves approved/);
+    expect(PATH_STEPS.find((step) => step.includes("now approved"))).toMatch(/stable in publiccode\.yml/);
+    expect(AUDIENCES.find((audience) => audience.id === "buyer")!.text).toMatch(/Approved adds that the software is stable/);
+  });
+
   it("uses every section id once", () => {
     const ids = ["audiences", "steps", ...PATH_SECTIONS.map((section) => section.id), "sources"];
     expect(new Set(ids).size).toBe(ids.length);

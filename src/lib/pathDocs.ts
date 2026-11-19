@@ -37,7 +37,7 @@ export const AUDIENCES: { id: string; title: string; text: string }[] = [
   {
     id: "buyer",
     title: "A buyer",
-    text: "You want to know if you can use a component with confidence. Look at the verdict and the level. Suitable means the code is good enough and someone maintains it under a contract. Approved adds that other organisations use it and that VNG has an SLA with the maintainer.",
+    text: "You want to know if you can use a component with confidence. Look at the verdict and the level. Suitable means the code is good enough and someone maintains it under a contract. Approved adds that the software is stable, that other organisations use it and that VNG has an SLA with the maintainer.",
   },
   {
     id: "maintainer",
@@ -58,7 +58,7 @@ export const PATH_STEPS: string[] = [
   "Fix every mandatory criterion and reach an overall rating of at least 2.5.",
   "Make the component maintainable: at least 4 stars for maintainability in the estimate.",
   "Name a maintenance contract in publiccode.yml. The component is now suitable for Common Ground.",
-  "At least two organisations confirm they use it, and VNG agrees an SLA with a maintainer. The component is now approved.",
+  "Mark the component stable in publiccode.yml. At least two organisations confirm they use it, and VNG agrees an SLA with a maintainer. The component is now approved.",
   "Stay there: the checker measures every night, and a drop below a criterion is fixed within the agreed fix term.",
 ];
 
@@ -129,7 +129,7 @@ export const PATH_SECTIONS: PathSection[] = [
         title: "Approved",
         status: { kind: "in-development" },
         paragraphs: [
-          "A component is approved when it is suitable, at least two organisations confirm they use it, and VNG has an SLA with a maintainer. The SLA rests on the hard criteria and the KPIs below. A component with one user is not yet a shared component. The number two is a proposal.",
+          "A component is approved when it is suitable, its developmentStatus in publiccode.yml is stable, at least two organisations confirm they use it, and VNG has an SLA with a maintainer. A component that leaves stable leaves approved. The SLA rests on the hard criteria and the KPIs below. A component with one user is not yet a shared component. The number two is a proposal.",
         ],
       },
     ],
