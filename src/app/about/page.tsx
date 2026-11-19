@@ -1,13 +1,19 @@
 import Link from "next/link";
+import ChecklistSourcesDiagram, { NARROW_SOURCES_LAYOUT, WIDE_SOURCES_LAYOUT } from "@/components/ChecklistSourcesDiagram";
+import DocTable from "@/components/DocTable";
 import LifecycleDiagram, { NARROW_LAYOUT, WIDE_LAYOUT } from "@/components/LifecycleDiagram";
 import StatusBadge from "@/components/StatusBadge";
 import {
   CG_STATES,
   CG_TRANSITIONS,
+  CHECKLIST_OUTCOMES,
+  CHECKLIST_SOURCES,
   COMPONENT_STATES,
+  INFORMATION_ONLY,
   LEAVING_STABLE,
   LIFECYCLE_RELATION,
-  PLAN_POINTS,
+  NO_CONDITIONS_OF_OUR_OWN,
+  SETUP_POINTS,
   stateName,
 } from "@/lib/aboutDocs";
 import { PATH_DOC_HREF } from "@/lib/pathDocs";
@@ -16,7 +22,7 @@ const CARD = "bg-white rounded-2xl border border-gray-200 shadow-sm p-4 sm:p-6 s
 const H2 = "text-2xl font-bold text-cg-blue";
 const LINK = "text-cg-lightblue hover:underline";
 
-function PlanLink({ href, text }: { href: string; text: string }) {
+function SetupLink({ href, text }: { href: string; text: string }) {
   if (href.startsWith("/")) {
     return (
       <Link href={href} className={LINK}>
@@ -61,21 +67,21 @@ export default function AboutPage() {
         </p>
       </section>
 
-      <section id="plan" aria-labelledby="plan-heading" className={CARD}>
-        <h2 id="plan-heading" className={H2}>
-          The plan
+      <section id="setup" aria-labelledby="setup-heading" className={CARD}>
+        <h2 id="setup-heading" className={H2}>
+          The setup
         </h2>
         <p className="text-gray-700">
-          This is a short overview of the plan behind the checker. Parts marked in review are built but not merged
-          yet. Parts marked in development are being built. Parts marked proposed wait for a decision by the
-          community.{" "}
+          This is a short overview of the setup behind the checker. It has four goals. Parts marked in review are
+          built but not merged yet. Parts marked in development are being built. Parts marked proposed wait for a
+          decision by the community.{" "}
           <Link href={PATH_DOC_HREF} className={LINK}>
             The path to Common Ground
           </Link>{" "}
           gives the detail.
         </p>
-        {PLAN_POINTS.map((point) => (
-          <div key={point.id} id={`plan-${point.id}`} className="space-y-2">
+        {SETUP_POINTS.map((point) => (
+          <div key={point.id} id={`setup-${point.id}`} className="space-y-2">
             <h3 className="text-lg font-semibold text-gray-800">
               {point.title}
               <StatusBadge status={point.status} />
@@ -92,11 +98,64 @@ export default function AboutPage() {
                 ))}
               </ul>
             )}
+            {point.tableIntro && <p className="text-gray-700">{point.tableIntro}</p>}
+            {point.table && <DocTable table={point.table} />}
             <p className="text-sm">
-              <PlanLink {...point.link} />
+              <SetupLink {...point.link} />
             </p>
           </div>
         ))}
+      </section>
+
+      <section id="checklist-sources" aria-labelledby="checklist-sources-heading" className={CARD}>
+        <h2 id="checklist-sources-heading" className={H2}>
+          Where the checklist comes from
+        </h2>
+        <p className="text-gray-700">
+          The checklist rests on three sources. What the checklist asks decides whether a component is suitable for
+          Common Ground and whether it can be approved.
+        </p>
+        <ChecklistSourcesDiagram layout={WIDE_SOURCES_LAYOUT} className="hidden lg:block w-full h-auto" />
+        <ChecklistSourcesDiagram layout={NARROW_SOURCES_LAYOUT} className="lg:hidden block w-full max-w-sm h-auto mx-auto" />
+
+        <h3 id="checklist-sources-list-heading" className="text-lg font-semibold text-gray-800">
+          The three sources
+        </h3>
+        <ol aria-labelledby="checklist-sources-list-heading" className="list-decimal pl-6 space-y-2 text-gray-700">
+          {CHECKLIST_SOURCES.map((source) => (
+            <li key={source.id}>
+              <span className="font-semibold text-gray-800">{source.title}.</span> {source.text}
+              <StatusBadge status={source.status} />
+            </li>
+          ))}
+        </ol>
+        <p className="text-gray-700">
+          The checklist feeds two levels:{" "}
+          {CHECKLIST_OUTCOMES.map((outcome, index) => (
+            <span key={outcome.id}>
+              {index > 0 && " and "}
+              {outcome.name}
+              <StatusBadge status={outcome.status} />
+            </span>
+          ))}
+          .
+        </p>
+        <p className="text-gray-700 font-semibold">{NO_CONDITIONS_OF_OUR_OWN}</p>
+
+        <h3 id="information-only-heading" className="text-lg font-semibold text-gray-800">
+          Shown for information only
+        </h3>
+        <p className="text-gray-700">
+          The checker also shows information that rates nothing. It never counts towards a rating or the verdict:
+        </p>
+        <ul aria-labelledby="information-only-heading" className="list-disc pl-6 space-y-1 text-gray-700">
+          {INFORMATION_ONLY.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+        <p className="text-gray-700">
+          The number of organisations listed under usedBy in publiccode.yml counts only towards approval.
+        </p>
       </section>
 
       <section id="common-ground-lifecycle" aria-labelledby="common-ground-lifecycle-heading" className={CARD}>
