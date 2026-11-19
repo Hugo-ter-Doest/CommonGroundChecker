@@ -16,7 +16,7 @@ import { ratingToStars } from "@/lib/stars";
 import type { AspectRating, CheckResult, CheckStatus } from "@/lib/types";
 
 const LINK_CLASS =
-  "text-cg-lightblue underline hover:text-cg-blue rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cg-blue";
+  "inline-flex min-h-[44px] items-center lg:min-h-0 text-cg-lightblue underline hover:text-cg-blue rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cg-blue";
 
 const STATUS_LABELS: Record<CheckStatus, string> = {
   pass: "Pass",
@@ -51,7 +51,7 @@ function CriterionTable({
   documents: boolean;
 }) {
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto" role="region" aria-label={caption} tabIndex={0}>
       <table className="min-w-full text-xs text-left border border-gray-200">
         <caption className="text-left text-gray-600 pb-1">{caption}</caption>
         <thead className="bg-cg-gray">
@@ -131,7 +131,7 @@ function AspectRow({
   const note = aspectNote(aspect);
   return (
     <div role="group" aria-labelledby={headingId} className="space-y-2">
-      <div className="grid gap-2 sm:grid-cols-[12rem_1fr_11rem] sm:items-center">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-[12rem_1fr_11rem] sm:items-center">
         <h5 id={headingId} className="text-sm font-semibold text-gray-800">
           {docSlug ? (
             <a href={aspectDocHref(docSlug, aspect.id)} className={LINK_CLASS}>
@@ -146,7 +146,7 @@ function AspectRow({
         <AspectValue aspect={aspect} aspectRating={aspectRating} />
       </div>
       <details className="mt-1">
-        <summary className="cursor-pointer text-xs text-cg-lightblue focus-visible:outline focus-visible:outline-2 focus-visible:outline-cg-lightblue">
+        <summary className="cursor-pointer py-3.5 lg:py-0 text-xs text-cg-lightblue focus-visible:outline focus-visible:outline-2 focus-visible:outline-cg-lightblue">
           Show what {aspect.title} is made of
         </summary>
         <div className="mt-2">
@@ -173,7 +173,7 @@ function CategorySection({
   const headingId = `category-rating-${category.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 
   return (
-    <section aria-labelledby={headingId} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-4">
+    <section aria-labelledby={headingId} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 sm:p-5 space-y-4">
       <div className="flex flex-wrap items-center gap-3">
         <h4 id={headingId} className="text-lg font-semibold text-cg-blue">
           {docSlug ? (

@@ -76,6 +76,7 @@ describe("CategoryRatings", () => {
     renderRatings();
 
     const table = screen.getByRole("table", { name: "What Testability is made of" });
+    expect(screen.getByRole("region", { name: "What Testability is made of" }).getAttribute("tabindex")).toBe("0");
     const headers = within(table).getAllByRole("columnheader").map((header) => header.textContent);
     expect(headers).toEqual([
       "Measured",
@@ -127,6 +128,20 @@ describe("CategoryRatings", () => {
     expect(details).not.toBeNull();
     expect(details?.open).toBe(false);
     expect(details?.querySelector("summary")?.textContent).toBe("Show what Licensing is made of");
+  });
+
+  it("scrolls each wide table in a keyboard reachable region and gives links 44px touch targets", () => {
+    renderRatings();
+
+    const region = screen.getByRole("region", { name: "What Licensing is made of" });
+    expect(region.getAttribute("tabindex")).toBe("0");
+    expect(region.className).toContain("overflow-x-auto");
+    expect(within(region).getByRole("table", { name: "What Licensing is made of" })).toBeTruthy();
+    for (const link of within(region).getAllByRole("link")) {
+      expect(link.className).toContain("min-h-[44px]");
+      expect(link.className).toContain("lg:min-h-0");
+    }
+    expect(region.closest("details")?.querySelector("summary")?.className).toContain("py-3.5");
   });
 
   it("marks a rated aspect with weight 0 as not counted", () => {
