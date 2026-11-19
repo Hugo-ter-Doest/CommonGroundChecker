@@ -5,8 +5,15 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 
 import AboutPage from "@/app/about/page";
 import { NARROW_LAYOUT, WIDE_LAYOUT, nameLines, transitionKey } from "@/components/LifecycleDiagram";
+import { NARROW_ADOPTION_LAYOUT, WIDE_ADOPTION_LAYOUT, adoptionEdgeKey } from "@/components/AdoptionDiagram";
 import { CHECKLIST_NODE, NARROW_SOURCES_LAYOUT, WIDE_SOURCES_LAYOUT, sourcesNodes } from "@/components/ChecklistSourcesDiagram";
 import {
+  ADOPTION_EDGES,
+  ADOPTION_NODES,
+  ADOPTION_NOTES,
+  ADOPTION_STATUS,
+  ADOPTION_STEPS,
+  ALV_EXPLANATION_URL,
   CG_STATES,
   CG_TRANSITIONS,
   COMPONENT_STATES,
@@ -37,6 +44,9 @@ function allText(): string[] {
     NO_CONDITIONS_OF_OUR_OWN,
     ...INFORMATION_ONLY,
     ...CG_STATES.flatMap((state) => [state.name, state.text]),
+    ...ADOPTION_NODES.flatMap((node) => node.lines),
+    ...ADOPTION_STEPS,
+    ...ADOPTION_NOTES,
     ...CG_TRANSITIONS.flatMap((transition) => [transition.label, transition.text]),
     ...COMPONENT_STATES.flatMap((state) => [state.name, state.text]),
     ...LIFECYCLE_RELATION.map((row) => row.effect),
@@ -181,7 +191,9 @@ describe("about docs data", () => {
     const source = (id: string) => CHECKLIST_SOURCES.find((candidate) => candidate.id === id)!;
     expect(source("component-checker").title).toMatch(/Hugo ter Doest's proposal for the original Component Checker/);
     expect(source("component-checker").text).toMatch(/what a repository contains/);
-    expect(source("sig").text).toMatch(/certifiable by SIG and TÜViT.*at least 4 stars for maintainability/);
+    expect(source("sig").text).toMatch(/ready for certification by SIG and TÜViT.*at least 4 stars for maintainability/);
+    expect(source("sig").text).toMatch(/Ready is not certified: certification is a manual assessment by SIG and TÜViT/);
+    expect(source("sig").text).toMatch(/The ALV papers do not ask for one\./);
     expect(source("sig").title).toBe("The SIG ratings, as the Common Ground programme currently uses them");
     expect(source("alv").status).toEqual({ kind: "proposed" });
     expect(source("alv").title).toBe("The Common Ground standard v1.0, put to the VNG autumn ALV of 11 December 2026");
@@ -250,6 +262,35 @@ describe("ChecklistSourcesDiagram layouts", () => {
   });
 });
 
+describe("AdoptionDiagram layouts", () => {
+  for (const layout of [WIDE_ADOPTION_LAYOUT, NARROW_ADOPTION_LAYOUT]) {
+    it(`places every node and edge inside the ${layout.id} layout`, () => {
+      expect(Object.keys(layout.boxes).sort()).toEqual(ADOPTION_NODES.map((node) => node.id).sort());
+      expect(Object.keys(layout.edges).sort()).toEqual(ADOPTION_EDGES.map(adoptionEdgeKey).sort());
+      for (const box of Object.values(layout.boxes)) {
+        expect(box.x + box.width).toBeLessThanOrEqual(layout.width);
+        expect(box.y + box.height).toBeLessThanOrEqual(layout.height);
+      }
+    });
+
+    it(`fits each line in its box in the ${layout.id} layout at about 0.6em per character`, () => {
+      for (const node of ADOPTION_NODES) {
+        const box = layout.boxes[node.id];
+        expect(node.lines.length * layout.lineHeight + 12, node.id).toBeLessThanOrEqual(box.height);
+        for (const line of node.lines) {
+          expect(line.length * layout.fontSize * 0.6, `${layout.id} ${line}`).toBeLessThanOrEqual(box.width - 12);
+        }
+      }
+    });
+  }
+
+  it("draws its text at 12px or more where each layout is shown", () => {
+    // The narrow layout is about 296px wide on a 360px phone; the wide one about 928px from 1024px up.
+    expect(NARROW_ADOPTION_LAYOUT.fontSize * (296 / NARROW_ADOPTION_LAYOUT.width)).toBeGreaterThanOrEqual(12);
+    expect(WIDE_ADOPTION_LAYOUT.fontSize * (928 / WIDE_ADOPTION_LAYOUT.width)).toBeGreaterThanOrEqual(12);
+  });
+});
+
 describe("LifecycleDiagram layouts", () => {
   for (const layout of [WIDE_LAYOUT, NARROW_LAYOUT]) {
     it(`places every state and transition in the ${layout.id} layout`, () => {
@@ -290,6 +331,7 @@ describe("AboutPage", () => {
     expect(Array.from(container.querySelectorAll("section[id]"), (section) => section.id)).toEqual([
       "setup",
       "checklist-sources",
+      "adoption",
       "common-ground-lifecycle",
       "component-lifecycle",
       "lifecycles-relation",
@@ -393,5 +435,31 @@ describe("AboutPage", () => {
       "obsoleteRetired",
     ]);
     expect(within(relation).getAllByRole("row")).toHaveLength(LIFECYCLE_RELATION.length + 1 + LEAVING_STABLE.length + 1);
+  });
+
+  it("shows how a component enters the standard, as a diagram and as text", () => {
+    render(<AboutPage />);
+
+    expect(ADOPTION_STATUS).toEqual({ kind: "proposed", until: "ALV 11 Dec 2026" });
+    const section = document.getElementById("adoption")!;
+    expect(
+      within(section).getByRole("heading", { level: 2, name: "How a component enters the standard (ALV papers) Proposed (ALV 11 Dec 2026)" })
+    ).toBeTruthy();
+    const images = within(section).getAllByRole("img", { name: /How a component enters the Common Ground standard/ });
+    expect(images.map((image) => image.getAttribute("data-layout"))).toEqual(["wide", "narrow"]);
+    for (const image of images) {
+      expect(image.querySelectorAll("[data-node]")).toHaveLength(ADOPTION_NODES.length);
+      expect(image.querySelectorAll("[data-edge]")).toHaveLength(ADOPTION_EDGES.length);
+      expect(image.querySelector('[data-edge="checker>regie"] path')!.getAttribute("stroke-dasharray")).toBe("5 4");
+      expect(image.querySelector('[data-edge="proposal>regie"] path')!.getAttribute("stroke-dasharray")).toBeNull();
+    }
+    expect(within(section).getByRole("list", { name: "The steps" }).children).toHaveLength(ADOPTION_STEPS.length);
+    expect(within(section).getByRole("list", { name: "What the ALV papers say about the regie" }).textContent).toBe(
+      ADOPTION_NOTES.join("")
+    );
+    expect(within(section).getByRole("link", { name: "The Common Ground standard v1.0 (PDF)" }).getAttribute("href")).toBe(ALV_STANDARD_URL);
+    expect(within(section).getByRole("link", { name: "The explanation of the Common Ground proposal (PDF)" }).getAttribute("href")).toBe(
+      ALV_EXPLANATION_URL
+    );
   });
 });

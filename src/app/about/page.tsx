@@ -1,9 +1,15 @@
 import Link from "next/link";
+import AdoptionDiagram, { NARROW_ADOPTION_LAYOUT, WIDE_ADOPTION_LAYOUT } from "@/components/AdoptionDiagram";
 import ChecklistSourcesDiagram, { NARROW_SOURCES_LAYOUT, WIDE_SOURCES_LAYOUT } from "@/components/ChecklistSourcesDiagram";
 import DocTable from "@/components/DocTable";
 import LifecycleDiagram, { NARROW_LAYOUT, WIDE_LAYOUT } from "@/components/LifecycleDiagram";
 import StatusBadge from "@/components/StatusBadge";
 import {
+  ADOPTION_NOTES,
+  ADOPTION_STATUS,
+  ADOPTION_STEPS,
+  ALV_EXPLANATION_URL,
+  ALV_STANDARD_URL,
   CG_STATES,
   CG_TRANSITIONS,
   CHECKLIST_OUTCOMES,
@@ -162,6 +168,42 @@ export default function AboutPage() {
         </ul>
         <p className="text-gray-700">
           The number of organisations listed under usedBy in publiccode.yml counts only towards Maintained.
+        </p>
+      </section>
+
+      <section id="adoption" aria-labelledby="adoption-heading" className={CARD}>
+        <h2 id="adoption-heading" className={H2}>
+          How a component enters the standard (ALV papers)
+          <StatusBadge status={ADOPTION_STATUS} />
+        </h2>
+        <p className="text-gray-700">
+          The Common Ground standard v1.0 and its explanation, put to the VNG ALV of 11 December 2026, describe how a
+          component enters the standard. The checker delivers a measurement. VNG, as regievoerder, decides.
+        </p>
+        <AdoptionDiagram layout={WIDE_ADOPTION_LAYOUT} className="hidden lg:block w-full h-auto" />
+        <AdoptionDiagram layout={NARROW_ADOPTION_LAYOUT} className="lg:hidden block w-full max-w-sm h-auto mx-auto" />
+
+        <h3 id="adoption-steps-heading" className="text-lg font-semibold text-gray-800">
+          The steps
+        </h3>
+        <ol aria-labelledby="adoption-steps-heading" className="list-decimal pl-6 space-y-2 text-gray-700">
+          {ADOPTION_STEPS.map((step) => (
+            <li key={step}>{step}</li>
+          ))}
+        </ol>
+        <ul aria-label="What the ALV papers say about the regie" className="list-disc pl-6 space-y-1 text-gray-700">
+          {ADOPTION_NOTES.map((note) => (
+            <li key={note}>{note}</li>
+          ))}
+        </ul>
+        <p className="text-sm">
+          <a href={ALV_STANDARD_URL} target="_blank" rel="noopener noreferrer" className={LINK}>
+            The Common Ground standard v1.0 (PDF)
+          </a>
+          {" · "}
+          <a href={ALV_EXPLANATION_URL} target="_blank" rel="noopener noreferrer" className={LINK}>
+            The explanation of the Common Ground proposal (PDF)
+          </a>
         </p>
       </section>
 

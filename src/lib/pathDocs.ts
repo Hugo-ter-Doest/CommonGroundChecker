@@ -8,7 +8,10 @@ export const PATH_DOC_HREF = "/docs/common-ground-path";
  * Where a part of the path stands: built and in review with its pull request,
  * being built now, or proposed and waiting for a decision by the community.
  */
-export type PathStatus = { kind: "in-review"; pr: number } | { kind: "in-development" } | { kind: "proposed" };
+export type PathStatus =
+  | { kind: "in-review"; pr: number }
+  | { kind: "in-development" }
+  | { kind: "proposed"; until?: string };
 
 export interface PathSection {
   id: string;
@@ -45,7 +48,7 @@ export function pathStatusLabel(status: PathStatus): string {
     case "in-development":
       return "In development";
     case "proposed":
-      return "Proposed";
+      return status.until ? `Proposed (${status.until})` : "Proposed";
   }
 }
 

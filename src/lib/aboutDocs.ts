@@ -13,6 +13,10 @@ export const ALV_STANDARD_URL = "https://vng.nl/sites/default/files/2026-11/08b-
 
 export const ALV_AGENDA_URL = "https://vng.nl/artikelen/agenda-en-stukken-najaars-alv-11-december-2026";
 
+/** The explanation of the Common Ground proposal to the same ALV. */
+export const ALV_EXPLANATION_URL =
+  "https://vng.nl/sites/default/files/2026-11/08b-bijlage-1-toelichting-op-voorstel-common-ground.pdf";
+
 /** The setup behind the checker, kept in issue #54. */
 export const SETUP_ISSUE_URL = "https://github.com/Hugo-ter-Doest/CommonGroundChecker/issues/54";
 
@@ -164,8 +168,8 @@ export const CHECKLIST_SOURCES: ChecklistSource[] = [
   {
     id: "sig",
     title: "The SIG ratings, as the Common Ground programme currently uses them",
-    text: "A component must be certifiable by SIG and TÜViT. That is why suitable for Common Ground asks at least 4 stars for maintainability.",
-    lines: ["The SIG ratings", "Certifiable by SIG/TÜViT"],
+    text: "A component must be ready for certification by SIG and TÜViT. That is why suitable for Common Ground asks at least 4 stars for maintainability, by the estimate. Ready is not certified: certification is a manual assessment by SIG and TÜViT, and the checker only estimates whether a component looks ready for it. Whether adoption into Common Ground needs a SIG certificate is up to VNG as regievoerder. The ALV papers do not ask for one.",
+    lines: ["The SIG ratings", "Ready for certification"],
   },
   {
     id: "alv",
@@ -308,3 +312,82 @@ export function stateName(id: string): string {
   if (!state) throw new Error(`no lifecycle state ${id}`);
   return state.name;
 }
+
+export interface AdoptionNode {
+  id: string;
+  /** The text drawn in the box; the first line is bold */
+  lines: string[];
+  /** step: a step in the process; input: feeds the regievoerder; decision: a question; end: where it ends */
+  kind: "step" | "input" | "decision" | "end";
+}
+
+export interface AdoptionEdge {
+  from: string;
+  to: string;
+  label?: string;
+}
+
+/** How a component enters the Common Ground standard, after the papers for the VNG ALV of 11 December 2026. */
+export const ADOPTION_NODES: AdoptionNode[] = [
+  { id: "checker", lines: ["The checker", "measures: suitable for", "Common Ground?"], kind: "input" },
+  { id: "board", lines: ["VNG board sets priorities", "advised by the Commissie", "Informatiesamenleving"], kind: "input" },
+  {
+    id: "college",
+    lines: ["College voor", "Dienstverleningszaken", "assesses new standards,", "route to national standards"],
+    kind: "input",
+  },
+  { id: "proposal", lines: ["Proposal", "new component or change", "from municipalities,", "suppliers or community"], kind: "step" },
+  { id: "regie", lines: ["Regievoerder (VNG)", "assesses on content,", "with municipal input"], kind: "step" },
+  {
+    id: "criteria",
+    lines: [
+      "Contributes to the collective",
+      "provision, fits the Common",
+      "Ground principles, meets the",
+      "standards, proven by at least",
+      "one municipality?",
+    ],
+    kind: "decision",
+  },
+  { id: "not-adopted", lines: ["Not adopted"], kind: "end" },
+  { id: "mandate", lines: ["Within mandate and", "financial frame?"], kind: "decision" },
+  { id: "alv", lines: ["ALV informed,", "consulted if needed"], kind: "step" },
+  { id: "adopted", lines: ["Adopted in the basisset of", "the Common Ground standard"], kind: "step" },
+  {
+    id: "after",
+    lines: ["Runs on Haven or Haven+.", "Municipalities contract the", "maintainer on VNG model", "contracts."],
+    kind: "end",
+  },
+];
+
+export const ADOPTION_EDGES: AdoptionEdge[] = [
+  { from: "checker", to: "regie", label: "measurement" },
+  { from: "board", to: "regie", label: "priorities" },
+  { from: "college", to: "regie", label: "standards" },
+  { from: "proposal", to: "regie" },
+  { from: "regie", to: "criteria" },
+  { from: "criteria", to: "not-adopted", label: "no" },
+  { from: "criteria", to: "mandate", label: "yes" },
+  { from: "mandate", to: "adopted", label: "yes" },
+  { from: "mandate", to: "alv", label: "no" },
+  { from: "alv", to: "adopted" },
+  { from: "adopted", to: "after" },
+];
+
+/** The same flow as text, for the list below the diagram. */
+export const ADOPTION_STEPS: string[] = [
+  "Anyone proposes a new component or a change: municipalities, suppliers or the community.",
+  "VNG, as regievoerder, assesses the proposal on content, with input from municipalities. The measurement of the checker, suitable for Common Ground or not, is one of its inputs. The VNG board sets the priorities, advised by the Commissie Informatiesamenleving. The College voor Dienstverleningszaken assesses new standards and is the route to national standardisation.",
+  "A component is adopted only when it contributes to the collective data provision, fits the Common Ground principles, meets the agreed standards and is proven in practice by at least one municipality. Otherwise it is not adopted.",
+  "Within the mandate and the financial frame, the component is adopted in the basisset of the Common Ground standard. Outside them, the ALV is informed and consulted if needed before it is adopted.",
+  "An adopted component runs on Haven or Haven+. Municipalities contract the maintainer, on the VNG model contracts.",
+];
+
+export const ADOPTION_NOTES: string[] = [
+  "The regievoerder supervises whether solutions meet the agreed frameworks. Validation services such as the checker belong to that task.",
+  "VNG does not contract, build or host. Municipalities contract, on the VNG model contracts and framework agreements.",
+  "In June 2027 the ALV decides on the organisation, the tasks and the financing of the regie.",
+  "The papers name no SIG certificate as a requirement. Whether one is needed is up to the regievoerder within this process.",
+];
+
+export const ADOPTION_STATUS: PathStatus = { kind: "proposed", until: "ALV 11 Dec 2026" };
