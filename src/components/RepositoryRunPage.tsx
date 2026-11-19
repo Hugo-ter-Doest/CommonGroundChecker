@@ -15,7 +15,7 @@ interface RepositoryRunPageProps {
   result: RepositoryRunResult;
 }
 
-const SECTION_CLASS = "bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4";
+const SECTION_CLASS = "bg-white rounded-2xl border border-gray-200 shadow-sm p-4 sm:p-6 space-y-4";
 
 function Navigation() {
   return (
@@ -44,7 +44,7 @@ function Navigation() {
 export default function RepositoryRunPage({ owner, repo, result }: RepositoryRunPageProps) {
   if (result.kind !== "found") {
     return (
-      <div className="max-w-4xl mx-auto px-6 py-10 space-y-4">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 space-y-4">
         <h2 className="text-2xl font-bold text-cg-blue">Component rating</h2>
         <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
           {result.kind === "missing-repository"
@@ -53,7 +53,7 @@ export default function RepositoryRunPage({ owner, repo, result }: RepositoryRun
         </p>
         <Link
           href={result.kind === "missing-repository" ? "/history" : repositoryRunHref(owner, repo)}
-          className="text-cg-lightblue hover:underline text-sm"
+          className="inline-flex min-h-[44px] items-center lg:min-h-0 text-cg-lightblue hover:underline text-sm"
         >
           {result.kind === "missing-repository" ? "← Back to history search" : "← See the latest run"}
         </Link>
@@ -67,16 +67,16 @@ export default function RepositoryRunPage({ owner, repo, result }: RepositoryRun
   const isOlder = selected !== null && selected.id !== latestId;
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10 space-y-6">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 space-y-6">
       <Navigation />
 
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <h2 className="text-2xl font-bold text-cg-blue">Component rating</h2>
-        <div className="flex items-center gap-3 text-sm">
-          <Link href="/history" className="text-cg-lightblue hover:underline">
+        <div className="flex flex-wrap items-center gap-x-3 text-sm">
+          <Link href="/history" className="inline-flex min-h-[44px] items-center lg:min-h-0 text-cg-lightblue hover:underline">
             Search another repository
           </Link>
-          <Link href="/" className="text-cg-lightblue hover:underline">
+          <Link href="/" className="inline-flex min-h-[44px] items-center lg:min-h-0 text-cg-lightblue hover:underline">
             Run new check
           </Link>
         </div>
@@ -98,7 +98,7 @@ export default function RepositoryRunPage({ owner, repo, result }: RepositoryRun
           <p className="text-sm text-gray-500">No analyses stored yet.</p>
         </section>
       ) : (
-        <section aria-labelledby="run-summary-heading" className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-3">
+        <section aria-labelledby="run-summary-heading" className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 sm:p-6 space-y-3">
           <h3 id="run-summary-heading" className="text-lg font-semibold text-gray-800">
             {isOlder ? "Older run" : "Latest run"}
           </h3>

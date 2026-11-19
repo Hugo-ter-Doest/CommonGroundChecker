@@ -132,143 +132,145 @@ export default function RatingHistoryChart({ runs, selectedId = null, analysisHr
 
   return (
     <div className="space-y-2">
-      <svg
-        viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
-        className="w-full h-auto"
-        aria-labelledby="rating-history-title rating-history-desc"
-      >
-        <title id="rating-history-title">Overall rating over time</title>
-        <desc id="rating-history-desc">{description}</desc>
-
-        <g aria-hidden="true">
-          {RATING_BANDS.map((band) => (
-            <rect
-              key={band.from}
-              x={PLOT_LEFT}
-              y={scaleRating(band.to)}
-              width={PLOT_RIGHT - PLOT_LEFT}
-              height={scaleRating(band.from) - scaleRating(band.to)}
-              className={band.className}
-            />
-          ))}
-          {AXIS_VALUES.map((value) => (
-            <g key={value}>
-              {value !== PASSING_RATING && (
-                <line
-                  x1={PLOT_LEFT}
-                  x2={PLOT_RIGHT}
-                  y1={scaleRating(value)}
-                  y2={scaleRating(value)}
-                  stroke="#e5e7eb"
-                  strokeDasharray={value === MIN_RATING || value === MAX_RATING ? undefined : "4 4"}
-                />
-              )}
-              <text
-                x={PLOT_LEFT - 6}
-                y={scaleRating(value)}
-                textAnchor="end"
-                dominantBaseline="middle"
-                className="fill-gray-500 text-[10px]"
-              >
-                {value.toFixed(1)}
-              </text>
-            </g>
-          ))}
-          <line
-            data-pass-line=""
-            x1={PLOT_LEFT}
-            x2={PLOT_RIGHT}
-            y1={scaleRating(PASSING_RATING)}
-            y2={scaleRating(PASSING_RATING)}
-            className="stroke-red-600"
-            strokeWidth="1.5"
-          />
-          <text
-            x={PLOT_RIGHT - 4}
-            y={scaleRating(PASSING_RATING) - 4}
-            textAnchor="end"
-            className="fill-red-700 text-[10px] font-semibold"
-          >
-            Pass {PASSING_RATING.toFixed(1)}
-          </text>
-          <text x={PLOT_LEFT} y={CHART_HEIGHT - 8} className="fill-gray-500 text-[10px]">
-            {formatDay(first.checkedAt)}
-          </text>
-          <text x={PLOT_RIGHT} y={CHART_HEIGHT - 8} textAnchor="end" className="fill-gray-500 text-[10px]">
-            {formatDay(last.checkedAt)}
-          </text>
-          {selected && (
-            <line
-              data-selected-line=""
-              x1={selected.x}
-              x2={selected.x}
-              y1={PLOT_TOP}
-              y2={PLOT_BOTTOM}
-              className="stroke-cg-blue"
-              strokeDasharray="2 3"
-            />
-          )}
-          <path d={linePath} fill="none" className="stroke-cg-blue" strokeWidth="2" strokeLinejoin="round" />
-        </g>
-
-        {points.map((point) => {
-          const tooltip = tooltipPosition(point);
-          const isSelected = point.id === selected?.id;
-          const label = `${formatDate(point.checkedAt)}, rating ${point.rating.toFixed(1)}, ${passText(
-            point.passed
-          ).toLowerCase()}`;
-          return (
-            <a
-              key={point.id}
-              href={analysisHref(point.id)}
-              aria-label={`Open the run of ${label}`}
-              aria-current={isSelected ? "page" : undefined}
-              className="group focus:outline-none"
-            >
-              <circle cx={point.x} cy={point.y} r="12" fill="transparent" />
-              <circle
-                cx={point.x}
-                cy={point.y}
-                r="11"
-                fill="none"
-                strokeWidth="2"
-                className="stroke-cg-lightblue opacity-0 group-focus-visible:opacity-100"
+      <div className="overflow-x-auto" role="region" aria-label="Rating graph" tabIndex={0}>
+        <svg
+          viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
+          className="w-full h-auto max-sm:min-w-[400px]"
+          aria-labelledby="rating-history-title rating-history-desc"
+        >
+          <title id="rating-history-title">Overall rating over time</title>
+          <desc id="rating-history-desc">{description}</desc>
+  
+          <g aria-hidden="true">
+            {RATING_BANDS.map((band) => (
+              <rect
+                key={band.from}
+                x={PLOT_LEFT}
+                y={scaleRating(band.to)}
+                width={PLOT_RIGHT - PLOT_LEFT}
+                height={scaleRating(band.from) - scaleRating(band.to)}
+                className={band.className}
               />
-              <circle
-                cx={point.x}
-                cy={point.y}
-                r={isSelected ? 7 : 5}
-                className={`${point.passed ? "fill-green-600" : "fill-red-500"} ${
-                  isSelected ? "stroke-cg-blue" : "stroke-white group-hover:stroke-cg-blue"
-                }`}
-                strokeWidth={isSelected ? 3 : 2}
-              />
-              <g
-                aria-hidden="true"
-                className="opacity-0 group-hover:opacity-100 group-focus:opacity-100 pointer-events-none"
-              >
-                <rect
-                  x={tooltip.x}
-                  y={tooltip.y}
-                  width={TOOLTIP_WIDTH}
-                  height={TOOLTIP_HEIGHT}
-                  rx="6"
-                  className="fill-white stroke-gray-300"
-                />
+            ))}
+            {AXIS_VALUES.map((value) => (
+              <g key={value}>
+                {value !== PASSING_RATING && (
+                  <line
+                    x1={PLOT_LEFT}
+                    x2={PLOT_RIGHT}
+                    y1={scaleRating(value)}
+                    y2={scaleRating(value)}
+                    stroke="#e5e7eb"
+                    strokeDasharray={value === MIN_RATING || value === MAX_RATING ? undefined : "4 4"}
+                  />
+                )}
                 <text
-                  x={tooltip.x + TOOLTIP_WIDTH / 2}
-                  y={tooltip.y + TOOLTIP_HEIGHT / 2}
-                  textAnchor="middle"
+                  x={PLOT_LEFT - 6}
+                  y={scaleRating(value)}
+                  textAnchor="end"
                   dominantBaseline="middle"
-                  className="fill-gray-800 text-[11px] font-semibold"
+                  className="fill-gray-500 text-[10px] max-sm:text-[20px]"
                 >
-                  {label}
+                  {value.toFixed(1)}
                 </text>
               </g>
-            </a>
-          );
-        })}
-      </svg>
+            ))}
+            <line
+              data-pass-line=""
+              x1={PLOT_LEFT}
+              x2={PLOT_RIGHT}
+              y1={scaleRating(PASSING_RATING)}
+              y2={scaleRating(PASSING_RATING)}
+              className="stroke-red-600"
+              strokeWidth="1.5"
+            />
+            <text
+              x={PLOT_RIGHT - 4}
+              y={scaleRating(PASSING_RATING) - 4}
+              textAnchor="end"
+              className="fill-red-700 text-[10px] max-sm:text-[20px] font-semibold"
+            >
+              Pass {PASSING_RATING.toFixed(1)}
+            </text>
+            <text x={PLOT_LEFT} y={CHART_HEIGHT - 8} className="fill-gray-500 text-[10px] max-sm:text-[20px]">
+              {formatDay(first.checkedAt)}
+            </text>
+            <text x={PLOT_RIGHT} y={CHART_HEIGHT - 8} textAnchor="end" className="fill-gray-500 text-[10px] max-sm:text-[20px]">
+              {formatDay(last.checkedAt)}
+            </text>
+            {selected && (
+              <line
+                data-selected-line=""
+                x1={selected.x}
+                x2={selected.x}
+                y1={PLOT_TOP}
+                y2={PLOT_BOTTOM}
+                className="stroke-cg-blue"
+                strokeDasharray="2 3"
+              />
+            )}
+            <path d={linePath} fill="none" className="stroke-cg-blue" strokeWidth="2" strokeLinejoin="round" />
+          </g>
+  
+          {points.map((point) => {
+            const tooltip = tooltipPosition(point);
+            const isSelected = point.id === selected?.id;
+            const label = `${formatDate(point.checkedAt)}, rating ${point.rating.toFixed(1)}, ${passText(
+              point.passed
+            ).toLowerCase()}`;
+            return (
+              <a
+                key={point.id}
+                href={analysisHref(point.id)}
+                aria-label={`Open the run of ${label}`}
+                aria-current={isSelected ? "page" : undefined}
+                className="group focus:outline-none"
+              >
+                <circle cx={point.x} cy={point.y} r="12" fill="transparent" />
+                <circle
+                  cx={point.x}
+                  cy={point.y}
+                  r="11"
+                  fill="none"
+                  strokeWidth="2"
+                  className="stroke-cg-lightblue opacity-0 group-focus-visible:opacity-100"
+                />
+                <circle
+                  cx={point.x}
+                  cy={point.y}
+                  r={isSelected ? 7 : 5}
+                  className={`${point.passed ? "fill-green-600" : "fill-red-500"} ${
+                    isSelected ? "stroke-cg-blue" : "stroke-white group-hover:stroke-cg-blue"
+                  }`}
+                  strokeWidth={isSelected ? 3 : 2}
+                />
+                <g
+                  aria-hidden="true"
+                  className="opacity-0 group-hover:opacity-100 group-focus:opacity-100 pointer-events-none"
+                >
+                  <rect
+                    x={tooltip.x}
+                    y={tooltip.y}
+                    width={TOOLTIP_WIDTH}
+                    height={TOOLTIP_HEIGHT}
+                    rx="6"
+                    className="fill-white stroke-gray-300"
+                  />
+                  <text
+                    x={tooltip.x + TOOLTIP_WIDTH / 2}
+                    y={tooltip.y + TOOLTIP_HEIGHT / 2}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    className="fill-gray-800 text-[11px] font-semibold"
+                  >
+                    {label}
+                  </text>
+                </g>
+              </a>
+            );
+          })}
+        </svg>
+      </div>
 
       <p className="flex flex-wrap gap-4 text-xs text-gray-600" aria-hidden="true">
         <span className="inline-flex items-center gap-1">
@@ -287,25 +289,27 @@ export default function RatingHistoryChart({ runs, selectedId = null, analysisHr
         )}
       </p>
 
-      <table className="sr-only">
-        <caption>Overall rating per run, oldest first</caption>
-        <thead>
-          <tr>
-            <th scope="col">Date</th>
-            <th scope="col">Rating</th>
-            <th scope="col">Result</th>
-          </tr>
-        </thead>
-        <tbody>
-          {points.map((point) => (
-            <tr key={point.id} aria-current={point.id === selected?.id ? "true" : undefined}>
-              <td>{formatDate(point.checkedAt)}</td>
-              <td>{point.rating.toFixed(1)}</td>
-              <td>{passText(point.passed)}</td>
+      <div className="sr-only">
+        <table>
+          <caption>Overall rating per run, oldest first</caption>
+          <thead>
+            <tr>
+              <th scope="col">Date</th>
+              <th scope="col">Rating</th>
+              <th scope="col">Result</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {points.map((point) => (
+              <tr key={point.id} aria-current={point.id === selected?.id ? "true" : undefined}>
+                <td>{formatDate(point.checkedAt)}</td>
+                <td>{point.rating.toFixed(1)}</td>
+                <td>{passText(point.passed)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

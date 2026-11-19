@@ -158,11 +158,27 @@ describe("RatingHistoryChart rendering", () => {
     expect(svg?.querySelector("desc")?.textContent).toContain("rating 3.0.");
   });
 
+  it("keeps the axis labels readable on phones, with a wider graph that scrolls in its own region", () => {
+    const { container } = render(<RatingHistoryChart runs={runs} selectedId="c" analysisHref={hrefFor} />);
+
+    const labels = Array.from(container.querySelectorAll("svg text")).filter((text) =>
+      /fill-(gray-500|red-700)/.test(text.getAttribute("class") ?? "")
+    );
+    expect(labels.length).toBeGreaterThan(0);
+    for (const label of labels) {
+      expect(label.getAttribute("class")).toContain("max-sm:text-[20px]");
+    }
+    const region = screen.getByRole("region", { name: "Rating graph" });
+    expect(region.getAttribute("tabindex")).toBe("0");
+    expect(region.querySelector("svg")?.getAttribute("class")).toContain("max-sm:min-w-[400px]");
+  });
+
   it("renders a visually hidden table with date, rating and result per run", () => {
     render(<RatingHistoryChart runs={runs} selectedId="c" analysisHref={hrefFor} />);
 
     const table = screen.getByRole("table", { name: /Overall rating per run/ });
-    expect(table.className).toContain("sr-only");
+    // A table ignores width and overflow, so the visually hidden wrapper keeps it off the page width
+    expect(table.parentElement?.className).toBe("sr-only");
     const headers = within(table).getAllByRole("columnheader").map((cell) => cell.textContent);
     expect(headers).toEqual(["Date", "Rating", "Result"]);
     const rows = within(table).getAllByRole("row").slice(1);
