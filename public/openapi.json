@@ -430,6 +430,18 @@
               },
               "score": {
                 "type": "integer"
+              },
+              "rating": {
+                "$ref": "#/components/schemas/Rating"
+              },
+              "categoryRatings": {
+                "$ref": "#/components/schemas/CategoryRatings"
+              },
+              "aspectRatings": {
+                "$ref": "#/components/schemas/AspectRatings"
+              },
+              "endorsement": {
+                "$ref": "#/components/schemas/Endorsement"
               }
             }
           }
@@ -554,6 +566,78 @@
           "repoUrl"
         ]
       },
+      "Rating": {
+        "type": [
+          "number",
+          "null"
+        ],
+        "minimum": 0.5,
+        "maximum": 5.5,
+        "description": "Continuous rating from 0.5 to 5.5, shown as 1 to 5 stars; null when no criterion counts"
+      },
+      "CategoryRatings": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "additionalProperties": {
+          "$ref": "#/components/schemas/Rating"
+        },
+        "description": "Rating per category; a category is null when none of its aspects is rated"
+      },
+      "AspectRating": {
+        "type": "object",
+        "properties": {
+          "rating": {
+            "$ref": "#/components/schemas/Rating"
+          },
+          "found": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "For a document-count aspect: the inputs that pass"
+          },
+          "expected": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "For a document-count aspect: the inputs that were measured"
+          }
+        },
+        "required": [
+          "rating"
+        ]
+      },
+      "AspectRatings": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "additionalProperties": {
+          "$ref": "#/components/schemas/AspectRating"
+        },
+        "description": "Rating per aspect id"
+      },
+      "Endorsement": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "passed": {
+            "type": "boolean",
+            "description": "No mandatory criterion fails and the overall rating is at least 2.5"
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "passed",
+          "reasons"
+        ]
+      },
       "RepoAnalysisInput": {
         "type": "object",
         "properties": {
@@ -575,6 +659,18 @@
           },
           "score": {
             "type": "integer"
+          },
+          "rating": {
+            "$ref": "#/components/schemas/Rating"
+          },
+          "categoryRatings": {
+            "$ref": "#/components/schemas/CategoryRatings"
+          },
+          "aspectRatings": {
+            "$ref": "#/components/schemas/AspectRatings"
+          },
+          "endorsement": {
+            "$ref": "#/components/schemas/Endorsement"
           },
           "results": {
             "type": "array",
@@ -616,6 +712,18 @@
           },
           "score": {
             "type": "integer"
+          },
+          "rating": {
+            "$ref": "#/components/schemas/Rating"
+          },
+          "categoryRatings": {
+            "$ref": "#/components/schemas/CategoryRatings"
+          },
+          "aspectRatings": {
+            "$ref": "#/components/schemas/AspectRatings"
+          },
+          "endorsement": {
+            "$ref": "#/components/schemas/Endorsement"
           },
           "results": {
             "type": "array",
@@ -900,6 +1008,25 @@
               "medium",
               "low"
             ]
+          },
+          "starRating": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5,
+            "description": "1 to 5 stars; from the criterion's own scale, or derived from its status"
+          },
+          "rating": {
+            "type": "number",
+            "minimum": 0.5,
+            "maximum": 5.5,
+            "description": "Continuous rating from 0.5 to 5.5, for a criterion measured on a continuous scale"
+          },
+          "aspectRatings": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Rating"
+            },
+            "description": "Ratings from 0.5 to 5.5 the check measures for aspects of the rating model, by key"
           }
         },
         "required": [
@@ -934,6 +1061,18 @@
           },
           "score": {
             "type": "integer"
+          },
+          "rating": {
+            "$ref": "#/components/schemas/Rating"
+          },
+          "categoryRatings": {
+            "$ref": "#/components/schemas/CategoryRatings"
+          },
+          "aspectRatings": {
+            "$ref": "#/components/schemas/AspectRatings"
+          },
+          "endorsement": {
+            "$ref": "#/components/schemas/Endorsement"
           },
           "results": {
             "type": "array",
