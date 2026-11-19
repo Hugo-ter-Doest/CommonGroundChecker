@@ -143,6 +143,16 @@ describe("LifecycleDiagram layouts", () => {
     });
   }
 
+  it("draws its text at 12px or more where each layout is shown", () => {
+    // The narrow layout is about 296px wide on a 360px phone; the wide one about 928px from 1024px up.
+    const narrowScale = 296 / NARROW_LAYOUT.width;
+    expect(NARROW_LAYOUT.nameSize * narrowScale).toBeGreaterThanOrEqual(12);
+    expect(NARROW_LAYOUT.labelSize * narrowScale).toBeGreaterThanOrEqual(12);
+    const wideScale = 928 / WIDE_LAYOUT.width;
+    expect(WIDE_LAYOUT.nameSize * wideScale).toBeGreaterThanOrEqual(12);
+    expect(WIDE_LAYOUT.labelSize * wideScale).toBeGreaterThanOrEqual(13);
+  });
+
   it("splits only long names over two lines", () => {
     expect(nameLines("Out of support")).toEqual(["Out of support"]);
     expect(nameLines("Suitable for Common Ground")).toEqual(["Suitable for", "Common Ground"]);

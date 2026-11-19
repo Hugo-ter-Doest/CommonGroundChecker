@@ -17,13 +17,16 @@ export interface DiagramLayout {
   width: number;
   height: number;
   boxWidth: number;
+  /** Font sizes in viewBox units, chosen so the text renders at 12px or more where the layout is shown */
+  nameSize: number;
+  labelSize: number;
   boxes: Record<string, Box>;
   /** Keyed by transitionKey() */
   edges: Record<string, Edge>;
 }
 
 const BOX_HEIGHT = 64;
-const LINE_HEIGHT = 15;
+const LINE_HEIGHT = 17;
 
 export function transitionKey(transition: Pick<LifecycleTransition, "from" | "to">): string {
   return `${transition.from}>${transition.to}`;
@@ -35,6 +38,8 @@ export const WIDE_LAYOUT: DiagramLayout = {
   width: 1040,
   height: 372,
   boxWidth: 140,
+  nameSize: 14,
+  labelSize: 15,
   boxes: {
     listed: { x: 10, y: 50 },
     measured: { x: 225, y: 50 },
@@ -51,7 +56,7 @@ export const WIDE_LAYOUT: DiagramLayout = {
     "suitable>approved": { d: "M580 82 H655", label: { x: 617, y: 40, anchor: "middle" } },
     "approved>in-remedy": { d: "M795 70 H870", label: { x: 832, y: 40, anchor: "middle" } },
     "in-remedy>approved": { d: "M870 96 H795", label: { x: 832, y: 132, anchor: "middle" } },
-    "in-remedy>out-of-support": { d: "M960 114 V222 H900", label: { x: 966, y: 165, anchor: "start" } },
+    "in-remedy>out-of-support": { d: "M1000 114 V222 H900", label: { x: 906, y: 242, anchor: "start" } },
     "approved>out-of-support": { d: "M700 114 V222 H760", label: { x: 693, y: 165, anchor: "end" } },
     "out-of-support>approved": { d: "M775 190 V114", label: { x: 782, y: 165, anchor: "start" } },
     "any>retired": { d: "M10 278 H1030 M510 278 V296", label: { x: 510, y: 270, anchor: "middle" } },
@@ -64,6 +69,8 @@ export const NARROW_LAYOUT: DiagramLayout = {
   width: 320,
   height: 710,
   boxWidth: 140,
+  nameSize: 14,
+  labelSize: 14,
   boxes: {
     listed: { x: 100, y: 10 },
     measured: { x: 100, y: 110 },
@@ -77,7 +84,7 @@ export const NARROW_LAYOUT: DiagramLayout = {
     "listed>measured": { d: "M170 74 V110", label: { x: 177, y: 96, anchor: "start" } },
     "measured>suitable": { d: "M155 174 V210", label: { x: 148, y: 196, anchor: "end" } },
     "suitable>measured": { d: "M185 210 V174", label: { x: 192, y: 196, anchor: "start" } },
-    "suitable>approved": { d: "M170 274 V310", label: { x: 177, y: 296, anchor: "start" } },
+    "suitable>approved": { d: "M130 274 V310", label: { x: 137, y: 296, anchor: "start" } },
     "approved>in-remedy": { d: "M155 374 V410", label: { x: 148, y: 396, anchor: "end" } },
     "in-remedy>approved": { d: "M185 410 V374", label: { x: 192, y: 396, anchor: "start" } },
     "in-remedy>out-of-support": { d: "M170 474 V510", label: { x: 177, y: 496, anchor: "start" } },
@@ -142,7 +149,7 @@ export default function LifecycleDiagram({ layout, className }: { layout: Diagra
               y={y}
               textAnchor={anchor}
               transform={rotate ? `rotate(-90 ${x} ${y})` : undefined}
-              fontSize={11}
+              fontSize={layout.labelSize}
               className="fill-gray-700"
             >
               {edgeLabel(transition)}
@@ -175,7 +182,7 @@ export default function LifecycleDiagram({ layout, className }: { layout: Diagra
                 x={centerX}
                 y={firstBaseline + index * LINE_HEIGHT}
                 textAnchor="middle"
-                fontSize={13}
+                fontSize={layout.nameSize}
                 fontWeight={600}
                 className="fill-gray-900"
               >
@@ -187,7 +194,7 @@ export default function LifecycleDiagram({ layout, className }: { layout: Diagra
                 x={centerX}
                 y={firstBaseline + lines.length * LINE_HEIGHT}
                 textAnchor="middle"
-                fontSize={11}
+                fontSize={layout.labelSize}
                 className="fill-amber-800"
               >
                 {pathStatusLabel(state.status)}
