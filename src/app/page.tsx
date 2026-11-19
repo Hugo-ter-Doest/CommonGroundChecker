@@ -3,8 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import CheckerForm from "@/components/CheckerForm";
+import IssueBlocks from "@/components/IssueBlocks";
 import ResultCard from "@/components/ResultCard";
-import ScoreBadge from "@/components/ScoreBadge";
+import RatingBadge from "@/components/RatingBadge";
+import RatingSummary from "@/components/RatingSummary";
+import CategoryRatings from "@/components/CategoryRatings";
+import { aspectsOfCategory, documentCountText } from "@/lib/componentRating";
+import { ratingToStars } from "@/lib/stars";
 import RepoMeta from "@/components/RepoMeta";
 import type { CheckReport } from "@/lib/types";
 import type { CriteriaCategory } from "@/lib/criteria";
@@ -14,6 +19,13 @@ import { AlertCircle, ClipboardList } from "lucide-react";
 
 function sanitizePdfFileName(value: string): string {
   return value.replace(/[^a-z0-9-_]+/gi, "-").replace(/-+/g, "-").toLowerCase();
+}
+
+/** Plain text for the PDF, whose standard fonts have no star glyphs. */
+function describeRating(rating: number | null): string {
+  if (rating === null) return "not rated";
+  const stars = ratingToStars(rating);
+  return `${rating.toFixed(1)} of 5 (${stars} ${stars === 1 ? "star" : "stars"})`;
 }
 
 async function exportAnalysisReportAsPdf(report: CheckReport): Promise<void> {
@@ -62,7 +74,35 @@ async function exportAnalysisReportAsPdf(report: CheckReport): Promise<void> {
     size: 10,
     gapAfter: 4,
   });
-  addBlock(`Score: ${report.score}/100`, { size: 11, gapAfter: 10 });
+  addBlock(`Overall rating: ${describeRating(report.rating)}`, { size: 11, gapAfter: 4 });
+  if (report.endorsement) {
+    addBlock(
+      report.endorsement.passed
+        ? "Passes"
+        : `Does not pass: ${report.endorsement.reasons.join("; ")}`,
+      { size: 10, indent: 10, gapAfter: 4 }
+    );
+  }
+  for (const category of CATEGORY_ORDER) {
+    addBlock(`${category}: ${describeRating(report.categoryRatings?.[category] ?? null)}`, {
+      size: 10,
+      indent: 10,
+      gapAfter: 1,
+    });
+    for (const aspect of aspectsOfCategory(category)) {
+      const aspectRating = report.aspectRatings?.[aspect.id];
+      const count = documentCountText(aspectRating);
+      const rating = aspectRating?.rating ?? null;
+      const value = rating === null ? "not measured" : describeRating(rating);
+      addBlock(`${aspect.title}: ${value}${count ? ` (${count})` : ""}`, {
+        size: 9,
+        indent: 20,
+        gapAfter: 1,
+      });
+    }
+  }
+  y += 5;
+  addBlock(`Compliance score: ${report.score}/100`, { size: 11, gapAfter: 10 });
 
   const passCount = report.results.filter((r) => r.status === "pass").length;
   const warnCount = report.results.filter((r) => r.status === "warn").length;
@@ -123,6 +163,7 @@ const DEFAULT_REQUIREMENT_LEVEL_BY_CHECK_ID: Record<string, RequirementLevelLabe
   documentation: "mandatory",
   tests: "mandatory",
   complexity: "recommended",
+  maintainability: "recommended",
   codemetrics: "informative",
   changelog: "recommended",
   coverage: "mandatory",
@@ -151,6 +192,7 @@ const CHECK_ID_BY_CRITERION_LABEL: Record<string, string> = {
   "Test suite presence": "tests",
   "Code coverage": "coverage",
   "Cyclomatic complexity": "complexity",
+  "Maintainability (ISO 25010)": "maintainability",
   "Code Metrics": "codemetrics",
   "OWASP Secure Coding": "owaspsecurecoding",
   "Contributing guide": "contributing",
@@ -321,6 +363,14 @@ const CRITERIA_OVERVIEW = [
     desc: "Lizard analysis on target repo",
     tooltip:
       "Clones the analyzed repository and runs Lizard locally to measure cyclomatic complexity across supported languages.",
+  },
+  {
+    icon: "⭐",
+    label: "Maintainability (ISO 25010)",
+    category: "Software Quality" as CriteriaCategory,
+    desc: "1 to 5 star maintainability rating",
+    tooltip:
+      "Rates unit size, unit complexity, unit interfacing, duplication, module coupling and component structure from 1 to 5 stars, and estimates an overall maintainability rating. 4 stars or more passes.",
   },
   {
     icon: "🛡️",
@@ -613,7 +663,11 @@ export default function HomePage() {
             {/* Summary header */}
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-                <ScoreBadge score={report.score} />
+                <RatingSummary
+                  rating={report.rating ?? null}
+                  endorsement={report.endorsement}
+                  score={report.score}
+                />
                 <div className="flex-1 space-y-3">
                   <RepoMeta
                     owner={report.owner}
@@ -670,6 +724,18 @@ export default function HomePage() {
               </div>
             </div>
 
+            <IssueBlocks
+              results={report.results}
+              rating={report.rating ?? null}
+              endorsement={report.endorsement}
+            />
+
+            <CategoryRatings
+              results={report.results}
+              categoryRatings={report.categoryRatings ?? {}}
+              aspectRatings={report.aspectRatings ?? {}}
+            />
+
             {/* Individual results */}
             <div className="space-y-1">
               <div className="flex items-center gap-2 mb-3 text-gray-500">
@@ -721,9 +787,15 @@ export default function HomePage() {
 
                   return sortedResults.length > 0 ? (
                     <div key={category}>
-                      <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mt-4 mb-2">
-                        {category}
-                      </h4>
+                      <div className="flex items-center gap-3 mt-4 mb-2">
+                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                          {category}
+                        </h4>
+                        <RatingBadge
+                          rating={report.categoryRatings?.[category] ?? null}
+                          label={`${category} rating`}
+                        />
+                      </div>
                       <div className="space-y-2">
                         {sortedResults.map((r) => (
                           <ResultCard key={r.id} {...r} />
