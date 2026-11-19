@@ -115,7 +115,7 @@ function IssueBlock({ kind, entries }: IssueBlockProps) {
   return (
     <section
       aria-labelledby={config.headingId}
-      className={`rounded-xl border ${config.border} ${config.bg} p-5`}
+      className={`rounded-xl border ${config.border} ${config.bg} p-4 sm:p-5`}
     >
       <h3 id={config.headingId} className={`flex items-center gap-2 font-semibold ${config.text}`}>
         <Icon className="w-5 h-5 shrink-0" aria-hidden="true" />
@@ -136,14 +136,14 @@ function IssueBlock({ kind, entries }: IssueBlockProps) {
               <a
                 href={`#${criterionAnchorId(result.id)}`}
                 onClick={(event) => openCriterion(event, result.id)}
-                className="font-semibold text-gray-900 underline hover:text-cg-lightblue"
+                className="inline-flex min-h-[44px] items-center lg:min-h-0 font-semibold text-gray-900 underline hover:text-cg-lightblue"
               >
                 {result.title}
                 <span className="sr-only">: go to the {result.title} result</span>
               </a>
               <span className="text-xs text-gray-600">{category}</span>
             </div>
-            <p className="mt-1 text-gray-700">{result.message}</p>
+            <p className="mt-1 text-gray-700 break-words">{result.message}</p>
           </li>
         ))}
       </ul>
@@ -160,7 +160,7 @@ export default function IssueBlocks({ results }: IssueBlocksProps) {
   if (errors.length === 0 && warnings.length === 0) return null;
 
   return (
-    <div className="grid gap-4">
+    <div className="grid grid-cols-1 gap-4">
       <IssueBlock kind="errors" entries={errors} />
       <IssueBlock kind="warnings" entries={warnings} />
     </div>
