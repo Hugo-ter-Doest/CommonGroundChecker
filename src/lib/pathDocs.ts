@@ -145,10 +145,16 @@ export const PATH_SECTIONS: PathSection[] = [
     items: [
       "no mandatory criterion fails;",
       "the overall rating is at least 2.5;",
-      "the maintainability estimate is at least 4 stars, the level of certification by SIG and TÜViT;",
+      "the maintainability estimate is at least 4 stars, the level at which SIG and TÜViT certify;",
       "publiccode.yml names a valid maintenance contract.",
     ],
     parts: [
+      {
+        title: "Ready for certification, not certified",
+        paragraphs: [
+          "The checker does not certify. Certification is a manual assessment by SIG and TÜViT. The checker only estimates whether a component looks ready for it. Whether adoption into Common Ground needs a SIG certificate is up to VNG as regievoerder. The ALV papers do not ask for one.",
+        ],
+      },
       {
         title: "A valid maintenance contract",
         status: { kind: "in-review", pr: 55 },

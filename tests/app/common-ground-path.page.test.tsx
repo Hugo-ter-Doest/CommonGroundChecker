@@ -190,7 +190,8 @@ describe("CommonGroundPathPage", () => {
 
     const verdict = document.getElementById("verdict")!;
     expect(within(verdict).getAllByRole("listitem")).toHaveLength(4);
-    expect(within(verdict).getByText(/at least 4 stars, the level of certification by SIG and TÜViT/)).toBeTruthy();
+    expect(within(verdict).getByText(/at least 4 stars, the level at which SIG and TÜViT certify/)).toBeTruthy();
+    expect(within(verdict).getByText(/The checker does not certify\..*The ALV papers do not ask for one\./)).toBeTruthy();
     expect(within(verdict).getByText(/maintenance\.type: contract/)).toBeTruthy();
 
     const levels = document.getElementById("levels")!;
