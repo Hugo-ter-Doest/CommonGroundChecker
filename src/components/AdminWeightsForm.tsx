@@ -45,6 +45,12 @@ const CRITERION_CATEGORIES: CriterionCategory[] = [
           "A publiccode.yml file in the root of the repository provides standardised metadata (name, description, category, maintenance) used by government software catalogues across Europe.",
       },
       {
+        id: "maintenance",
+        label: "Maintenance contract",
+        explanation:
+          "Reads maintenance from publiccode.yml: passes only on maintenance under contract with at least one valid contractor (a name, an end date that has not passed, a valid email address if given). Any other declaration fails and says what is missing or invalid.",
+      },
+      {
         id: "contributing",
         label: "Contributing guide",
         explanation:
