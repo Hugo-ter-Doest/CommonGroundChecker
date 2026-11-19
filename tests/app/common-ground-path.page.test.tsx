@@ -27,7 +27,13 @@ function allText(): string[] {
       section.title,
       ...section.paragraphs,
       ...(section.items ?? []),
-      ...(section.parts ?? []).flatMap((part) => [part.title, ...part.paragraphs]),
+      ...(section.parts ?? []).flatMap((part) => [
+        part.title,
+        ...part.paragraphs,
+        ...(part.items ?? []),
+        ...(part.notes ?? []),
+        ...(part.table ? [part.table.caption, ...part.table.columns, ...part.table.rows.flat()] : []),
+      ]),
     ]),
   ];
 }
@@ -85,6 +91,35 @@ describe("path docs data", () => {
     expect(usage.paragraphs[0]).toMatch(/no separate confirmation step for now/);
     const others = allText().filter((text) => text !== usage.paragraphs[0]);
     for (const text of others) expect(text, text).not.toMatch(/confirm/i);
+  });
+
+  it("calls it the setup, not the plan", () => {
+    for (const text of [...allText(), ...PATH_DOC_SOURCES.map((source) => source.title)]) {
+      expect(text, text).not.toMatch(/\bplan\b/i);
+    }
+    expect(PATH_DOC_SOURCES[0].title).toBe("The setup behind the checker (issue #54)");
+  });
+
+  it("proposes what an SLA for an approved component at least covers", () => {
+    expect(statusOf("What an SLA covers")).toEqual({ kind: "proposed" });
+    const sla = PATH_SECTIONS.flatMap((section) => section.parts ?? []).find((part) => part.title === "What an SLA covers")!;
+    expect(sla.items).toHaveLength(2);
+    expect(sla.items![0]).toMatch(/above the level of Approved.*within the fix term/);
+    expect(sla.items![1]).toMatch(/response and fix times below, as KPIs/);
+  });
+
+  it("proposes response and fix times in working days", () => {
+    expect(statusOf("Response and fix times")).toEqual({ kind: "proposed" });
+    const times = PATH_SECTIONS.flatMap((section) => section.parts ?? []).find((part) => part.title === "Response and fix times")!;
+    expect(times.table!.columns).toEqual(["Report", "Respond", "Fix"]);
+    expect(times.table!.rows).toEqual([
+      ["Critical vulnerability", "1", "7"],
+      ["High vulnerability", "2", "30"],
+      ["Blocking bug", "2", "10"],
+      ["Other bug", "5", "Next release"],
+      ["Question or feature request", "10", "No term"],
+    ]);
+    expect(times.paragraphs[0]).toMatch(/in working days/);
   });
 
   it("uses every section id once", () => {
@@ -172,6 +207,18 @@ describe("CommonGroundPathPage", () => {
     expect(within(checklist).getByText(/pas toe of leg uit/)).toBeTruthy();
     expect(within(checklist).getByText(/shows it as a warning, not as a fail/)).toBeTruthy();
     expect(within(document.getElementById("governance")!).getByText(/does not make that decision/)).toBeTruthy();
+  });
+
+  it("shows the SLA and the response and fix times as a table", () => {
+    render(<CommonGroundPathPage />);
+
+    const maintenance = document.getElementById("maintenance")!;
+    expect(within(maintenance).getByRole("heading", { level: 3, name: "What an SLA covers Proposed" })).toBeTruthy();
+    const table = within(maintenance).getByRole("table", { name: "Proposed response and fix times, in working days" });
+    expect(within(table).getAllByRole("columnheader").map((cell) => cell.textContent)).toEqual(["Report", "Respond", "Fix"]);
+    const critical = within(table).getByRole("rowheader", { name: "Critical vulnerability" }).closest("tr")!;
+    expect(Array.from(critical.cells, (cell) => cell.textContent)).toEqual(["Critical vulnerability", "1", "7"]);
+    expect(within(table).getAllByRole("row")).toHaveLength(6);
   });
 
   it("links the tools page and every source", () => {

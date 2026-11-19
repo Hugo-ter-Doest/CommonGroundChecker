@@ -18,7 +18,23 @@ export interface PathSection {
   paragraphs: string[];
   items?: string[];
   /** Parts of the section with a status of their own */
-  parts?: { title: string; status?: PathStatus; paragraphs: string[] }[];
+  parts?: PathPart[];
+}
+
+export interface PathTable {
+  caption: string;
+  columns: string[];
+  rows: string[][];
+}
+
+export interface PathPart {
+  title: string;
+  status?: PathStatus;
+  paragraphs: string[];
+  items?: string[];
+  table?: PathTable;
+  /** Shown below the list and the table */
+  notes?: string[];
 }
 
 /** The label shown next to a section or part that is not in the checker yet. */
@@ -61,6 +77,30 @@ export const PATH_STEPS: string[] = [
   "Mark the component stable in publiccode.yml. At least two organisations are listed as users under usedBy, and VNG agrees an SLA with a maintainer. The component is now approved.",
   "Stay there: the checker measures every night, and a drop below a criterion is fixed within the agreed fix term.",
 ];
+
+/** What an SLA for an approved component at least says. A proposal. */
+export const SLA_TERMS: string[] = [
+  "The maintainer keeps the component above the level of Approved. When it drops below a criterion, the maintainer fixes it within the fix term.",
+  "The maintainer meets the response and fix times below, as KPIs.",
+];
+
+export const RESPONSE_AND_FIX_TIMES_INTRO =
+  "For the KPIs we propose these response and fix times, in working days. Responding is the first reaction of a maintainer. Fixing is a stable release with the solution.";
+
+export const RESPONSE_AND_FIX_TIMES: PathTable = {
+  caption: "Proposed response and fix times, in working days",
+  columns: ["Report", "Respond", "Fix"],
+  rows: [
+    ["Critical vulnerability", "1", "7"],
+    ["High vulnerability", "2", "30"],
+    ["Blocking bug", "2", "10"],
+    ["Other bug", "5", "Next release"],
+    ["Question or feature request", "10", "No term"],
+  ],
+};
+
+export const REPORT_KINDS =
+  "The checker reads the kind of report from the standard GitHub labels (bug, question, enhancement, documentation) and from published security advisories. A repository does not have to set anything up for this. There is no standard label for a blocking bug, so without such a label every bug counts as an other bug.";
 
 export const PATH_SECTIONS: PathSection[] = [
   {
@@ -155,6 +195,19 @@ export const PATH_SECTIONS: PathSection[] = [
         ],
       },
       {
+        title: "What an SLA covers",
+        status: { kind: "proposed" },
+        paragraphs: ["We propose that an SLA for an approved component at least says this:"],
+        items: SLA_TERMS,
+      },
+      {
+        title: "Response and fix times",
+        status: { kind: "proposed" },
+        paragraphs: [RESPONSE_AND_FIX_TIMES_INTRO],
+        table: RESPONSE_AND_FIX_TIMES,
+        notes: [REPORT_KINDS],
+      },
+      {
         title: "What is not maintenance",
         paragraphs: [
           "New development is not maintenance. An issue that asks for new or different functionality is development work and is agreed separately.",
@@ -202,14 +255,14 @@ export const PATH_SECTIONS: PathSection[] = [
     id: "governance",
     title: "Who decides on approval",
     paragraphs: [
-      "Approval needs more than technology. It needs a governance decision: who approves, who sets the fix terms and the targets, and what happens when a maintainer does not meet them. This guide does not make that decision. It refers to it once it exists, and the checker shows the outcome.",
+      "Approval needs more than technology. It needs a governance decision: who approves, who sets the fix terms and the targets, and what happens when a maintainer does not meet them. The setup does not make that decision. It refers to it once it exists, and the checker shows the outcome.",
     ],
   },
 ];
 
 export const PATH_DOC_SOURCES: DocSource[] = [
   {
-    title: "The plan behind the checker (issue #54)",
+    title: "The setup behind the checker (issue #54)",
     url: "https://github.com/Hugo-ter-Doest/CommonGroundChecker/issues/54",
   },
   {
