@@ -160,6 +160,17 @@ describe("CategoryDocPage", () => {
     expect(within(analysability).getByText("Unit size")).toBeTruthy();
   });
 
+  it("scrolls the wide code property table inside a keyboard reachable region", async () => {
+    await renderCategory("maintainability");
+
+    const region = screen.getByRole("region", { name: "Star limits per code property" });
+    expect(region.getAttribute("tabindex")).toBe("0");
+    expect(region.className).toContain("overflow-x-auto");
+    const description = document.getElementById("code-property-limits")!;
+    expect(region.contains(description)).toBe(false);
+    expect(within(region).getByRole("table").getAttribute("aria-describedby")).toBe("code-property-limits");
+  });
+
   it("marks layering as not counted", async () => {
     await renderCategory("architecture");
 

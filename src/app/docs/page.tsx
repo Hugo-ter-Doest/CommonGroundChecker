@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function RatingGuidePage() {
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10 space-y-8">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 space-y-8">
       <section className="space-y-3">
         <h1 className="text-3xl font-bold text-cg-blue">Rating guide</h1>
         <p className="text-gray-700">
@@ -28,8 +28,8 @@ export default function RatingGuidePage() {
         </h2>
         <ul className="space-y-3">
           {RATING_DOCS.map((category) => (
-            <li key={category.slug} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-2">
-              <Link href={`/docs/${category.slug}`} className="text-lg font-semibold text-cg-lightblue hover:underline">
+            <li key={category.slug} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 sm:p-6 space-y-2">
+              <Link href={`/docs/${category.slug}`} className="inline-flex min-h-[44px] items-center lg:min-h-0 text-lg font-semibold text-cg-lightblue hover:underline">
                 {category.title}
               </Link>
               <p className="text-gray-700">{category.summary}</p>
